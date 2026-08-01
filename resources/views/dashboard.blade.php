@@ -15,11 +15,11 @@
         <div class="card" style="padding:20px">
             <div style="display:flex;align-items:center;justify-content:space-between">
                 <div>
-                    <p style="font-size:13px;color:#94a3b8;margin:0">Roles</p>
-                    <p style="font-size:28px;font-weight:700;color:#1e293b;margin:4px 0 0">{{ \App\Models\Role::count() }}</p>
+                    <p style="font-size:13px;color:#94a3b8;margin:0">Tareas activas</p>
+                    <p style="font-size:28px;font-weight:700;color:#1e293b;margin:4px 0 0">{{ \App\Models\Task::whereIn('status', ['pendiente','en_progreso'])->count() }}</p>
                 </div>
                 <div style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(99,102,241,0.06)">
-                    <i data-lucide="shield-check" style="width:20px;height:20px;color:#6366f1"></i>
+                    <i data-lucide="list-checks" style="width:20px;height:20px;color:#6366f1"></i>
                 </div>
             </div>
         </div>

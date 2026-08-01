@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\RoleController;
+use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -51,6 +52,11 @@ Route::middleware('auth')->group(function (): void {
     Route::post('roles/{role}/toggle', [RoleController::class, 'toggle'])->name('roles.toggle');
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
+
+    Route::resource('tasks', TaskController::class);
+    Route::post('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.progress.update');
+    Route::post('tasks/{task}/comment', [TaskController::class, 'addComment'])->name('tasks.comments.add');
+    Route::post('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status.update');
 });
 
 Route::get('/dashboard', function () {
