@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true)->index()->after('password');
             $table->boolean('must_change_password')->default(true)->index()->after('is_active');
             $table->timestamp('last_login_at')->nullable()->after('must_change_password');
+            $table->timestamp('password_changed_at')->nullable()->after('last_login_at');
             $table->foreignId('created_by')->nullable()->constrained('users')->nullOnDelete()->after('last_login_at');
             $table->foreignId('updated_by')->nullable()->constrained('users')->nullOnDelete()->after('created_by');
             $table->softDeletes()->after('updated_at');
@@ -45,6 +46,7 @@ return new class extends Migration
                 'is_active',
                 'must_change_password',
                 'last_login_at',
+                'password_changed_at',
             ]);
         });
     }
