@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
+    <link rel="preload" href="{{ asset('images/logo-login.png') }}" as="image">
+    <link rel="preload" href="{{ asset('images/logo_icono.png') }}" as="image">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -211,7 +213,7 @@
         <!-- Sidebar -->
         <aside class="sidebar" id="sidebar" :class="(window.innerWidth < 1024 && !sidebarOpen) ? 'mobile-closed' : (collapsed ? 'collapsed' : '')">
             <div class="sidebar-header">
-                <img :src="collapsed ? '{{ asset('images/logo_icono.png') }}' : '{{ asset('images/logo-login.png') }}'" alt="Logo" style="transition:all 0.3s ease">
+                <img :src="collapsed ? '{{ asset('images/logo_icono.png') }}' : '{{ asset('images/logo-login.png') }}'" alt="Logo" style="transition:all 0.3s ease;background:rgba(18,63,110,0.05);border-radius:8px">
                 <span class="logo-text" style="font-size:16px;font-weight:700;color:#123f6e;white-space:nowrap">ONE</span>
                 <button class="sidebar-close" @click="sidebarOpen = false" style="display:none" x-init="$watch('sidebarOpen', v => $el.style.display = (window.innerWidth < 1024 && v) ? 'flex' : 'none')">
                     <i data-lucide="x" style="width:20px;height:20px"></i>
