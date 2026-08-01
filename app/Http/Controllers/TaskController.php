@@ -82,7 +82,7 @@ class TaskController extends Controller
 
         $assignedUsers = User::whereIn('id', $validated['assignees'])->get();
         foreach ($assignedUsers as $user) {
-            Mail::to($user->email)->queue(new TaskAssignedMail($task, $user));
+            Mail::to($user->email)->send(new TaskAssignedMail($task, $user));
         }
 
         return redirect()->route('tasks.index')->with('success', 'Tarea creada y notificaciones enviadas.');
