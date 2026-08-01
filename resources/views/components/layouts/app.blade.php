@@ -334,7 +334,7 @@
             lucide.createIcons();
         });
 
-        // Show spinner on navigation (clicks, back, forward)
+        // Show spinner on navigation (clicks only)
         document.addEventListener('DOMContentLoaded', () => {
             lucide.createIcons();
 
@@ -345,13 +345,15 @@
                 const href = link.getAttribute('href');
                 if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') return;
                 if (link.hasAttribute('data-no-spinner')) return;
+                if (link.closest('form')) return;
                 e.preventDefault();
                 showSpinner(() => { window.location.href = href; });
             });
 
-            // Handle back/forward buttons
-            window.addEventListener('popstate', () => {
-                showSpinner(() => { window.location.reload(); });
+            // Ensure spinner is hidden on bfcache restore (back/forward)
+            window.addEventListener('pageshow', () => {
+                const spinner = document.getElementById('app-spinner');
+                if (spinner) { spinner.classList.add('hidden'); setTimeout(() => spinner.remove(), 300); }
             });
         });
 

@@ -428,16 +428,9 @@
                 setTimeout(() => { window.location.href = href; }, 100);
             });
 
-            window.addEventListener('popstate', () => {
-                let spinner = document.getElementById('app-spinner');
-                if (!spinner) {
-                    spinner = document.createElement('div');
-                    spinner.id = 'app-spinner';
-                    spinner.innerHTML = '<div class="spinner-logo-wrap"><div class="spinner-ring"></div><img src="{{ asset("images/logo_icono.png") }}" alt="ColvaOne"></div>';
-                    document.body.appendChild(spinner);
-                }
-                spinner.classList.remove('hidden');
-                setTimeout(() => { window.location.reload(); }, 100);
+            window.addEventListener('pageshow', () => {
+                const spinner = document.getElementById('app-spinner');
+                if (spinner) { spinner.classList.add('hidden'); setTimeout(() => spinner.remove(), 300); }
             });
         });
     </script>
