@@ -185,25 +185,31 @@
         /* Spinner */
         #app-spinner {
             position: fixed; inset: 0; z-index: 9999;
-            background: #f0f4f8;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 20px; transition: opacity 0.3s ease;
+            background: rgba(240,244,248,0.85); backdrop-filter: blur(6px);
+            display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.3s ease;
         }
         #app-spinner.hidden { opacity: 0; pointer-events: none; }
-        #app-spinner img { height: 48px; width: auto; }
+        .spinner-logo-wrap {
+            position: relative; width: 80px; height: 80px;
+            display: flex; align-items: center; justify-content: center;
+        }
+        .spinner-logo-wrap img { width: 40px; height: 40px; object-fit: contain; position: relative; z-index: 1; }
         .spinner-ring {
-            width: 36px; height: 36px; border-radius: 50%;
-            border: 3px solid rgba(18,63,110,0.1);
-            border-top-color: #123f6e;
-            animation: spin 0.8s linear infinite;
+            position: absolute; inset: 0; border-radius: 50%;
+            border: 3px solid rgba(18,63,110,0.08);
+            border-top-color: #123f6e; border-right-color: #059669;
+            animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
     <div id="app-spinner">
-        <img src="{{ asset('images/logo_icono.png') }}" alt="ColvaOne">
-        <div class="spinner-ring"></div>
+        <div class="spinner-logo-wrap">
+            <div class="spinner-ring"></div>
+            <img src="{{ asset('images/logo_icono.png') }}" alt="ColvaOne">
+        </div>
     </div>
 
     <div class="app-bg">
@@ -354,7 +360,7 @@
             if (!spinner) {
                 spinner = document.createElement('div');
                 spinner.id = 'app-spinner';
-                spinner.innerHTML = '<img src="{{ asset("images/logo_icono.png") }}" alt="ColvaOne"><div class="spinner-ring"></div>';
+                spinner.innerHTML = '<div class="spinner-logo-wrap"><div class="spinner-ring"></div><img src="{{ asset("images/logo_icono.png") }}" alt="ColvaOne"></div>';
                 document.body.appendChild(spinner);
             }
             spinner.classList.remove('hidden');
