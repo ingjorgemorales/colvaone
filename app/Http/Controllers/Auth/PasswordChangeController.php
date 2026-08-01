@@ -31,6 +31,6 @@ class PasswordChangeController extends Controller
 
         $events->record($request, 'password_changed', true, $request->user());
 
-        return redirect()->route('dashboard')->with('status', 'Contrasena actualizada correctamente.');
+        return redirect()->route('profile.edit')->with('password_changed', true);
     }
 }
