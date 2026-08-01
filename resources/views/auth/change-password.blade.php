@@ -11,13 +11,19 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('password.change.update') }}" style="display:flex;flex-direction:column;gap:18px" id="passwordForm">
+            <form method="POST" action="{{ route('password.change.update') }}" style="display:flex;flex-direction:column;gap:18px" id="passwordForm" x-data="{ showCurrent: false, showNew: false, showConfirm: false }">
                 @csrf
                 @method('PUT')
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Contrasena actual</label>
-                    <input name="current_password" type="password" required class="input-field @error('current_password') {{ 'error-field' }} @enderror" placeholder="Ingresa tu contrasena actual">
+                    <div style="position:relative">
+                        <input name="current_password" :type="showCurrent ? 'text' : 'password'" required class="input-field @error('current_password') {{ 'error-field' }} @enderror" placeholder="Ingresa tu contrasena actual" style="padding-right:44px">
+                        <button type="button" @click="showCurrent = !showCurrent" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px">
+                            <svg x-show="!showCurrent" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg x-show="showCurrent" x-cloak xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+                        </button>
+                    </div>
                     @error('current_password')
                         <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
                             <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i>
@@ -28,7 +34,13 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Nueva contrasena</label>
-                    <input id="password" name="password" type="password" required class="input-field @error('password') {{ 'error-field' }} @enderror" placeholder="Ingresa la nueva contrasena">
+                    <div style="position:relative">
+                        <input id="password" name="password" :type="showNew ? 'text' : 'password'" required class="input-field @error('password') {{ 'error-field' }} @enderror" placeholder="Ingresa la nueva contrasena" style="padding-right:44px">
+                        <button type="button" @click="showNew = !showNew" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px">
+                            <svg x-show="!showNew" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg x-show="showNew" x-cloak xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+                        </button>
+                    </div>
                     @error('password')
                         <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
                             <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i>
@@ -39,7 +51,13 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Confirmar nueva contrasena</label>
-                    <input id="password_confirmation" name="password_confirmation" type="password" required class="input-field" placeholder="Confirma la nueva contrasena">
+                    <div style="position:relative">
+                        <input id="password_confirmation" name="password_confirmation" :type="showConfirm ? 'text' : 'password'" required class="input-field" placeholder="Confirma la nueva contrasena" style="padding-right:44px">
+                        <button type="button" @click="showConfirm = !showConfirm" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:#94a3b8;padding:4px">
+                            <svg x-show="!showConfirm" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2.062 12.348a1 1 0 0 1 0-.696 10.75 10.75 0 0 1 19.876 0 1 1 0 0 1 0 .696 10.75 10.75 0 0 1-19.876 0"/><circle cx="12" cy="12" r="3"/></svg>
+                            <svg x-show="showConfirm" x-cloak xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.733 5.076a10.744 10.744 0 0 1 11.205 6.575 1 1 0 0 1 0 .696 10.747 10.747 0 0 1-1.444 2.49"/><path d="M14.084 14.158a3 3 0 0 1-4.242-4.242"/><path d="M17.479 17.499a10.75 10.75 0 0 1-15.417-5.151 1 1 0 0 1 0-.696 10.75 10.75 0 0 1 4.446-5.143"/><path d="m2 2 20 20"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <div style="padding:12px 16px;border-radius:10px;font-size:13px;color:#123f6e;background:rgba(18,63,110,0.04);border:1px solid rgba(18,63,110,0.08)">
