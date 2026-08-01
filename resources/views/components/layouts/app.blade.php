@@ -181,9 +181,31 @@
             transition: opacity 0.2s; z-index: 60;
         }
         .nav-link:hover .nav-tooltip { opacity: 1; }
+
+        /* Spinner */
+        #app-spinner {
+            position: fixed; inset: 0; z-index: 9999;
+            background: #f0f4f8;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            gap: 20px; transition: opacity 0.3s ease;
+        }
+        #app-spinner.hidden { opacity: 0; pointer-events: none; }
+        #app-spinner img { height: 48px; width: auto; }
+        .spinner-ring {
+            width: 36px; height: 36px; border-radius: 50%;
+            border: 3px solid rgba(18,63,110,0.1);
+            border-top-color: #123f6e;
+            animation: spin 0.8s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="app-spinner">
+        <img src="{{ asset('images/logo_icono.png') }}" alt="ColvaOne">
+        <div class="spinner-ring"></div>
+    </div>
+
     <div class="app-bg">
         <div class="app-grid"></div>
         <div class="app-orb app-orb-1"></div>
@@ -298,8 +320,46 @@
             document.getElementById('sidebar').classList.add('collapsed');
             document.querySelector('.main-area').classList.add('sidebar-collapsed');
         }
-        document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
-        window.addEventListener('load', () => { setTimeout(() => lucide.createIcons(), 100); });
+
+        // Hide spinner on page load
+        window.addEventListener('load', () => {
+            const spinner = document.getElementById('app-spinner');
+            if (spinner) { spinner.classList.add('hidden'); setTimeout(() => spinner.remove(), 300); }
+            lucide.createIcons();
+        });
+
+        // Show spinner on navigation (clicks, back, forward)
+        document.addEventListener('DOMContentLoaded', () => {
+            lucide.createIcons();
+
+            // Intercept all link clicks
+            document.addEventListener('click', (e) => {
+                const link = e.target.closest('a[href]');
+                if (!link) return;
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') return;
+                if (link.hasAttribute('data-no-spinner')) return;
+                e.preventDefault();
+                showSpinner(() => { window.location.href = href; });
+            });
+
+            // Handle back/forward buttons
+            window.addEventListener('popstate', () => {
+                showSpinner(() => { window.location.reload(); });
+            });
+        });
+
+        function showSpinner(callback) {
+            let spinner = document.getElementById('app-spinner');
+            if (!spinner) {
+                spinner = document.createElement('div');
+                spinner.id = 'app-spinner';
+                spinner.innerHTML = '<img src="{{ asset("images/logo_icono.png") }}" alt="ColvaOne"><div class="spinner-ring"></div>';
+                document.body.appendChild(spinner);
+            }
+            spinner.classList.remove('hidden');
+            setTimeout(() => { if (callback) callback(); }, 100);
+        }
     </script>
     @livewireScripts
 </body>
