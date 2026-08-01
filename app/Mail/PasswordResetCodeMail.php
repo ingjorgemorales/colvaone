@@ -21,7 +21,7 @@ class PasswordResetCodeMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Codigo de recuperacion - CRM Administrativo',
+            subject: 'Codigo de recuperacion - ColvaOne',
         );
     }
 

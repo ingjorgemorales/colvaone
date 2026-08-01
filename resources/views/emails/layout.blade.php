@@ -12,7 +12,7 @@
 @yield('content')
 </td></tr>
 <tr><td style="padding:20px 40px;border-top:1px solid #e2e8f0;text-align:center;font-size:12px;color:#94a3b8">
-CRM Administrativo &copy; {{ date('Y') }}
+ColvaOne &copy; {{ date('Y') }}
 </td></tr>
 </table>
 </td></tr>

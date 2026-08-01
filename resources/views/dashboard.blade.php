@@ -56,7 +56,7 @@
             </div>
             <div style="flex:1;min-width:0">
                 <h2 style="font-size:18px;font-weight:600;color:#1e293b;margin:0">Bienvenido, {{ auth()->user()->name }}</h2>
-                <p style="font-size:14px;color:#94a3b8;margin:6px 0 0">CRM Administrativo Corporativo. Sistema de gestion, control y trazabilidad.</p>
+                <p style="font-size:14px;color:#94a3b8;margin:6px 0 0">ColvaOne. Sistema de gestion, control y trazabilidad.</p>
                 <div style="margin-top:16px;display:flex;flex-wrap:wrap;gap:12px">
                     <a href="{{ route('profile.edit') }}" class="btn-primary">
                         <i data-lucide="user" style="width:16px;height:16px"></i> Mi perfil

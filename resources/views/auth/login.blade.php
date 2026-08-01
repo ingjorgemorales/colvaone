@@ -1,7 +1,7 @@
 <x-layouts.auth title="Iniciar sesion | {{ config('app.name') }}">
     <div style="text-align:center;margin-bottom:32px">
         <img src="{{ asset('images/logo-login.png') }}" alt="Logo {{ config('app.name') }}" style="max-height:80px;width:auto;margin:0 auto 20px;display:block">
-        <h1 style="font-size:24px;font-weight:700;color:#123f6e;letter-spacing:-0.5px">CRM Administrativo</h1>
+        <h1 style="font-size:24px;font-weight:700;color:#123f6e;letter-spacing:-0.5px">ColvaOne</h1>
         <p style="font-size:13px;color:#64748b;margin-top:4px">Gestion corporativa, control y trazabilidad</p>
     </div>
 
