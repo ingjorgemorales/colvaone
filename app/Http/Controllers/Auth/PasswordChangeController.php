@@ -17,6 +17,11 @@ class PasswordChangeController extends Controller
         return view('auth.change-password');
     }
 
+    public function forcedEdit(): View
+    {
+        return view('auth.forced-change-password');
+    }
+
     public function update(Request $request, AuthEventService $events): RedirectResponse
     {
         $request->validate([
@@ -32,5 +37,21 @@ class PasswordChangeController extends Controller
         $events->record($request, 'password_changed', true, $request->user());
 
         return redirect()->route('profile.edit')->with('password_changed', true);
+    }
+
+    public function forcedUpdate(Request $request, AuthEventService $events): RedirectResponse
+    {
+        $request->validate([
+            'password' => ['required', 'confirmed', Password::min(12)->mixedCase()->numbers()->symbols()],
+        ]);
+
+        $request->user()->forceFill([
+            'password' => Hash::make($request->input('password')),
+            'must_change_password' => false,
+        ])->save();
+
+        $events->record($request, 'password_changed', true, $request->user());
+
+        return redirect()->route('dashboard');
     }
 }

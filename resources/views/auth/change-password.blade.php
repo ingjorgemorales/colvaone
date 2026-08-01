@@ -11,7 +11,7 @@
                 </div>
             </div>
 
-            <form method="POST" action="{{ route('password.change.update') }}" style="display:flex;flex-direction:column;gap:18px" id="passwordForm" x-data="{ showCurrent: false, showNew: false, showConfirm: false }">
+            <form method="POST" action="{{ route('password.profile.update') }}" style="display:flex;flex-direction:column;gap:18px" id="passwordForm" x-data="{ showCurrent: false, showNew: false, showConfirm: false }">
                 @csrf
                 @method('PUT')
 

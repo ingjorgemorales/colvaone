@@ -297,7 +297,7 @@
                                 <a href="{{ route('profile.edit') }}" class="user-menu-item">
                                     <i data-lucide="user"></i> Mi perfil
                                 </a>
-                                <a href="{{ route('password.change.edit') }}" class="user-menu-item">
+                                <a href="{{ route('password.profile.edit') }}" class="user-menu-item">
                                     <i data-lucide="key-round"></i> Cambiar contrasena
                                 </a>
                             </div>

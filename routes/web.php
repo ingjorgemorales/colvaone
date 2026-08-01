@@ -36,8 +36,10 @@ Route::middleware('auth')->group(function (): void {
     Route::post('/email/verification-notification', [EmailVerificationController::class, 'send'])
         ->middleware('throttle:6,1')
         ->name('verification.send');
-    Route::get('/password/change', [PasswordChangeController::class, 'edit'])->name('password.change.edit');
-    Route::put('/password/change', [PasswordChangeController::class, 'update'])->name('password.change.update');
+    Route::get('/password/change', [PasswordChangeController::class, 'forcedEdit'])->name('password.change.edit');
+    Route::put('/password/change', [PasswordChangeController::class, 'forcedUpdate'])->name('password.change.update');
+    Route::get('/password/profile', [PasswordChangeController::class, 'edit'])->name('password.profile.edit');
+    Route::put('/password/profile', [PasswordChangeController::class, 'update'])->name('password.profile.update');
 
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');

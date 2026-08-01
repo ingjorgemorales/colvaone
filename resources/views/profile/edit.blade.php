@@ -80,7 +80,7 @@
                 <i data-lucide="key-round" style="width:16px;height:16px;color:#059669"></i>
                 Cambiar contrasena
             </h3>
-            <a href="{{ route('password.change.edit') }}" class="btn-primary">
+            <a href="{{ route('password.profile.edit') }}" class="btn-primary">
                 <i data-lucide="key-round" style="width:16px;height:16px"></i> Cambiar contrasena
             </a>
         </div>
