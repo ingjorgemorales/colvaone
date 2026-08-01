@@ -196,6 +196,10 @@
         toggleCollapse() {
             this.collapsed = !this.collapsed;
             localStorage.setItem('sidebarCollapsed', this.collapsed);
+            const sb = document.getElementById('sidebar');
+            const ma = document.querySelector('.main-area');
+            if (this.collapsed) { sb.classList.add('collapsed'); ma.classList.add('sidebar-collapsed'); }
+            else { sb.classList.remove('collapsed'); ma.classList.remove('sidebar-collapsed'); }
             this.$nextTick(() => lucide.createIcons());
         }
     }" class="layout">
@@ -205,7 +209,7 @@
         </template>
 
         <!-- Sidebar -->
-        <aside class="sidebar" :class="(window.innerWidth < 1024 && !sidebarOpen) ? 'mobile-closed' : (collapsed ? 'collapsed' : '')">
+        <aside class="sidebar" id="sidebar" :class="(window.innerWidth < 1024 && !sidebarOpen) ? 'mobile-closed' : (collapsed ? 'collapsed' : '')">
             <div class="sidebar-header">
                 <img :src="collapsed ? '{{ asset('images/logo_icono.png') }}' : '{{ asset('images/logo-login.png') }}'" alt="Logo" style="transition:all 0.3s ease">
                 <span class="logo-text" style="font-size:16px;font-weight:700;color:#123f6e;white-space:nowrap">ONE</span>
@@ -290,6 +294,10 @@
 
 
     <script>
+        if (localStorage.getItem('sidebarCollapsed') === 'true' && window.innerWidth >= 1024) {
+            document.getElementById('sidebar').classList.add('collapsed');
+            document.querySelector('.main-area').classList.add('sidebar-collapsed');
+        }
         document.addEventListener('DOMContentLoaded', () => { lucide.createIcons(); });
         window.addEventListener('load', () => { setTimeout(() => lucide.createIcons(), 100); });
     </script>
