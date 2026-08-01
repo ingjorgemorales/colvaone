@@ -28,6 +28,7 @@ use Illuminate\Notifications\Notifiable;
         'is_active',
         'must_change_password',
         'last_login_at',
+        'password_changed_at',
         'created_by',
         'updated_by',
     ])]
@@ -56,7 +57,12 @@ class User extends Authenticatable implements MustVerifyEmail
     public function getRoleLabelAttribute(): string
     {
         return match ($this->role) {
+            'superadmin' => 'Super Administrador',
             'admin' => 'Administrador',
+            'gerente' => 'Gerente',
+            'jefe' => 'Jefe',
+            'operador' => 'Operador',
+            'auditor' => 'Auditor',
             'user' => 'Usuario',
             'viewer' => 'Visualizador',
             default => 'Sin rol',

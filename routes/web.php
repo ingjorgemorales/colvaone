@@ -6,7 +6,9 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordCodeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RoleController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -41,6 +43,11 @@ Route::middleware('auth')->group(function (): void {
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
     Route::resource('users', UserController::class)->except(['show']);
+    Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+
+    Route::resource('roles', RoleController::class)->except(['show']);
+
+    Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
 });
 
 Route::get('/dashboard', function () {
