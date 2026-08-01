@@ -46,6 +46,7 @@ Route::middleware('auth')->group(function (): void {
     Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
 
     Route::resource('roles', RoleController::class)->except(['show']);
+    Route::post('roles/{role}/toggle', [RoleController::class, 'toggle'])->name('roles.toggle');
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
 });

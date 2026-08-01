@@ -68,6 +68,20 @@ class RoleController extends Controller
         return redirect()->route('roles.index')->with('success', 'Rol actualizado correctamente.');
     }
 
+    public function toggle(Role $role, Request $request, AuthEventService $events): RedirectResponse
+    {
+        if ($role->slug === 'superadmin') {
+            return redirect()->route('roles.index')->with('error', 'No se puede desactivar el rol Super Administrador.');
+        }
+
+        $role->update(['is_active' => !$role->is_active]);
+
+        $status = $role->is_active ? 'activado' : 'desactivado';
+        $events->record($request, 'role_toggled', true, $request->user(), null, "Rol {$role->name} {$status}");
+
+        return redirect()->route('roles.index')->with('success', "Rol {$status} correctamente.");
+    }
+
     public function destroy(Role $role, Request $request, AuthEventService $events): RedirectResponse
     {
         if ($role->slug === 'superadmin') {

@@ -40,18 +40,28 @@
                             <td style="padding:12px 16px">
                                 <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(18,63,110,0.06);color:#123f6e">{{ count($role->permissions ?? []) }} permisos</span>
                             </td>
-                            <td style="padding:12px 16px;color:#64748b;font-size:13px">{{ $role->users_count }}</td>
+                            <td style="padding:12px 16px">
+                                @if($role->is_active ?? true)
+                                    <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(5,150,105,0.08);color:#059669">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:#059669"></span> Activo
+                                    </span>
+                                @else
+                                    <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:rgba(220,38,38,0.08);color:#dc2626">
+                                        <span style="width:6px;height:6px;border-radius:50%;background:#dc2626"></span> Inactivo
+                                    </span>
+                                @endif
+                            </td>
+                            <td style="padding:12px 16px">{{ $role->users_count }}</td>
                             <td style="padding:12px 16px">
                                 <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">
                                     <a href="{{ route('roles.edit', $role) }}" title="Editar" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:#94a3b8;transition:all 0.2s;text-decoration:none" onmouseover="this.style.background='rgba(18,63,110,0.06)';this.style.color='#123f6e'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
                                         <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                     </a>
                                     @if ($role->slug !== 'superadmin')
-                                        <form method="POST" action="{{ route('roles.destroy', $role) }}" onsubmit="return confirm('Eliminar este rol?')" style="margin:0">
+                                        <form method="POST" action="{{ route('roles.toggle', $role) }}" style="margin:0">
                                             @csrf
-                                            @method('DELETE')
-                                            <button type="submit" title="Eliminar" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:none;color:#94a3b8;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(220,38,38,0.06)';this.style.color='#dc2626'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
-                                                <i data-lucide="trash-2" style="width:14px;height:14px"></i>
+                                            <button type="submit" title="{{ ($role->is_active ?? true) ? 'Desactivar' : 'Activar' }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:none;color:{{ ($role->is_active ?? true) ? '#f59e0b' : '#059669' }};cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(245,158,11,0.06)'" onmouseout="this.style.background='transparent'">
+                                                <i data-lucide="{{ ($role->is_active ?? true) ? 'shield-off' : 'shield-check' }}" style="width:14px;height:14px"></i>
                                             </button>
                                         </form>
                                     @endif
