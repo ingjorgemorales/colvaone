@@ -96,13 +96,6 @@
                                             <i data-lucide="{{ $user->is_active ? 'user-x' : 'user-check' }}" style="width:14px;height:14px"></i>
                                         </button>
                                     </form>
-                                    <form method="POST" action="{{ route('users.destroy', $user) }}" onsubmit="return confirm('Eliminar este usuario?')" style="margin:0">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" title="Eliminar" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:none;color:#94a3b8;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(220,38,38,0.06)';this.style.color='#dc2626'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
-                                            <i data-lucide="trash-2" style="width:14px;height:14px"></i>
-                                        </button>
-                                    </form>
                                 </div>
                             </td>
                         </tr>
