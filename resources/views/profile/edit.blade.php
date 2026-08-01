@@ -85,5 +85,21 @@
             </a>
         </div>
     </div>
+
+    @if(session('password_changed'))
+    <div id="successModal" style="position:fixed;inset:0;z-index:9999;display:grid;place-items:center;background:rgba(18,63,110,0.3);backdrop-filter:blur(4px)" onclick="this.style.display='none'">
+        <div class="card" style="padding:32px;max-width:400px;width:90%;text-align:center" onclick="event.stopPropagation()">
+            <div style="width:64px;height:64px;border-radius:50%;display:grid;place-items:center;background:rgba(5,150,105,0.1);margin:0 auto 20px">
+                <i data-lucide="check-circle" style="width:32px;height:32px;color:#059669"></i>
+            </div>
+            <h3 style="font-size:18px;font-weight:600;color:#1e293b;margin:0 0 8px">Contrasena actualizada</h3>
+            <p style="font-size:14px;color:#64748b;margin:0 0 24px">Tu contrasena ha sido cambiada exitosamente.</p>
+            <button onclick="document.getElementById('successModal').style.display='none'" class="btn-primary" style="width:100%;justify-content:center">
+                <i data-lucide="check" style="width:16px;height:16px"></i> Entendido
+            </button>
+        </div>
+    </div>
+    @endif
+
     <script>setTimeout(() => lucide.createIcons(), 300);</script>
 </x-layouts.app>
