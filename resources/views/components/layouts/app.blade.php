@@ -282,6 +282,29 @@
                     @endif
                 </div>
                 @auth
+                    <div style="position:relative" x-data="{ notifOpen: false }" @click.outside="notifOpen = false" style="margin-right:8px">
+                        <button @click="notifOpen = !notifOpen" style="position:relative;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
+                            <i data-lucide="bell" style="width:18px;height:18px;color:#64748b"></i>
+                            <span style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:2px solid white;display:none"></span>
+                        </button>
+                        <div x-cloak x-show="notifOpen" x-transition style="position:absolute;right:0;top:calc(100% + 8px);width:360px;background:white;border-radius:14px;box-shadow:0 10px 40px rgba(18,63,110,0.12),0 0 0 1px rgba(18,63,110,0.06);z-index:50;overflow:hidden">
+                            <div style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.06);display:flex;align-items:center;justify-content:space-between">
+                                <h4 style="font-size:14px;font-weight:600;color:#1e293b;margin:0">Notificaciones</h4>
+                                <span style="font-size:11px;color:#94a3b8">0 sin leer</span>
+                            </div>
+                            <div style="padding:40px 16px;text-align:center">
+                                <div style="width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.04);margin:0 auto 12px">
+                                    <i data-lucide="bell-off" style="width:22px;height:22px;color:#94a3b8"></i>
+                                </div>
+                                <p style="font-size:13px;color:#94a3b8;margin:0">No hay notificaciones nuevas</p>
+                                <p style="font-size:11px;color:#cbd5e1;margin:4px 0 0">Las apareceran aqui cuando las tengas</p>
+                            </div>
+                            <div style="padding:10px 16px;border-top:1px solid rgba(18,63,110,0.06);text-align:center">
+                                <span style="font-size:12px;color:#94a3b8">Centro de notificaciones — proximamente</span>
+                            </div>
+                        </div>
+                    </div>
+
                     <div style="position:relative" x-data="{ userMenu: false }" @click.outside="userMenu = false">
                         <button class="user-menu-trigger" @click="userMenu = !userMenu">
                             <div class="avatar" style="width:36px;height:36px">{{ auth()->user()->initials }}</div>
