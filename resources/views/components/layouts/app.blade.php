@@ -282,7 +282,7 @@
                     @endif
                 </div>
                 @auth
-                    <div style="position:relative" x-data="{ notifOpen: false }" @click.outside="notifOpen = false" style="margin-right:8px">
+                    <div style="position:relative;margin-right:8px" x-data="{ notifOpen: false }" @click.outside="notifOpen = false">
                         <button @click="notifOpen = !notifOpen" style="position:relative;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
                             <i data-lucide="bell" style="width:18px;height:18px;color:#64748b"></i>
                             <span style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:2px solid white;display:none"></span>
