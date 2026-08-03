@@ -29,7 +29,7 @@ class TaskAssignedMail extends Mailable
     public function content(): Content
     {
         return new Content(
-            markdown: 'emails.task-assigned',
+            html: 'emails.task-assigned',
             with: [
                 'task' => $this->task,
                 'user' => $this->user,
