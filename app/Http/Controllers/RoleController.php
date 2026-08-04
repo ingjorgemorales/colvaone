@@ -109,7 +109,6 @@ class RoleController extends Controller
                     'users.view' => 'Ver usuarios',
                     'users.create' => 'Crear usuarios',
                     'users.edit' => 'Editar usuarios',
-                    'users.delete' => 'Eliminar usuarios',
                     'users.toggle' => 'Activar/Desactivar usuarios',
                 ],
             ],
@@ -119,7 +118,7 @@ class RoleController extends Controller
                     'roles.view' => 'Ver roles',
                     'roles.create' => 'Crear roles',
                     'roles.edit' => 'Editar roles',
-                    'roles.delete' => 'Eliminar roles',
+                    'roles.toggle' => 'Activar/Desactivar roles',
                 ],
             ],
             'audit' => [
@@ -134,7 +133,7 @@ class RoleController extends Controller
                     'budgets.view' => 'Ver presupuesto',
                     'budgets.create' => 'Crear presupuesto',
                     'budgets.edit' => 'Editar presupuesto',
-                    'budgets.delete' => 'Eliminar presupuesto',
+                    'budgets.toggle' => 'Activar/Desactivar presupuesto',
                 ],
             ],
             'indicators' => [
@@ -149,7 +148,7 @@ class RoleController extends Controller
                     'savings.view' => 'Ver ahorros',
                     'savings.create' => 'Crear ahorros',
                     'savings.edit' => 'Editar ahorros',
-                    'savings.delete' => 'Eliminar ahorros',
+                    'savings.toggle' => 'Activar/Desactivar ahorros',
                 ],
             ],
             'applications' => [
@@ -158,7 +157,7 @@ class RoleController extends Controller
                     'applications.view' => 'Ver aplicativos',
                     'applications.create' => 'Crear aplicativos',
                     'applications.edit' => 'Editar aplicativos',
-                    'applications.delete' => 'Eliminar aplicativos',
+                    'applications.toggle' => 'Activar/Desactivar aplicativos',
                 ],
             ],
             'contracts' => [
@@ -167,7 +166,7 @@ class RoleController extends Controller
                     'contracts.view' => 'Ver contratos',
                     'contracts.create' => 'Crear contratos',
                     'contracts.edit' => 'Editar contratos',
-                    'contracts.delete' => 'Eliminar contratos',
+                    'contracts.toggle' => 'Activar/Desactivar contratos',
                 ],
             ],
             'committees' => [
@@ -176,7 +175,7 @@ class RoleController extends Controller
                     'committees.view' => 'Ver comites',
                     'committees.create' => 'Crear comites',
                     'committees.edit' => 'Editar comites',
-                    'committees.delete' => 'Eliminar comites',
+                    'committees.toggle' => 'Activar/Desactivar comites',
                 ],
             ],
             'settings' => [
@@ -212,7 +211,6 @@ class RoleController extends Controller
                     'group_tasks.complete' => 'Finalizar tareas',
                     'group_tasks.cancel' => 'Cancelar tareas',
                     'group_tasks.archive' => 'Archivar tareas',
-                    'group_tasks.delete' => 'Eliminar tareas',
                 ],
             ],
         ];

@@ -246,12 +246,12 @@ class TaskController extends Controller
         return redirect()->route('tasks.index')->with('success', 'Tarea actualizada.');
     }
 
-    public function destroy(Task $task)
+    public function archive(Task $task)
     {
         $this->authorizeTask($task);
 
-        $task->delete();
-        return redirect()->route('tasks.index')->with('success', 'Tarea eliminada.');
+        $task->update(['status' => 'archivada']);
+        return redirect()->route('tasks.index')->with('success', 'Tarea archivada.');
     }
 
     public function updateProgress(Request $request, Task $task)

@@ -110,11 +110,11 @@
                                     <i data-lucide="pencil" style="width:15px;height:15px"></i>
                                 </a>
                                 @endif
-                                @if(auth()->user()->hasPermission('group_tasks.delete'))
-                                <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Eliminar esta tarea?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(239,68,68,0.04);color:#ef4444;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='rgba(239,68,68,0.04)'" title="Eliminar">
-                                        <i data-lucide="trash-2" style="width:15px;height:15px"></i>
+                                @if(auth()->user()->hasPermission('group_tasks.archive'))
+                                <form method="POST" action="{{ route('tasks.archive', $task) }}" onsubmit="return confirm('Archivar esta tarea?')">
+                                    @csrf
+                                    <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(245,158,11,0.04);color:#f59e0b;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(245,158,11,0.1)'" onmouseout="this.style.background='rgba(245,158,11,0.04)'" title="Archivar">
+                                        <i data-lucide="archive" style="width:15px;height:15px"></i>
                                     </button>
                                 </form>
                                 @endif
