@@ -28,6 +28,7 @@ class Task extends Model
         'progress',
         'observations',
         'block_reason',
+        'days_delayed',
     ];
 
     protected $casts = [
@@ -74,10 +75,7 @@ class Task extends Model
 
     public function getDaysDelayedAttribute(): int
     {
-        if (!$this->isDelayed()) {
-            return 0;
-        }
-        return (int) $this->end_date->diffInDays(now());
+        return (int) $this->attributes['days_delayed'];
     }
 
     public function getPriorityColorAttribute(): string

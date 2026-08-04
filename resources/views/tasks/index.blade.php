@@ -84,7 +84,7 @@
                         </td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04);color:{{ $task->isDelayed() ? '#ef4444' : '#64748b' }};font-weight:{{ $task->isDelayed() ? '600' : '400' }}">{{ $task->end_date->format('d/m/Y') }}</td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
-                            @if($task->isDelayed())
+                            @if($task->isDelayed() || $task->days_delayed > 0)
                                 <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;color:#ef4444;background:rgba(239,68,68,0.08)">
                                     <i data-lucide="alert-triangle" style="width:11px;height:11px"></i> {{ $task->days_delayed }}{{ $task->days_delayed === 1 ? ' dia' : ' dias' }}
                                 </span>

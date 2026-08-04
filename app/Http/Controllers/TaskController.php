@@ -293,7 +293,8 @@ class TaskController extends Controller
         $newProgress = round($avgProgress);
 
         if ($newProgress >= 100) {
-            $task->update(['progress' => 100, 'status' => 'finalizada']);
+            $delayed = $task->end_date->isPast() ? $task->end_date->diffInDays(now()) : 0;
+            $task->update(['progress' => 100, 'status' => 'finalizada', 'days_delayed' => $delayed]);
         } elseif ($newProgress > 0) {
             $task->update(['progress' => $newProgress, 'status' => 'en_progreso']);
         } else {
@@ -370,11 +371,12 @@ class TaskController extends Controller
         $task->update(['status' => $validated['status']]);
 
         if (in_array($validated['status'], ['finalizada', 'completada'])) {
+            $delayed = $task->end_date->isPast() ? $task->end_date->diffInDays(now()) : 0;
             $task->assignees()->updateExistingPivot(
                 $task->assignees()->pluck('users.id')->toArray(),
                 ['progress' => 100, 'status' => 'completada']
             );
-            $task->update(['progress' => 100]);
+            $task->update(['progress' => 100, 'days_delayed' => $delayed]);
         }
 
         $statusLabels = ['pendiente'=>'Pendiente','asignada'=>'Asignada','en_progreso'=>'En progreso','bloqueada'=>'Bloqueada','en_revision'=>'En revision','finalizada'=>'Finalizada','cancelada'=>'Cancelada','archivada'=>'Archivada'];
