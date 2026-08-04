@@ -15,6 +15,9 @@ class Task extends Model
 
     protected $fillable = [
         'created_by',
+        'group_id',
+        'assigned_by',
+        'responsible_user_id',
         'title',
         'description',
         'area',
@@ -24,6 +27,7 @@ class Task extends Model
         'status',
         'progress',
         'observations',
+        'block_reason',
     ];
 
     protected $casts = [
@@ -34,6 +38,21 @@ class Task extends Model
     public function creator(): BelongsTo
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function group(): BelongsTo
+    {
+        return $this->belongsTo(Group::class);
+    }
+
+    public function assigner(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'assigned_by');
+    }
+
+    public function responsible(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'responsible_user_id');
     }
 
     public function assignees(): BelongsToMany
@@ -50,7 +69,7 @@ class Task extends Model
 
     public function isDelayed(): bool
     {
-        return $this->status !== 'completada' && $this->end_date->isPast();
+        return !in_array($this->status, ['finalizada', 'cancelada', 'archivada']) && $this->end_date->isPast();
     }
 
     public function getPriorityColorAttribute(): string
@@ -68,9 +87,14 @@ class Task extends Model
     {
         return match ($this->status) {
             'pendiente' => 'Pendiente',
+            'asignada' => 'Asignada',
             'en_progreso' => 'En progreso',
-            'completada' => 'Completada',
+            'bloqueada' => 'Bloqueada',
+            'en_revision' => 'En revision',
+            'finalizada' => 'Finalizada',
             'cancelada' => 'Cancelada',
+            'archivada' => 'Archivada',
+            'completada' => 'Completada',
             'vencida' => 'Vencida',
             default => $this->status,
         };
@@ -80,11 +104,31 @@ class Task extends Model
     {
         return match ($this->status) {
             'pendiente' => '#f59e0b',
+            'asignada' => '#8b5cf6',
             'en_progreso' => '#6366f1',
+            'bloqueada' => '#ef4444',
+            'en_revision' => '#f97316',
+            'finalizada' => '#059669',
             'completada' => '#059669',
             'cancelada' => '#94a3b8',
+            'archivada' => '#64748b',
             'vencida' => '#ef4444',
             default => '#94a3b8',
         };
+    }
+
+    public function scopeVisibleFor($query, User $user)
+    {
+        if ($user->hasPermission('group_tasks.view_all')) {
+            return $query;
+        }
+
+        if ($user->hasPermission('group_tasks.view')) {
+            $groupIds = $user->groups()->wherePivot('is_active', true)->pluck('groups.id');
+            return $query->whereIn('group_id', $groupIds)->orWhere('created_by', $user->id);
+        }
+
+        return $query->where('responsible_user_id', $user->id)
+            ->orWhereHas('assignees', fn ($q) => $q->where('users.id', $user->id));
     }
 }

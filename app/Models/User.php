@@ -112,4 +112,30 @@ class User extends Authenticatable implements MustVerifyEmail
             ->withPivot(['progress', 'status'])
             ->withTimestamps();
     }
+
+    public function groups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_user')
+            ->withPivot(['member_type', 'is_active', 'assigned_by', 'joined_at', 'left_at'])
+            ->withTimestamps();
+    }
+
+    public function managedGroups(): BelongsToMany
+    {
+        return $this->belongsToMany(Group::class, 'group_user')
+            ->wherePivot('member_type', 'manager')
+            ->wherePivot('is_active', true)
+            ->withPivot(['assigned_by', 'joined_at'])
+            ->withTimestamps();
+    }
+
+    public function isManagerOf(Group $group): bool
+    {
+        return $group->isManager($this);
+    }
+
+    public function isMemberOf(Group $group): bool
+    {
+        return $group->isMember($this);
+    }
 }

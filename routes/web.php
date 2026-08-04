@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\PasswordCodeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\GroupController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
@@ -50,6 +51,12 @@ Route::middleware('auth')->group(function (): void {
 
     Route::resource('roles', RoleController::class)->except(['show'])->middleware('permission:roles.view');
     Route::post('roles/{role}/toggle', [RoleController::class, 'toggle'])->name('roles.toggle')->middleware('permission:roles.edit');
+
+    Route::resource('groups', GroupController::class)->except(['show'])->middleware('permission:groups.view');
+    Route::get('groups/{group}', [GroupController::class, 'show'])->name('groups.show')->middleware('permission:groups.view');
+    Route::post('groups/{group}/toggle', [GroupController::class, 'toggle'])->name('groups.toggle')->middleware('permission:groups.disable');
+    Route::post('groups/{group}/members', [GroupController::class, 'addMember'])->name('groups.members.add')->middleware('permission:groups.manage_members');
+    Route::delete('groups/{group}/members/{user}', [GroupController::class, 'removeMember'])->name('groups.members.remove')->middleware('permission:groups.manage_members');
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 

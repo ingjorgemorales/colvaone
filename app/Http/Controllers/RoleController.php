@@ -195,6 +195,35 @@ class RoleController extends Controller
                     'settings.edit' => 'Editar configuracion',
                 ],
             ],
+            'groups' => [
+                'name' => 'Grupos de trabajo',
+                'items' => [
+                    'groups.view' => 'Ver mis grupos',
+                    'groups.view_all' => 'Ver todos los grupos',
+                    'groups.create' => 'Crear grupos',
+                    'groups.update' => 'Editar grupos',
+                    'groups.disable' => 'Activar/Desactivar grupos',
+                    'groups.manage_members' => 'Gestionar integrantes',
+                    'groups.assign_manager' => 'Asignar gerentes',
+                ],
+            ],
+            'group_tasks' => [
+                'name' => 'Tareas de grupos',
+                'items' => [
+                    'group_tasks.view' => 'Ver tareas de mis grupos',
+                    'group_tasks.view_all' => 'Ver todas las tareas',
+                    'group_tasks.create' => 'Crear tareas',
+                    'group_tasks.assign' => 'Asignar tareas',
+                    'group_tasks.reassign' => 'Reasignar tareas',
+                    'group_tasks.update' => 'Editar tareas',
+                    'group_tasks.update_progress' => 'Actualizar progreso',
+                    'group_tasks.comment' => 'Comentar en tareas',
+                    'group_tasks.complete' => 'Finalizar tareas',
+                    'group_tasks.cancel' => 'Cancelar tareas',
+                    'group_tasks.archive' => 'Archivar tareas',
+                    'group_tasks.delete' => 'Eliminar tareas',
+                ],
+            ],
         ];
     }
 }

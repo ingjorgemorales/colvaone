@@ -1,0 +1,80 @@
+<x-layouts.app title="Editar grupo | {{ config('app.name') }}" heading="Editar grupo" subheading="Actualizar informacion del grupo">
+    <div style="max-width:700px">
+        <div class="card" style="padding:28px">
+            <form method="POST" action="{{ route('groups.update', $group) }}" style="display:flex;flex-direction:column;gap:18px">
+                @csrf
+                @method('PUT')
+
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Nombre del grupo *</label>
+                    <input name="name" type="text" value="{{ old('name', $group->name) }}" required class="input-field @error('name') {{ 'error-field' }} @enderror">
+                    @error('name')
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
+                            <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Descripcion</label>
+                    <textarea name="description" rows="3" class="input-field" style="resize:vertical">{{ old('description', $group->description) }}</textarea>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Estado *</label>
+                    <select name="status" required class="input-field" style="cursor:pointer">
+                        <option value="active" {{ old('status', $group->status)==='active'?'selected':'' }}>Activo</option>
+                        <option value="inactive" {{ old('status', $group->status)==='inactive'?'selected':'' }}>Inactivo</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Gerente(s) responsable(s) *</label>
+                    <div style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:180px;overflow-y:auto;background:white">
+                        @foreach($users as $u)
+                            <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
+                                <input type="checkbox" name="managers[]" value="{{ $u->id }}" {{ $group->managers->contains($u->id) ? 'checked' : '' }} style="accent-color:#123f6e">
+                                <div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">{{ strtoupper(substr($u->name,0,1).substr($u->last_name??'',0,1)) }}</div>
+                                <div>
+                                    <span style="font-weight:500">{{ $u->name }} {{ $u->last_name }}</span>
+                                    <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->role_label }}</span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('managers')
+                        <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
+                            <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i> {{ $message }}
+                        </div>
+                    @enderror
+                </div>
+
+                <div>
+                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Integrantes</label>
+                    <div style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:220px;overflow-y:auto;background:white">
+                        @foreach($users as $u)
+                            <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
+                                <input type="checkbox" name="members[]" value="{{ $u->id }}" {{ $group->members->contains($u->id) ? 'checked' : '' }} style="accent-color:#123f6e">
+                                <div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">{{ strtoupper(substr($u->name,0,1).substr($u->last_name??'',0,1)) }}</div>
+                                <div>
+                                    <span style="font-weight:500">{{ $u->name }} {{ $u->last_name }}</span>
+                                    <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->role_label }}</span>
+                                </div>
+                            </label>
+                        @endforeach
+                    </div>
+                </div>
+
+                <div style="display:flex;gap:12px;justify-content:flex-end">
+                    <a href="{{ route('groups.index') }}" class="btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn-primary">
+                        <i data-lucide="save" style="width:16px;height:16px"></i> Actualizar grupo
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>.error-field { border-color: rgba(220,38,38,0.4) !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.06) !important; }</style>
+    <script>setTimeout(() => lucide.createIcons(), 300);</script>
+</x-layouts.app>
