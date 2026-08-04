@@ -250,7 +250,9 @@
                     @php
                         $isLinked = filled($item['route']);
                         $isActive = $isLinked && request()->routeIs($item['route']);
+                        $hasPermission = empty($item['permission']) || auth()->user()->hasPermission($item['permission']);
                     @endphp
+                    @if($hasPermission)
                     <a href="{{ $isLinked ? route($item['route']) : '#' }}"
                         class="nav-link {{ $isActive ? 'active' : '' }}"
                         @click="if(window.innerWidth < 1024) sidebarOpen = false"
@@ -259,6 +261,7 @@
                         <span class="nav-label">{{ $item['name'] }}</span>
                         <span class="nav-tooltip" x-show="collapsed && window.innerWidth >= 1024" x-cloak>{{ $item['name'] }}</span>
                     </a>
+                    @endif
                 @endforeach
             </nav>
             <div class="sidebar-footer">

@@ -45,18 +45,18 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
-    Route::resource('users', UserController::class)->except(['show']);
-    Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle');
+    Route::resource('users', UserController::class)->except(['show'])->middleware('permission:users.view');
+    Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle')->middleware('permission:users.edit');
 
-    Route::resource('roles', RoleController::class)->except(['show']);
-    Route::post('roles/{role}/toggle', [RoleController::class, 'toggle'])->name('roles.toggle');
+    Route::resource('roles', RoleController::class)->except(['show'])->middleware('permission:roles.view');
+    Route::post('roles/{role}/toggle', [RoleController::class, 'toggle'])->name('roles.toggle')->middleware('permission:roles.edit');
 
-    Route::get('audit', [AuditController::class, 'index'])->name('audit.index');
+    Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 
-    Route::resource('tasks', TaskController::class);
-    Route::post('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.progress.update');
-    Route::post('tasks/{task}/comment', [TaskController::class, 'addComment'])->name('tasks.comments.add');
-    Route::post('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status.update');
+    Route::resource('tasks', TaskController::class)->middleware('permission:tasks.view');
+    Route::post('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.progress.update')->middleware('permission:tasks.edit');
+    Route::post('tasks/{task}/comment', [TaskController::class, 'addComment'])->name('tasks.comments.add')->middleware('permission:tasks.view');
+    Route::post('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status.update')->middleware('permission:tasks.edit');
 });
 
 Route::get('/dashboard', function () {

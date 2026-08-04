@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -76,6 +77,28 @@ class User extends Authenticatable implements MustVerifyEmail
         $first = mb_substr($this->name, 0, 1);
         $last = mb_substr($this->last_name ?? '', 0, 1);
         return strtoupper($first . $last);
+    }
+
+    public function roleObject(): BelongsTo
+    {
+        return $this->belongsTo(Role::class, 'role', 'slug');
+    }
+
+    public function hasPermission(string $permission): bool
+    {
+        if ($this->role === 'superadmin') {
+            return true;
+        }
+
+        $role = Role::where('slug', $this->role)->first();
+
+        if (!$role || !$role->is_active) {
+            return false;
+        }
+
+        $permissions = $role->permissions ?? [];
+
+        return in_array($permission, $permissions);
     }
 
     public function createdTasks(): HasMany
