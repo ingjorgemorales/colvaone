@@ -16,7 +16,7 @@
                     <!-- Header -->
                     <tr>
                         <td style="background:linear-gradient(135deg,#123f6e 0%,#0d3158 50%,#059669 100%);border-radius:16px 16px 0 0;padding:32px 40px;text-align:center">
-                            <img src="{{ asset('images/logo-login.png') }}" alt="ColvaOne" width="180" style="display:block;margin:0 auto 12px;border:0">
+                            <img src="{{ config('app.url') }}/images/logo-login.png" alt="ColvaOne" width="180" style="display:block;margin:0 auto 12px;border:0">
                             <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0">Gestion corporativa, control y trazabilidad</p>
                         </td>
                     </tr>
