@@ -310,7 +310,7 @@ class TaskController extends Controller
 
         if (in_array($validated['status'], ['finalizada', 'completada'])) {
             $task->assignees()->updateExistingPivot(
-                $task->assignees()->pluck('id')->toArray(),
+                $task->assignees()->pluck('users.id')->toArray(),
                 ['progress' => 100, 'status' => 'completada']
             );
             $task->update(['progress' => 100]);
