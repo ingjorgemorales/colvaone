@@ -17,7 +17,7 @@ class GroupController extends Controller
         if ($request->user()->hasPermission('groups.view_all')) {
             // Admin sees all
         } else {
-            $query->whereHas('users', fn ($q) => $q->where('users.id', Auth::id())->wherePivot('is_active', true));
+            $query->whereHas('users', fn ($q) => $q->where('users.id', Auth::id())->where('group_user.is_active', true));
         }
 
         if ($request->filled('search')) {

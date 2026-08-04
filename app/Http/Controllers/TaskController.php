@@ -60,7 +60,7 @@ class TaskController extends Controller
         $tasks = $query->paginate(15)->withQueryString();
 
         $groups = Group::where('status', 'active')
-            ->whereHas('users', fn ($q) => $q->where('users.id', Auth::id())->wherePivot('is_active', true))
+            ->whereHas('users', fn ($q) => $q->where('users.id', Auth::id())->where('group_user.is_active', true))
             ->get();
 
         return view('tasks.index', compact('tasks', 'groups'));
@@ -72,7 +72,7 @@ class TaskController extends Controller
 
         if ($user->hasPermission('group_tasks.view_all') || $user->hasPermission('group_tasks.create')) {
             $groups = Group::where('status', 'active')
-                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->wherePivot('is_active', true))
+                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->where('group_user.is_active', true))
                 ->get();
         } else {
             $groups = collect();
@@ -187,7 +187,7 @@ class TaskController extends Controller
         $user = Auth::user();
 
         $groups = Group::where('status', 'active')
-            ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->wherePivot('is_active', true))
+            ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->where('group_user.is_active', true))
             ->get();
 
         $users = collect();

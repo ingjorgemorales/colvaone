@@ -108,7 +108,7 @@ class Group extends Model
             return $query;
         }
 
-        return $query->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->wherePivot('is_active', true));
+        return $query->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->where('group_user.is_active', true));
     }
 
     public function isManager(User $user): bool
