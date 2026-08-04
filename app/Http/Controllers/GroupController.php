@@ -40,12 +40,18 @@ class GroupController extends Controller
 
     public function create()
     {
+        if (!Auth::user()->hasPermission('groups.create')) {
+            abort(403);
+        }
         $users = User::where('is_active', true)->orderBy('name')->get();
         return view('groups.create', compact('users'));
     }
 
     public function store(Request $request)
     {
+        if (!Auth::user()->hasPermission('groups.create')) {
+            abort(403);
+        }
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:groups,name',
             'description' => 'nullable|string',
@@ -113,6 +119,10 @@ class GroupController extends Controller
     {
         $this->authorizeGroup($group);
 
+        if (!Auth::user()->hasPermission('groups.update')) {
+            abort(403);
+        }
+
         $group->load(['managers', 'members']);
         $users = User::where('is_active', true)->orderBy('name')->get();
 
@@ -122,6 +132,10 @@ class GroupController extends Controller
     public function update(Request $request, Group $group)
     {
         $this->authorizeGroup($group);
+
+        if (!Auth::user()->hasPermission('groups.update')) {
+            abort(403);
+        }
 
         $validated = $request->validate([
             'name' => 'required|string|max:255|unique:groups,name,' . $group->id,
