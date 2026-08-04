@@ -167,25 +167,6 @@
                 </div>
             </div>
 
-            @if(auth()->user()->hasPermission('group_tasks.update'))
-            <div class="card" style="padding:20px">
-                <h3 style="font-size:14px;font-weight:600;color:#1e293b;margin:0 0 14px;display:flex;align-items:center;gap:8px">
-                    <i data-lucide="settings" style="width:16px;height:16px;color:#f59e0b"></i>
-                    Cambiar estado
-                </h3>
-                <div style="display:flex;flex-wrap:wrap;gap:6px">
-                    @foreach(['pendiente' => 'Pendiente', 'asignada' => 'Asignada', 'en_progreso' => 'En progreso', 'bloqueada' => 'Bloqueada', 'en_revision' => 'En revision', 'finalizada' => 'Finalizada', 'cancelada' => 'Cancelada', 'archivada' => 'Archivada'] as $val => $label)
-                        <form method="POST" action="{{ route('tasks.status.update', $task) }}">
-                            @csrf
-                            <input type="hidden" name="status" value="{{ $val }}">
-                            <button type="submit" style="padding:6px 12px;border-radius:6px;font-size:11px;font-weight:600;border:1px solid {{ $task->status === $val ? $task->status_color : 'rgba(18,63,110,0.12)' }};background:{{ $task->status === $val ? $task->status_color : 'white' }};color:{{ $task->status === $val ? 'white' : '#475569' }};cursor:pointer;transition:all 0.15s" @mouseover="this.style.borderColor='{{ $task->status_color }}'" @mouseout="this.style.borderColor='{{ $task->status === $val ? $task->status_color : 'rgba(18,63,110,0.12)' }}'">
-                                {{ $label }}
-                            </button>
-                        </form>
-                    @endforeach
-                </div>
-            </div>
-            @endif
         </div>
     </div>
 
