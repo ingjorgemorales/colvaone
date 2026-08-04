@@ -215,7 +215,6 @@ class TaskController extends Controller
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'priority' => 'required|in:baja,media,alta,urgente',
-            'status' => 'required|in:pendiente,asignada,en_progreso,bloqueada,en_revision,finalizada,cancelada,archivada',
             'observations' => 'nullable|string',
             'assignees' => 'required|array|min:1',
             'assignees.*' => 'exists:users,id',
@@ -242,7 +241,6 @@ class TaskController extends Controller
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'priority' => $validated['priority'],
-            'status' => $validated['status'],
             'observations' => $validated['observations'] ?? null,
         ]);
 

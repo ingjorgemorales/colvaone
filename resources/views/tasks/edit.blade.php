@@ -57,20 +57,6 @@
                 </div>
 
                 <div>
-                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Estado *</label>
-                    <select name="status" required class="input-field" style="cursor:pointer">
-                        <option value="pendiente" {{ old('status', $task->status)=='pendiente'?'selected':'' }}>Pendiente</option>
-                        <option value="asignada" {{ old('status', $task->status)=='asignada'?'selected':'' }}>Asignada</option>
-                        <option value="en_progreso" {{ old('status', $task->status)=='en_progreso'?'selected':'' }}>En progreso</option>
-                        <option value="bloqueada" {{ old('status', $task->status)=='bloqueada'?'selected':'' }}>Bloqueada</option>
-                        <option value="en_revision" {{ old('status', $task->status)=='en_revision'?'selected':'' }}>En revision</option>
-                        <option value="finalizada" {{ old('status', $task->status)=='finalizada'?'selected':'' }}>Finalizada</option>
-                        <option value="cancelada" {{ old('status', $task->status)=='cancelada'?'selected':'' }}>Cancelada</option>
-                        <option value="archivada" {{ old('status', $task->status)=='archivada'?'selected':'' }}>Archivada</option>
-                    </select>
-                </div>
-
-                <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Area</label>
                     <input name="area" type="text" value="{{ old('area', $task->area) }}" class="input-field" placeholder="Ej: Administracion, TI, Finanzas">
                 </div>

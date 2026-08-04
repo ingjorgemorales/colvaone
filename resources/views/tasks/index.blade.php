@@ -10,11 +10,8 @@
             </select>
             <select name="status" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;color:#475569;outline:none;cursor:pointer">
                 <option value="">Todos los estados</option>
-                <option value="pendiente" {{ request('status')=='pendiente'?'selected':'' }}>Pendiente</option>
                 <option value="asignada" {{ request('status')=='asignada'?'selected':'' }}>Asignada</option>
                 <option value="en_progreso" {{ request('status')=='en_progreso'?'selected':'' }}>En progreso</option>
-                <option value="bloqueada" {{ request('status')=='bloqueada'?'selected':'' }}>Bloqueada</option>
-                <option value="en_revision" {{ request('status')=='en_revision'?'selected':'' }}>En revision</option>
                 <option value="finalizada" {{ request('status')=='finalizada'?'selected':'' }}>Finalizada</option>
                 <option value="cancelada" {{ request('status')=='cancelada'?'selected':'' }}>Cancelada</option>
                 <option value="archivada" {{ request('status')=='archivada'?'selected':'' }}>Archivada</option>
