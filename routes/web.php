@@ -60,10 +60,11 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 
-    Route::resource('tasks', TaskController::class)->middleware('permission:tasks.view');
-    Route::post('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.progress.update')->middleware('permission:tasks.edit');
-    Route::post('tasks/{task}/comment', [TaskController::class, 'addComment'])->name('tasks.comments.add')->middleware('permission:tasks.view');
-    Route::post('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status.update')->middleware('permission:tasks.edit');
+    Route::resource('tasks', TaskController::class)->middleware('permission:group_tasks.view');
+    Route::get('tasks-group-members/{group}', [TaskController::class, 'getGroupMembers'])->name('tasks.group-members')->middleware('auth');
+    Route::post('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.progress.update')->middleware('permission:group_tasks.update_progress');
+    Route::post('tasks/{task}/comment', [TaskController::class, 'addComment'])->name('tasks.comments.add')->middleware('permission:group_tasks.comment');
+    Route::post('tasks/{task}/status', [TaskController::class, 'updateStatus'])->name('tasks.status.update')->middleware('permission:group_tasks.update');
 });
 
 Route::get('/dashboard', function () {

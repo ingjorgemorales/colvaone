@@ -1,14 +1,23 @@
-<x-layouts.app title="Tareas | {{ config('app.name') }}" heading="Tareas" subheading="Gestion y asignacion de tareas por area">
+<x-layouts.app title="Tareas | {{ config('app.name') }}" heading="Tareas" subheading="Gestion y asignacion de tareas por grupo de trabajo">
     <div style="margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
         <form method="GET" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
             <input type="text" name="search" value="{{ request('search') }}" placeholder="Buscar tarea..." style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;width:220px;outline:none">
+            <select name="group_id" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;color:#475569;outline:none;cursor:pointer">
+                <option value="">Todos los grupos</option>
+                @foreach($groups as $g)
+                    <option value="{{ $g->id }}" {{ request('group_id')==$g->id?'selected':'' }}>{{ $g->name }}</option>
+                @endforeach
+            </select>
             <select name="status" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;color:#475569;outline:none;cursor:pointer">
                 <option value="">Todos los estados</option>
                 <option value="pendiente" {{ request('status')=='pendiente'?'selected':'' }}>Pendiente</option>
+                <option value="asignada" {{ request('status')=='asignada'?'selected':'' }}>Asignada</option>
                 <option value="en_progreso" {{ request('status')=='en_progreso'?'selected':'' }}>En progreso</option>
-                <option value="completada" {{ request('status')=='completada'?'selected':'' }}>Completada</option>
-                <option value="vencida" {{ request('status')=='vencida'?'selected':'' }}>Vencida</option>
+                <option value="bloqueada" {{ request('status')=='bloqueada'?'selected':'' }}>Bloqueada</option>
+                <option value="en_revision" {{ request('status')=='en_revision'?'selected':'' }}>En revision</option>
+                <option value="finalizada" {{ request('status')=='finalizada'?'selected':'' }}>Finalizada</option>
                 <option value="cancelada" {{ request('status')=='cancelada'?'selected':'' }}>Cancelada</option>
+                <option value="archivada" {{ request('status')=='archivada'?'selected':'' }}>Archivada</option>
             </select>
             <select name="priority" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;color:#475569;outline:none;cursor:pointer">
                 <option value="">Todas las prioridades</option>
@@ -17,16 +26,10 @@
                 <option value="alta" {{ request('priority')=='alta'?'selected':'' }}>Alta</option>
                 <option value="urgente" {{ request('priority')=='urgente'?'selected':'' }}>Urgente</option>
             </select>
-            <select name="assignee" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;color:#475569;outline:none;cursor:pointer">
-                <option value="">Todos los asignados</option>
-                @foreach($users as $u)
-                    <option value="{{ $u->id }}" {{ request('assignee')==$u->id?'selected':'' }}>{{ $u->name }} {{ $u->last_name }}</option>
-                @endforeach
-            </select>
             <button type="submit" class="btn-secondary" style="padding:9px 16px;font-size:13px">
                 <i data-lucide="search" style="width:14px;height:14px"></i> Buscar
             </button>
-            @if(request()->hasAny(['search','status','priority','assignee']))
+            @if(request()->hasAny(['search','status','priority','group_id']))
                 <a href="{{ route('tasks.index') }}" class="btn-secondary" style="padding:9px 16px;font-size:13px;color:#dc2626">
                     <i data-lucide="x" style="width:14px;height:14px"></i> Limpiar
                 </a>
@@ -46,7 +49,7 @@
             <thead>
                 <tr>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Tarea</th>
-                    <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Area</th>
+                    <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Grupo</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Asignados</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Fecha fin</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Progreso</th>
@@ -70,7 +73,9 @@
                                 </div>
                             </div>
                         </td>
-                        <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04);color:#64748b">{{ $task->area ?? '—' }}</td>
+                        <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
+                            <span style="display:inline-flex;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:500;color:#123f6e;background:rgba(18,63,110,0.06)">{{ $task->group->name ?? '—' }}</span>
+                        </td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
                             <div style="display:flex;flex-wrap:wrap;gap:4px">
                                 @foreach($task->assignees->take(3) as $a)

@@ -1,7 +1,7 @@
 <x-layouts.app title="Nueva tarea | {{ config('app.name') }}" heading="Nueva tarea" subheading="Crear y asignar una tarea">
     <div style="max-width:700px">
         <div class="card" style="padding:28px">
-            <form method="POST" action="{{ route('tasks.store') }}" style="display:flex;flex-direction:column;gap:18px" x-data="{ assignees: [] }">
+            <form method="POST" action="{{ route('tasks.store') }}" style="display:flex;flex-direction:column;gap:18px" id="taskForm">
                 @csrf
 
                 <div>
@@ -21,8 +21,18 @@
 
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                     <div>
-                        <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Area</label>
-                        <input name="area" type="text" value="{{ old('area') }}" class="input-field" placeholder="Ej: Tecnologia">
+                        <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Grupo de trabajo *</label>
+                        <select name="group_id" id="groupSelect" required class="input-field @error('group_id') {{ 'error-field' }} @enderror" style="cursor:pointer" onchange="loadGroupMembers(this.value)">
+                            <option value="">Seleccionar grupo...</option>
+                            @foreach($groups as $g)
+                                <option value="{{ $g->id }}" {{ ($groupId ?? old('group_id')) == $g->id ? 'selected' : '' }}>{{ $g->name }}</option>
+                            @endforeach
+                        </select>
+                        @error('group_id')
+                            <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
+                                <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i> {{ $message }}
+                            </div>
+                        @enderror
                     </div>
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Prioridad *</label>
@@ -58,17 +68,21 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Asignar a *</label>
-                    <div style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:180px;overflow-y:auto;background:white">
-                        @foreach($users as $u)
-                            <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
-                                <input type="checkbox" name="assignees[]" value="{{ $u->id }}" {{ in_array($u->id, old('assignees', [])) ? 'checked' : '' }} style="accent-color:#123f6e">
-                                <div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">{{ strtoupper(substr($u->name,0,1).substr($u->last_name??'',0,1)) }}</div>
-                                <div>
-                                    <span style="font-weight:500">{{ $u->name }} {{ $u->last_name }}</span>
-                                    <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->role_label }}</span>
-                                </div>
-                            </label>
-                        @endforeach
+                    <div id="membersContainer" style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:180px;overflow-y:auto;background:white">
+                        @if($users->count() > 0)
+                            @foreach($users as $u)
+                                <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
+                                    <input type="checkbox" name="assignees[]" value="{{ $u->id }}" {{ in_array($u->id, old('assignees', [])) ? 'checked' : '' }} style="accent-color:#123f6e">
+                                    <div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">{{ strtoupper(substr($u->name,0,1).substr($u->last_name??'',0,1)) }}</div>
+                                    <div>
+                                        <span style="font-weight:500">{{ $u->name }} {{ $u->last_name }}</span>
+                                        <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->role_label }}</span>
+                                    </div>
+                                </label>
+                            @endforeach
+                        @else
+                            <p style="font-size:13px;color:#94a3b8;text-align:center;padding:16px" id="noGroupMsg">Selecciona un grupo para ver sus integrantes</p>
+                        @endif
                     </div>
                     @error('assignees')
                         <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
@@ -100,5 +114,44 @@
     </div>
 
     <style>.error-field { border-color: rgba(220,38,38,0.4) !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.06) !important; }</style>
+    <script>
+    function loadGroupMembers(groupId) {
+        const container = document.getElementById('membersContainer');
+        if (!groupId) {
+            container.innerHTML = '<p style="font-size:13px;color:#94a3b8;text-align:center;padding:16px">Selecciona un grupo para ver sus integrantes</p>';
+            return;
+        }
+        container.innerHTML = '<p style="font-size:13px;color:#94a3b8;text-align:center;padding:16px">Cargando integrantes...</p>';
+
+        fetch('/tasks-group-members/' + groupId)
+            .then(r => r.json())
+            .then(members => {
+                if (members.error) {
+                    container.innerHTML = '<p style="font-size:13px;color:#dc2626;text-align:center;padding:16px">' + members.error + '</p>';
+                    return;
+                }
+                if (members.length === 0) {
+                    container.innerHTML = '<p style="font-size:13px;color:#94a3b8;text-align:center;padding:16px">Este grupo no tiene integrantes</p>';
+                    return;
+                }
+                let html = '';
+                members.forEach(m => {
+                    html += '<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background=\'rgba(18,63,110,0.04)\'" onmouseout="this.style.background=\'transparent\'">';
+                    html += '<input type="checkbox" name="assignees[]" value="' + m.id + '" style="accent-color:#123f6e">';
+                    html += '<div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">' + m.initials + '</div>';
+                    html += '<div><span style="font-weight:500">' + m.name + '</span> <span style="font-size:11px;color:#94a3b8;margin-left:6px">' + m.role + '</span></div>';
+                    html += '</label>';
+                });
+                container.innerHTML = html;
+            });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const select = document.getElementById('groupSelect');
+        if (select.value) {
+            loadGroupMembers(select.value);
+        }
+    });
+    </script>
     <script>setTimeout(() => lucide.createIcons(), 300);</script>
 </x-layouts.app>

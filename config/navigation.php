@@ -3,7 +3,7 @@
 return [
     'items' => [
         ['name' => 'Dashboard', 'icon' => 'layout-dashboard', 'route' => 'dashboard', 'permission' => 'dashboard.view', 'order' => 10, 'enabled' => true],
-        ['name' => 'Tareas', 'icon' => 'list-checks', 'route' => 'tasks.index', 'permission' => 'tasks.view', 'order' => 20, 'enabled' => true],
+        ['name' => 'Tareas', 'icon' => 'list-checks', 'route' => 'tasks.index', 'permission' => 'group_tasks.view', 'order' => 20, 'enabled' => true],
         ['name' => 'Grupos', 'icon' => 'users-round', 'route' => 'groups.index', 'permission' => 'groups.view', 'order' => 25, 'enabled' => true],
         ['name' => 'Presupuesto', 'icon' => 'wallet-cards', 'route' => null, 'permission' => 'budgets.view', 'order' => 30, 'enabled' => true],
         ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => null, 'permission' => 'indicators.view', 'order' => 40, 'enabled' => true],

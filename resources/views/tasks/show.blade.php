@@ -19,7 +19,11 @@
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;font-size:13px">
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:16px;font-size:13px">
+                    <div>
+                        <span style="color:#94a3b8">Grupo</span>
+                        <p style="font-weight:500;color:#123f6e;margin:2px 0 0">{{ $task->group->name ?? '—' }}</p>
+                    </div>
                     <div>
                         <span style="color:#94a3b8">Area</span>
                         <p style="font-weight:500;color:#1e293b;margin:2px 0 0">{{ $task->area ?? 'Sin area' }}</p>
@@ -28,6 +32,8 @@
                         <span style="color:#94a3b8">Prioridad</span>
                         <p style="font-weight:500;color:{{ $task->priority_color }};margin:2px 0 0;text-transform:capitalize">{{ $task->priority }}</p>
                     </div>
+                </div>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;font-size:13px">
                     <div>
                         <span style="color:#94a3b8">Fecha inicio</span>
                         <p style="font-weight:500;color:#1e293b;margin:2px 0 0">{{ $task->start_date->format('d/m/Y') }}</p>
@@ -134,6 +140,10 @@
                 </h3>
                 <div style="display:flex;flex-direction:column;gap:10px;font-size:13px">
                     <div style="display:flex;justify-content:space-between">
+                        <span style="color:#94a3b8">Grupo</span>
+                        <span style="font-weight:500;color:#1e293b">{{ $task->group->name ?? '—' }}</span>
+                    </div>
+                    <div style="display:flex;justify-content:space-between">
                         <span style="color:#94a3b8">Creada por</span>
                         <span style="font-weight:500;color:#1e293b">{{ $task->creator->name }}</span>
                     </div>
@@ -158,7 +168,7 @@
                     Cambiar estado
                 </h3>
                 <div style="display:flex;flex-wrap:wrap;gap:6px">
-                    @foreach(['pendiente' => 'Pendiente', 'en_progreso' => 'En progreso', 'completada' => 'Completada', 'cancelada' => 'Cancelada'] as $val => $label)
+                    @foreach(['pendiente' => 'Pendiente', 'asignada' => 'Asignada', 'en_progreso' => 'En progreso', 'bloqueada' => 'Bloqueada', 'en_revision' => 'En revision', 'finalizada' => 'Finalizada', 'cancelada' => 'Cancelada', 'archivada' => 'Archivada'] as $val => $label)
                         <form method="POST" action="{{ route('tasks.status.update', $task) }}">
                             @csrf
                             <input type="hidden" name="status" value="{{ $val }}">

@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Group;
 use App\Models\Task;
 use App\Models\TaskComment;
 use App\Models\User;
 use App\Services\AuthEventService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -15,7 +17,19 @@ class TaskController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Task::with(['creator', 'assignees']);
+        $query = Task::with(['creator', 'assignees', 'group']);
+
+        $user = $request->user();
+
+        if (!$user->hasPermission('group_tasks.view_all')) {
+            if ($user->hasPermission('group_tasks.view')) {
+                $groupIds = $user->groups()->wherePivot('is_active', true)->pluck('groups.id');
+                $query->whereIn('group_id', $groupIds)->orWhere('created_by', $user->id);
+            } else {
+                $query->where('responsible_user_id', $user->id)
+                    ->orWhereHas('assignees', fn ($q) => $q->where('users.id', $user->id));
+            }
+        }
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -37,19 +51,66 @@ class TaskController extends Controller
             $query->whereHas('assignees', fn ($q) => $q->where('users.id', $request->assignee));
         }
 
+        if ($request->filled('group_id')) {
+            $query->where('group_id', $request->group_id);
+        }
+
         $query->orderBy('end_date', 'asc');
 
         $tasks = $query->paginate(15)->withQueryString();
 
-        $users = User::orderBy('name')->get();
+        $groups = Group::where('status', 'active')
+            ->whereHas('users', fn ($q) => $q->where('users.id', Auth::id())->wherePivot('is_active', true))
+            ->get();
 
-        return view('tasks.index', compact('tasks', 'users'));
+        return view('tasks.index', compact('tasks', 'groups'));
     }
 
     public function create()
     {
-        $users = User::orderBy('name')->get();
-        return view('tasks.create', compact('users'));
+        $user = Auth::user();
+
+        if ($user->hasPermission('group_tasks.view_all') || $user->hasPermission('group_tasks.create')) {
+            $groups = Group::where('status', 'active')
+                ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->wherePivot('is_active', true))
+                ->get();
+        } else {
+            $groups = collect();
+        }
+
+        $groupId = request('group_id');
+        $users = collect();
+
+        if ($groupId) {
+            $group = Group::find($groupId);
+            if ($group && $group->isMember($user)) {
+                $users = $group->activeMembers()->orderBy('name')->get();
+            }
+        }
+
+        return view('tasks.create', compact('users', 'groups', 'groupId'));
+    }
+
+    public function getGroupMembers(Group $group): JsonResponse
+    {
+        $user = Auth::user();
+
+        if (!$group->isMember($user) && !$user->hasPermission('group_tasks.view_all')) {
+            return response()->json(['error' => 'No tienes acceso a este grupo.'], 403);
+        }
+
+        $members = $group->activeMembers()
+            ->orderBy('name')
+            ->get()
+            ->map(fn ($m) => [
+                'id' => $m->id,
+                'name' => $m->name . ' ' . ($m->last_name ?? ''),
+                'email' => $m->email,
+                'role' => $m->role_label,
+                'initials' => strtoupper(substr($m->name, 0, 1) . substr($m->last_name ?? '', 0, 1)),
+            ]);
+
+        return response()->json($members);
     }
 
     public function store(Request $request)
@@ -58,6 +119,7 @@ class TaskController extends Controller
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'area' => 'nullable|string|max:255',
+            'group_id' => 'required|exists:groups,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'priority' => 'required|in:baja,media,alta,urgente',
@@ -66,23 +128,42 @@ class TaskController extends Controller
             'assignees.*' => 'exists:users,id',
         ]);
 
+        $user = Auth::user();
+        $group = Group::find($validated['group_id']);
+
+        if (!$group->isActive()) {
+            return back()->withInput()->with('error', 'El grupo seleccionado esta inactivo.');
+        }
+
+        if (!$group->isMember($user) && !$user->hasPermission('group_tasks.view_all')) {
+            abort(403, 'No tienes acceso a este grupo.');
+        }
+
+        foreach ($validated['assignees'] as $assigneeId) {
+            if (!$group->hasMember(User::find($assigneeId))) {
+                return back()->withInput()->with('error', 'Uno o mas usuarios seleccionados no pertenecen a este grupo.');
+            }
+        }
+
         $task = Task::create([
             'created_by' => Auth::id(),
+            'group_id' => $validated['group_id'],
+            'assigned_by' => Auth::id(),
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'area' => $validated['area'] ?? null,
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'priority' => $validated['priority'],
-            'status' => 'pendiente',
+            'status' => 'asignada',
             'observations' => $validated['observations'] ?? null,
         ]);
 
         $task->assignees()->attach($validated['assignees']);
 
         $assignedUsers = User::whereIn('id', $validated['assignees'])->get();
-        foreach ($assignedUsers as $user) {
-            Mail::to($user->email)->send(new TaskAssignedMail($task, $user));
+        foreach ($assignedUsers as $u) {
+            Mail::to($u->email)->send(new TaskAssignedMail($task, $u));
         }
 
         return redirect()->route('tasks.index')->with('success', 'Tarea creada y notificaciones enviadas.');
@@ -90,7 +171,9 @@ class TaskController extends Controller
 
     public function show(Task $task)
     {
-        $task->load(['creator', 'assignees', 'comments.user']);
+        $this->authorizeTask($task);
+
+        $task->load(['creator', 'assignees', 'comments.user', 'group']);
         $users = User::orderBy('name')->get();
 
         return view('tasks.show', compact('task', 'users'));
@@ -98,31 +181,59 @@ class TaskController extends Controller
 
     public function edit(Task $task)
     {
-        $task->load('assignees');
-        $users = User::orderBy('name')->get();
+        $this->authorizeTask($task);
 
-        return view('tasks.edit', compact('task', 'users'));
+        $task->load('assignees');
+        $user = Auth::user();
+
+        $groups = Group::where('status', 'active')
+            ->whereHas('users', fn ($q) => $q->where('users.id', $user->id)->wherePivot('is_active', true))
+            ->get();
+
+        $users = collect();
+        if ($task->group_id) {
+            $users = $task->group->activeMembers()->orderBy('name')->get();
+        }
+
+        return view('tasks.edit', compact('task', 'users', 'groups'));
     }
 
     public function update(Request $request, Task $task)
     {
+        $this->authorizeTask($task);
+
         $validated = $request->validate([
             'title' => 'required|string|max:255',
             'description' => 'nullable|string',
             'area' => 'nullable|string|max:255',
+            'group_id' => 'required|exists:groups,id',
             'start_date' => 'required|date',
             'end_date' => 'required|date|after_or_equal:start_date',
             'priority' => 'required|in:baja,media,alta,urgente',
-            'status' => 'required|in:pendiente,en_progreso,completada,cancelada',
+            'status' => 'required|in:pendiente,asignada,en_progreso,bloqueada,en_revision,finalizada,cancelada,archivada',
             'observations' => 'nullable|string',
             'assignees' => 'required|array|min:1',
             'assignees.*' => 'exists:users,id',
         ]);
 
+        $user = Auth::user();
+        $group = Group::find($validated['group_id']);
+
+        if (!$group->isMember($user) && !$user->hasPermission('group_tasks.view_all')) {
+            abort(403, 'No tienes acceso a este grupo.');
+        }
+
+        foreach ($validated['assignees'] as $assigneeId) {
+            if (!$group->hasMember(User::find($assigneeId))) {
+                return back()->withInput()->with('error', 'Uno o mas usuarios seleccionados no pertenecen a este grupo.');
+            }
+        }
+
         $task->update([
             'title' => $validated['title'],
             'description' => $validated['description'] ?? null,
             'area' => $validated['area'] ?? null,
+            'group_id' => $validated['group_id'],
             'start_date' => $validated['start_date'],
             'end_date' => $validated['end_date'],
             'priority' => $validated['priority'],
@@ -137,12 +248,16 @@ class TaskController extends Controller
 
     public function destroy(Task $task)
     {
+        $this->authorizeTask($task);
+
         $task->delete();
         return redirect()->route('tasks.index')->with('success', 'Tarea eliminada.');
     }
 
     public function updateProgress(Request $request, Task $task)
     {
+        $this->authorizeTask($task);
+
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
             'progress' => 'required|integer|min:0|max:100',
@@ -157,7 +272,7 @@ class TaskController extends Controller
         $task->update(['progress' => round($avgProgress)]);
 
         if ($avgProgress >= 100) {
-            $task->update(['status' => 'completada']);
+            $task->update(['status' => 'en_revision']);
         } elseif ($avgProgress > 0) {
             $task->update(['status' => 'en_progreso']);
         }
@@ -167,13 +282,17 @@ class TaskController extends Controller
 
     public function addComment(Request $request, Task $task)
     {
+        $this->authorizeTask($task);
+
         $validated = $request->validate([
             'comment' => 'required|string',
+            'parent_id' => 'nullable|exists:task_comments,id',
         ]);
 
         $task->comments()->create([
             'user_id' => Auth::id(),
             'comment' => $validated['comment'],
+            'parent_id' => $validated['parent_id'] ?? null,
         ]);
 
         return back()->with('success', 'Comentario agregado.');
@@ -181,13 +300,15 @@ class TaskController extends Controller
 
     public function updateStatus(Request $request, Task $task)
     {
+        $this->authorizeTask($task);
+
         $validated = $request->validate([
-            'status' => 'required|in:pendiente,en_progreso,completada,cancelada,vencida',
+            'status' => 'required|in:pendiente,asignada,en_progreso,bloqueada,en_revision,finalizada,cancelada,archivada',
         ]);
 
         $task->update(['status' => $validated['status']]);
 
-        if ($validated['status'] === 'completada') {
+        if (in_array($validated['status'], ['finalizada', 'completada'])) {
             $task->assignees()->updateExistingPivot(
                 $task->assignees()->pluck('id')->toArray(),
                 ['progress' => 100, 'status' => 'completada']
@@ -196,5 +317,32 @@ class TaskController extends Controller
         }
 
         return back()->with('success', 'Estado actualizado.');
+    }
+
+    private function authorizeTask(Task $task): void
+    {
+        $user = Auth::user();
+
+        if ($user->hasPermission('group_tasks.view_all')) {
+            return;
+        }
+
+        if ($task->created_by === $user->id) {
+            return;
+        }
+
+        if ($task->responsible_user_id === $user->id) {
+            return;
+        }
+
+        if ($task->assignees->contains($user->id)) {
+            return;
+        }
+
+        if ($task->group_id && $task->group->isMember($user)) {
+            return;
+        }
+
+        abort(403, 'No tienes acceso a esta tarea.');
     }
 }
