@@ -15,9 +15,8 @@
                 <table role="presentation" width="600" cellpadding="0" cellspacing="0" style="max-width:600px;width:100%">
                     <!-- Header -->
                     <tr>
-                        <td style="background:linear-gradient(135deg,#123f6e 0%,#0d3158 50%,#059669 100%);border-radius:16px 16px 0 0;padding:32px 40px;text-align:center">
-                            <img src="{{ config('app.url') }}/images/logo-login.png" alt="ColvaOne" width="180" style="display:block;margin:0 auto 12px;border:0">
-                            <p style="color:rgba(255,255,255,0.7);font-size:13px;margin:0">Gestion corporativa, control y trazabilidad</p>
+                        <td style="background:white;border-radius:16px 16px 0 0;padding:32px 40px;text-align:center">
+                            <img src="{{ config('app.url') }}/images/logo-login.png" alt="ColvaOne" width="180" style="display:block;margin:0 auto;border:0">
                         </td>
                     </tr>
 
