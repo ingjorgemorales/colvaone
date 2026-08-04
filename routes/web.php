@@ -68,12 +68,44 @@ Route::middleware('auth')->group(function (): void {
 });
 
 Route::get('/dashboard', function () {
-    return view('dashboard', [
-        'navigationItems' => collect(config('navigation.items'))
-            ->where('enabled', true)
-            ->sortBy('order')
-            ->values(),
-    ]);
+    $user = Auth::user();
+    $isAdmin = in_array($user->role, ['superadmin', 'admin']);
+    $isGerente = $user->role === 'gerente';
+
+    $data = ['navigationItems' => collect(config('navigation.items'))->where('enabled', true)->sortBy('order')->values()];
+
+    if ($isAdmin) {
+        $data['totalUsers'] = \App\Models\User::count();
+        $data['totalTasks'] = \App\Models\Task::count();
+        $data['activeTasks'] = \App\Models\Task::whereIn('status', ['pendiente', 'asignada', 'en_progreso'])->count();
+        $data['completedTasks'] = \App\Models\Task::whereIn('status', ['finalizada', 'completada'])->count();
+        $data['totalGroups'] = \App\Models\Group::count();
+        $data['tasksByStatus'] = \App\Models\Task::selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $data['tasksByGroup'] = \App\Models\Task::join('groups', 'tasks.group_id', '=', 'groups.id')->selectRaw('groups.name as group_name, count(*) as total')->groupBy('groups.name')->pluck('total', 'group_name');
+        $data['recentTasks'] = \App\Models\Task::with(['creator', 'assignees', 'group'])->latest()->take(5)->get();
+        $data['eventsToday'] = \App\Models\AuthEvent::where('occurred_at', '>=', now()->startOfDay())->count();
+        $data['totalEvents'] = \App\Models\AuthEvent::count();
+    } elseif ($isGerente) {
+        $groupIds = $user->groups()->wherePivot('is_active', true)->pluck('groups.id');
+        $data['myGroups'] = \App\Models\Group::whereIn('id', $groupIds)->count();
+        $data['teamTasks'] = \App\Models\Task::whereIn('group_id', $groupIds)->count();
+        $data['activeTeamTasks'] = \App\Models\Task::whereIn('group_id', $groupIds)->whereIn('status', ['pendiente', 'asignada', 'en_progreso'])->count();
+        $data['completedTeamTasks'] = \App\Models\Task::whereIn('group_id', $groupIds)->whereIn('status', ['finalizada', 'completada'])->count();
+        $data['myCreatedTasks'] = \App\Models\Task::where('created_by', $user->id)->count();
+        $data['tasksByStatus'] = \App\Models\Task::whereIn('group_id', $groupIds)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $data['tasksByGroup'] = \App\Models\Task::join('groups', 'tasks.group_id', '=', 'groups.id')->whereIn('tasks.group_id', $groupIds)->selectRaw('groups.name as group_name, count(*) as total')->groupBy('groups.name')->pluck('total', 'group_name');
+        $data['recentTasks'] = \App\Models\Task::with(['creator', 'assignees', 'group'])->whereIn('group_id', $groupIds)->latest()->take(5)->get();
+    } else {
+        $data['myAssignedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->count();
+        $data['myActiveTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereIn('status', ['pendiente', 'asignada', 'en_progreso'])->count();
+        $data['myCompletedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereIn('status', ['finalizada', 'completada'])->count();
+        $data['myDelayedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->where('end_date', '<', now())->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->count();
+        $data['myTasksByStatus'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
+        $data['myRecentTasks'] = \App\Models\Task::with(['creator', 'group'])->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->latest()->take(5)->get();
+        $data['myGroups'] = $user->groups()->wherePivot('is_active', true)->get();
+    }
+
+    return view('dashboard', $data);
 })->middleware(['auth', 'verified', 'password.changed'])->name('dashboard');
 
 Route::view('/politica-tratamiento-datos', 'legal.data-policy')
