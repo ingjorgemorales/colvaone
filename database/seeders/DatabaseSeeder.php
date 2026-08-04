@@ -40,9 +40,8 @@ class DatabaseSeeder extends Seeder
             );
         }
 
-        User::query()->updateOrCreate(
-            ['email' => 'admin@crm.test'],
-            [
+        if (User::withTrashed()->where('email', 'admin@crm.test')->exists()) {
+            User::withTrashed()->where('email', 'admin@crm.test')->first()->update([
                 'name' => 'Administrador',
                 'last_name' => 'Principal',
                 'email_verified_at' => now(),
@@ -53,7 +52,21 @@ class DatabaseSeeder extends Seeder
                 'position' => 'Superadministrador',
                 'area' => 'Administracion',
                 'department' => 'Tecnologia',
-            ],
-        );
+            ]);
+        } else {
+            User::create([
+                'email' => 'admin@crm.test',
+                'name' => 'Administrador',
+                'last_name' => 'Principal',
+                'email_verified_at' => now(),
+                'password' => Hash::make('TempPass!2026'),
+                'is_active' => true,
+                'must_change_password' => true,
+                'role' => 'admin',
+                'position' => 'Superadministrador',
+                'area' => 'Administracion',
+                'department' => 'Tecnologia',
+            ]);
+        }
     }
 }
