@@ -362,7 +362,7 @@ class TaskController extends Controller
         $this->authorizeTask($task);
 
         $validated = $request->validate([
-            'status' => 'required|in:pendiente,asignada,en_progreso,bloqueada,en_revision,finalizada,cancelada,archivada',
+            'status' => 'required|in:asignada,en_progreso,finalizada,cancelada,archivada',
         ]);
 
         $oldStatus = $task->status;

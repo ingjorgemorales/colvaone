@@ -110,11 +110,15 @@
                                     <i data-lucide="pencil" style="width:15px;height:15px"></i>
                                 </a>
                                 @endif
-                                @if(auth()->user()->hasPermission('group_tasks.archive'))
-                                <form method="POST" action="{{ route('tasks.archive', $task) }}" onsubmit="return confirm('Archivar esta tarea?')">
+                                @php
+                                    $canCancel = !in_array($task->status, ['finalizada','cancelada','archivada']) && (Auth::id() === $task->created_by || Auth::user()->role === 'superadmin');
+                                @endphp
+                                @if($canCancel && auth()->user()->hasPermission('group_tasks.cancel'))
+                                <form method="POST" action="{{ route('tasks.status.update', $task) }}" onsubmit="return confirm('Cancelar esta tarea?')">
                                     @csrf
-                                    <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(245,158,11,0.04);color:#f59e0b;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(245,158,11,0.1)'" onmouseout="this.style.background='rgba(245,158,11,0.04)'" title="Archivar">
-                                        <i data-lucide="archive" style="width:15px;height:15px"></i>
+                                    <input type="hidden" name="status" value="cancelada">
+                                    <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(239,68,68,0.04);color:#ef4444;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='rgba(239,68,68,0.04)'" title="Cancelar">
+                                        <i data-lucide="x-circle" style="width:15px;height:15px"></i>
                                     </button>
                                 </form>
                                 @endif
