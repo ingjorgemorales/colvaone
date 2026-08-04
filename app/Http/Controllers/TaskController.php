@@ -290,12 +290,14 @@ class TaskController extends Controller
         ]);
 
         $avgProgress = $task->assignees()->pluck('task_assignments.progress')->avg();
-        $task->update(['progress' => round($avgProgress)]);
+        $newProgress = round($avgProgress);
 
-        if ($avgProgress >= 100) {
-            $task->update(['status' => 'en_revision']);
-        } elseif ($avgProgress > 0) {
-            $task->update(['status' => 'en_progreso']);
+        if ($newProgress >= 100) {
+            $task->update(['progress' => 100, 'status' => 'finalizada']);
+        } elseif ($newProgress > 0) {
+            $task->update(['progress' => $newProgress, 'status' => 'en_progreso']);
+        } else {
+            $task->update(['progress' => 0, 'status' => 'asignada']);
         }
 
         $userWhoUpdated = User::find($validated['user_id']);

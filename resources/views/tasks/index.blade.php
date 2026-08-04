@@ -54,6 +54,7 @@
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Grupo</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Asignados</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Fecha fin</th>
+                    <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Retraso</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Progreso</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Estado</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Acciones</th>
@@ -65,14 +66,7 @@
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
                             <div style="display:flex;align-items:center;gap:10px">
                                 <span style="width:8px;height:8px;border-radius:50%;background:{{ $task->priority_color }};flex-shrink:0" title="{{ ucfirst($task->priority) }}"></span>
-                                <div>
-                                    <a href="{{ route('tasks.show', $task) }}" style="font-weight:600;color:#1e293b;text-decoration:none">{{ $task->title }}</a>
-                                    @if($task->isDelayed())
-                                        <span style="display:inline-flex;align-items:center;gap:4px;margin-left:6px;padding:2px 6px;border-radius:4px;font-size:10px;font-weight:600;color:#ef4444;background:rgba(239,68,68,0.08)">
-                                            <i data-lucide="alert-triangle" style="width:10px;height:10px"></i> Retrasada
-                                        </span>
-                                    @endif
-                                </div>
+                                <a href="{{ route('tasks.show', $task) }}" style="font-weight:600;color:#1e293b;text-decoration:none">{{ $task->title }}</a>
                             </div>
                         </td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
@@ -89,6 +83,15 @@
                             </div>
                         </td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04);color:{{ $task->isDelayed() ? '#ef4444' : '#64748b' }};font-weight:{{ $task->isDelayed() ? '600' : '400' }}">{{ $task->end_date->format('d/m/Y') }}</td>
+                        <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
+                            @if($task->isDelayed())
+                                <span style="display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:6px;font-size:11px;font-weight:600;color:#ef4444;background:rgba(239,68,68,0.08)">
+                                    <i data-lucide="alert-triangle" style="width:11px;height:11px"></i> {{ $task->days_delayed }}{{ $task->days_delayed === 1 ? ' dia' : ' dias' }}
+                                </span>
+                            @else
+                                <span style="font-size:12px;color:#94a3b8">—</span>
+                            @endif
+                        </td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
                             <div style="display:flex;align-items:center;gap:8px">
                                 <div style="flex:1;max-width:80px;height:6px;border-radius:3px;background:rgba(18,63,110,0.06);overflow:hidden">
@@ -123,7 +126,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="7" style="padding:40px 16px;text-align:center;color:#94a3b8">
+                        <td colspan="8" style="padding:40px 16px;text-align:center;color:#94a3b8">
                             <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
                                 <i data-lucide="list-checks" style="width:32px;height:32px;color:#cbd5e1"></i>
                                 No hay tareas registradas

@@ -72,6 +72,14 @@ class Task extends Model
         return !in_array($this->status, ['finalizada', 'cancelada', 'archivada']) && $this->end_date->isPast();
     }
 
+    public function getDaysDelayedAttribute(): int
+    {
+        if (!$this->isDelayed()) {
+            return 0;
+        }
+        return (int) $this->end_date->diffInDays(now());
+    }
+
     public function getPriorityColorAttribute(): string
     {
         return match ($this->priority) {
