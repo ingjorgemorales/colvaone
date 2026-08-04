@@ -13,9 +13,11 @@
                         @endif
                     </div>
                     <div style="display:flex;gap:6px">
+                        @if(auth()->user()->hasPermission('group_tasks.update'))
                         <a href="{{ route('tasks.edit', $task) }}" class="btn-secondary" style="padding:7px 14px;font-size:12px">
                             <i data-lucide="pencil" style="width:14px;height:14px"></i> Editar
                         </a>
+                        @endif
                     </div>
                 </div>
 
@@ -122,12 +124,14 @@
                             <div style="width:100%;height:4px;border-radius:2px;background:rgba(18,63,110,0.06);overflow:hidden">
                                 <div style="height:100%;width:{{ $assignee->pivot->progress }}%;border-radius:2px;background:{{ $assignee->pivot->progress >= 100 ? '#059669' : ($assignee->pivot->progress >= 50 ? '#6366f1' : '#f59e0b') }}"></div>
                             </div>
+                            @if(auth()->user()->hasPermission('group_tasks.update_progress'))
                             <form method="POST" action="{{ route('tasks.progress.update', $task) }}" style="display:flex;gap:6px;margin-top:8px" x-data="{ val: {{ $assignee->pivot->progress }} }">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{ $assignee->id }}">
                                 <input type="range" name="progress" min="0" max="100" step="5" x-model="val" @change="$el.form.submit()" style="flex:1;accent-color:#123f6e;cursor:pointer">
                                 <span x-text="val + '%'" style="font-size:11px;font-weight:600;color:#475569;min-width:32px;text-align:right"></span>
                             </form>
+                            @endif
                         </div>
                     @endforeach
                 </div>
@@ -162,6 +166,7 @@
                 </div>
             </div>
 
+            @if(auth()->user()->hasPermission('group_tasks.update'))
             <div class="card" style="padding:20px">
                 <h3 style="font-size:14px;font-weight:600;color:#1e293b;margin:0 0 14px;display:flex;align-items:center;gap:8px">
                     <i data-lucide="settings" style="width:16px;height:16px;color:#f59e0b"></i>
@@ -179,6 +184,7 @@
                     @endforeach
                 </div>
             </div>
+            @endif
         </div>
     </div>
 

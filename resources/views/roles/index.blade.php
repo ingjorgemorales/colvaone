@@ -1,9 +1,11 @@
 <x-layouts.app title="Roles | {{ config('app.name') }}" heading="Roles y permisos" subheading="Administra los roles del sistema">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <p style="font-size:13px;color:#94a3b8;margin:0">{{ $roles->total() }} roles configurados</p>
+        @if(auth()->user()->hasPermission('roles.create'))
         <a href="{{ route('roles.create') }}" class="btn-primary">
             <i data-lucide="shield-plus" style="width:16px;height:16px"></i> Nuevo rol
         </a>
+        @endif
     </div>
 
     @if (session('success'))
@@ -54,10 +56,12 @@
                             <td style="padding:12px 16px">{{ $role->users_count }}</td>
                             <td style="padding:12px 16px">
                                 <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">
+                                    @if(auth()->user()->hasPermission('roles.edit'))
                                     <a href="{{ route('roles.edit', $role) }}" title="Editar" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:#94a3b8;transition:all 0.2s;text-decoration:none" onmouseover="this.style.background='rgba(18,63,110,0.06)';this.style.color='#123f6e'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
                                         <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                     </a>
-                                    @if ($role->slug !== 'superadmin')
+                                    @endif
+                                    @if(auth()->user()->hasPermission('roles.edit') && $role->slug !== 'superadmin')
                                         <form method="POST" action="{{ route('roles.toggle', $role) }}" style="margin:0">
                                             @csrf
                                             <button type="submit" title="{{ ($role->is_active ?? true) ? 'Desactivar' : 'Activar' }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:none;color:{{ ($role->is_active ?? true) ? '#f59e0b' : '#059669' }};cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(245,158,11,0.06)'" onmouseout="this.style.background='transparent'">

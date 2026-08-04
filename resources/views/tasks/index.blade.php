@@ -35,9 +35,11 @@
                 </a>
             @endif
         </form>
+        @if(auth()->user()->hasPermission('group_tasks.create'))
         <a href="{{ route('tasks.create') }}" class="btn-primary">
             <i data-lucide="plus" style="width:16px;height:16px"></i> Nueva tarea
         </a>
+        @endif
     </div>
 
     @if(session('success'))
@@ -103,15 +105,19 @@
                                 <a href="{{ route('tasks.show', $task) }}" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(18,63,110,0.04);color:#123f6e;text-decoration:none;transition:background 0.15s" onmouseover="this.style.background='rgba(18,63,110,0.1)'" onmouseout="this.style.background='rgba(18,63,110,0.04)'" title="Ver">
                                     <i data-lucide="eye" style="width:15px;height:15px"></i>
                                 </a>
+                                @if(auth()->user()->hasPermission('group_tasks.update'))
                                 <a href="{{ route('tasks.edit', $task) }}" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(18,63,110,0.04);color:#6366f1;text-decoration:none;transition:background 0.15s" onmouseover="this.style.background='rgba(18,63,110,0.1)'" onmouseout="this.style.background='rgba(18,63,110,0.04)'" title="Editar">
                                     <i data-lucide="pencil" style="width:15px;height:15px"></i>
                                 </a>
+                                @endif
+                                @if(auth()->user()->hasPermission('group_tasks.delete'))
                                 <form method="POST" action="{{ route('tasks.destroy', $task) }}" onsubmit="return confirm('Eliminar esta tarea?')">
                                     @csrf @method('DELETE')
                                     <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(239,68,68,0.04);color:#ef4444;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='rgba(239,68,68,0.04)'" title="Eliminar">
                                         <i data-lucide="trash-2" style="width:15px;height:15px"></i>
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </td>
                     </tr>

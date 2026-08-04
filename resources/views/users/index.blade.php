@@ -35,9 +35,11 @@
 
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
         <p style="font-size:13px;color:#94a3b8;margin:0">{{ $users->total() }} usuarios registrados</p>
+        @if(auth()->user()->hasPermission('users.create'))
         <a href="{{ route('users.create') }}" class="btn-primary">
             <i data-lucide="user-plus" style="width:16px;height:16px"></i> Nuevo usuario
         </a>
+        @endif
     </div>
 
     @if (session('success'))
@@ -87,15 +89,19 @@
                             </td>
                             <td style="padding:12px 16px">
                                 <div style="display:flex;align-items:center;gap:4px;justify-content:flex-end">
+                                    @if(auth()->user()->hasPermission('users.edit'))
                                     <a href="{{ route('users.edit', $user) }}" title="Editar" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;color:#94a3b8;transition:all 0.2s;text-decoration:none" onmouseover="this.style.background='rgba(18,63,110,0.06)';this.style.color='#123f6e'" onmouseout="this.style.background='transparent';this.style.color='#94a3b8'">
                                         <i data-lucide="pencil" style="width:14px;height:14px"></i>
                                     </a>
+                                    @endif
+                                    @if(auth()->user()->hasPermission('users.toggle'))
                                     <form method="POST" action="{{ route('users.toggle', $user) }}" style="margin:0">
                                         @csrf
                                         <button type="submit" title="{{ $user->is_active ? 'Desactivar' : 'Activar' }}" style="display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:8px;border:none;background:none;color:{{ $user->is_active ? '#f59e0b' : '#059669' }};cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(245,158,11,0.06)'" onmouseout="this.style.background='transparent'">
                                             <i data-lucide="{{ $user->is_active ? 'user-x' : 'user-check' }}" style="width:14px;height:14px"></i>
                                         </button>
                                     </form>
+                                    @endif
                                 </div>
                             </td>
                         </tr>
