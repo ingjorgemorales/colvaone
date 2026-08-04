@@ -35,7 +35,7 @@ class DatabaseSeeder extends Seeder
 
         foreach ($roles as $role) {
             Role::query()->updateOrCreate(
-                ['slug' => $role['slug']],
+                ['name' => $role['name']],
                 $role
             );
         }
