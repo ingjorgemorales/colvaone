@@ -128,15 +128,6 @@ class RoleController extends Controller
                     'audit.view' => 'Ver auditoria',
                 ],
             ],
-            'tasks' => [
-                'name' => 'Tareas',
-                'items' => [
-                    'tasks.view' => 'Ver tareas',
-                    'tasks.create' => 'Crear tareas',
-                    'tasks.edit' => 'Editar tareas',
-                    'tasks.delete' => 'Eliminar tareas',
-                ],
-            ],
             'budgets' => [
                 'name' => 'Presupuesto',
                 'items' => [
@@ -208,7 +199,7 @@ class RoleController extends Controller
                 ],
             ],
             'group_tasks' => [
-                'name' => 'Tareas de grupos',
+                'name' => 'Tareas',
                 'items' => [
                     'group_tasks.view' => 'Ver tareas de mis grupos',
                     'group_tasks.view_all' => 'Ver todas las tareas',
