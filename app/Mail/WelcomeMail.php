@@ -33,6 +33,7 @@ class WelcomeMail extends Mailable
                 'name' => $this->name,
                 'email' => $this->email,
                 'password' => $this->password,
+                'loginUrl' => 'https://colvaone.colvatel.com/login',
             ],
         );
     }

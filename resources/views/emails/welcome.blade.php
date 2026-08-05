@@ -75,7 +75,14 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px">
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ config('app.url') }}" style="display:inline-block;background:linear-gradient(135deg,#123f6e,#059669);color:white;font-weight:600;font-size:14px;padding:14px 32px;border-radius:10px;text-decoration:none;box-shadow:0 4px 12px rgba(18,63,110,0.2)">Iniciar sesion en ColvaOne</a>
+                                        <table role="presentation" cellpadding="0" cellspacing="0" style="margin:0 auto">
+                                            <tr>
+                                                <td align="center" bgcolor="#123f6e" style="border-radius:10px;background:#123f6e">
+                                                    <a href="{{ $loginUrl }}" style="display:inline-block;color:white;font-weight:600;font-size:14px;padding:14px 32px;border-radius:10px;text-decoration:none">Iniciar sesion en ColvaOne</a>
+                                                </td>
+                                            </tr>
+                                        </table>
+                                        <p style="font-size:12px;color:#64748b;margin:12px 0 0;text-align:center">Tambien puedes ingresar desde: <a href="{{ $loginUrl }}" style="color:#123f6e;text-decoration:none;font-weight:600">{{ $loginUrl }}</a></p>
                                     </td>
                                 </tr>
                             </table>
