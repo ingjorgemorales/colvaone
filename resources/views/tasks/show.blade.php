@@ -155,7 +155,7 @@
                     </div>
                     <div style="display:flex;justify-content:space-between">
                         <span style="color:#94a3b8">Actualizada</span>
-                        <span style="font-weight:500;color:#1e293b">{{ $task->updated_at->diffForHumans() }}</span>
+                        <span style="font-weight:500;color:#1e293b">{{ $task->updated_at->format('d/m/Y H:i') }}</span>
                     </div>
                     <div style="display:flex;justify-content:space-between">
                         <span style="color:#94a3b8">Asignados</span>
