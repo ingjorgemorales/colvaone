@@ -121,9 +121,6 @@
                                 <span style="font-size:12px;font-weight:500;color:#1e293b">{{ $assignee->name }}</span>
                                 <span style="font-size:11px;font-weight:600;color:{{ $assignee->pivot->progress >= 100 ? '#059669' : '#475569' }}">{{ $assignee->pivot->progress }}%</span>
                             </div>
-                            <div style="width:100%;height:4px;border-radius:2px;background:rgba(18,63,110,0.06);overflow:hidden">
-                                <div style="height:100%;width:{{ $assignee->pivot->progress }}%;border-radius:2px;background:{{ $assignee->pivot->progress >= 100 ? '#059669' : ($assignee->pivot->progress >= 50 ? '#6366f1' : '#f59e0b') }}"></div>
-                            </div>
                             @if(auth()->user()->hasPermission('group_tasks.update_progress'))
                             <form method="POST" action="{{ route('tasks.progress.update', $task) }}" style="display:flex;gap:6px;margin-top:8px;align-items:center" x-data="{ val: {{ $assignee->pivot->progress }}, orig: {{ $assignee->pivot->progress }} }">
                                 @csrf
