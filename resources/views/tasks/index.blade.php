@@ -50,6 +50,7 @@
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Tarea</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Grupo</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Asignados</th>
+                    <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Fecha inicio</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Fecha fin</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Retraso</th>
                     <th style="text-align:left;padding:12px 16px;font-weight:600;color:#475569;border-bottom:2px solid rgba(18,63,110,0.06)">Progreso</th>
@@ -79,6 +80,7 @@
                                 @endif
                             </div>
                         </td>
+                        <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04);color:#64748b;font-weight:500">{{ $task->start_date->format('d/m/Y') }}</td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04);color:{{ $task->isDelayed() ? '#ef4444' : '#64748b' }};font-weight:{{ $task->isDelayed() ? '600' : '400' }}">{{ $task->end_date->format('d/m/Y') }}</td>
                         <td style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.04)">
                             @if($task->isDelayed() || $task->days_delayed > 0)
@@ -127,7 +129,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="8" style="padding:40px 16px;text-align:center;color:#94a3b8">
+                        <td colspan="9" style="padding:40px 16px;text-align:center;color:#94a3b8">
                             <div style="display:flex;flex-direction:column;align-items:center;gap:8px">
                                 <i data-lucide="list-checks" style="width:32px;height:32px;color:#cbd5e1"></i>
                                 No hay tareas registradas
