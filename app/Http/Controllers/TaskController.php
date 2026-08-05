@@ -188,6 +188,10 @@ class TaskController extends Controller
     {
         $this->authorizeTask($task);
 
+        if (in_array($task->status, ['finalizada', 'cancelada', 'archivada'])) {
+            return redirect()->route('tasks.show', $task)->with('error', 'No se puede editar una tarea ' . $task->status . '.');
+        }
+
         $task->load('assignees');
         $user = Auth::user();
 

@@ -105,7 +105,7 @@
                                 <a href="{{ route('tasks.show', $task) }}" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(18,63,110,0.04);color:#123f6e;text-decoration:none;transition:background 0.15s" onmouseover="this.style.background='rgba(18,63,110,0.1)'" onmouseout="this.style.background='rgba(18,63,110,0.04)'" title="Ver">
                                     <i data-lucide="eye" style="width:15px;height:15px"></i>
                                 </a>
-                                @if(auth()->user()->hasPermission('group_tasks.update'))
+                                @if(auth()->user()->hasPermission('group_tasks.update') && !in_array($task->status, ['finalizada','cancelada','archivada']))
                                 <a href="{{ route('tasks.edit', $task) }}" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(18,63,110,0.04);color:#6366f1;text-decoration:none;transition:background 0.15s" onmouseover="this.style.background='rgba(18,63,110,0.1)'" onmouseout="this.style.background='rgba(18,63,110,0.04)'" title="Editar">
                                     <i data-lucide="pencil" style="width:15px;height:15px"></i>
                                 </a>

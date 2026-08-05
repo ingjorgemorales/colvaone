@@ -13,7 +13,7 @@
                         @endif
                     </div>
                     <div style="display:flex;gap:6px">
-                        @if(auth()->user()->hasPermission('group_tasks.update'))
+                        @if(auth()->user()->hasPermission('group_tasks.update') && !in_array($task->status, ['finalizada','cancelada','archivada']))
                         <a href="{{ route('tasks.edit', $task) }}" class="btn-secondary" style="padding:7px 14px;font-size:12px">
                             <i data-lucide="pencil" style="width:14px;height:14px"></i> Editar
                         </a>
