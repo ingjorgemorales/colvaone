@@ -100,7 +100,7 @@
                                             <tr>
                                                 <td width="50%" style="padding:8px 0;vertical-align:top">
                                                     <p style="font-size:11px;color:#94a3b8;margin:0 0 2px;text-transform:uppercase;letter-spacing:0.3px">Fecha fin</p>
-                                                    <p style="font-size:13px;font-weight:600;color:{{ $task->end_date->isPast() && !in_array($task->status, ['finalizada','cancelada','archivada']) ? '#ef4444' : '#1e293b' }};margin:0">{{ $task->end_date->format('d/m/Y') }}</p>
+                                                    <p style="font-size:13px;font-weight:600;color:{{ $task->isDelayed() ? '#ef4444' : '#1e293b' }};margin:0">{{ $task->end_date->format('d/m/Y') }}</p>
                                                 </td>
                                                 <td width="50%" style="padding:8px 0;vertical-align:top">
                                                     <p style="font-size:11px;color:#94a3b8;margin:0 0 2px;text-transform:uppercase;letter-spacing:0.3px">Progreso</p>

@@ -69,12 +69,17 @@ class Task extends BaseModel
 
     public function isDelayed(): bool
     {
-        return !in_array($this->status, ['finalizada', 'cancelada', 'archivada']) && $this->end_date->isPast();
+        return !in_array($this->status, ['finalizada', 'completada', 'cancelada', 'archivada'])
+            && $this->end_date->startOfDay()->lt(today());
     }
 
     public function getDaysDelayedAttribute(): int
     {
-        return (int) $this->attributes['days_delayed'];
+        if ($this->isDelayed()) {
+            return max(1, (int) $this->end_date->startOfDay()->diffInDays(today()));
+        }
+
+        return (int) ($this->attributes['days_delayed'] ?? 0);
     }
 
     public function getPriorityColorAttribute(): string

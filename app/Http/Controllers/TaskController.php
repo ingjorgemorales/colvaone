@@ -294,7 +294,7 @@ class TaskController extends Controller
         $newProgress = round($avgProgress);
 
         if ($newProgress >= 100) {
-            $delayed = $task->end_date->isPast() ? $task->end_date->diffInDays(now()) : 0;
+            $delayed = $task->days_delayed;
             $task->update(['progress' => 100, 'status' => 'finalizada', 'days_delayed' => $delayed]);
         } elseif ($newProgress > 0) {
             $task->update(['progress' => $newProgress, 'status' => 'en_progreso']);
@@ -374,7 +374,7 @@ class TaskController extends Controller
         $task->update(['status' => $validated['status']]);
 
         if (in_array($validated['status'], ['finalizada', 'completada'])) {
-            $delayed = $task->end_date->isPast() ? $task->end_date->diffInDays(now()) : 0;
+            $delayed = $task->days_delayed;
             $task->assignees()->updateExistingPivot(
                 $task->assignees()->pluck('users.id')->toArray(),
                 ['progress' => 100, 'status' => 'completada']

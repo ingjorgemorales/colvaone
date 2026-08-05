@@ -107,7 +107,7 @@ class GroupController extends Controller
             'blocked' => $group->tasks()->where('status', 'bloqueada')->count(),
             'in_review' => $group->tasks()->where('status', 'en_revision')->count(),
             'completed' => $group->tasks()->whereIn('status', ['finalizada', 'completada'])->count(),
-            'delayed' => $group->tasks()->where('status', '!=', 'finalizada')->where('end_date', '<', now())->count(),
+            'delayed' => $group->tasks()->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->whereDate('end_date', '<', today())->count(),
         ];
 
         $allUsers = User::where('is_active', true)->orderBy('name')->get();

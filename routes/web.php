@@ -105,7 +105,7 @@ Route::get('/dashboard', function () {
         $data['myAssignedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->count();
         $data['myActiveTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereIn('status', ['pendiente', 'asignada', 'en_progreso'])->count();
         $data['myCompletedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereIn('status', ['finalizada', 'completada'])->count();
-        $data['myDelayedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->where('end_date', '<', now())->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->count();
+        $data['myDelayedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereDate('end_date', '<', today())->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->count();
         $data['myTasksByStatus'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
         $data['myRecentTasks'] = \App\Models\Task::with(['creator', 'group'])->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->latest()->take(5)->get();
         $data['myGroups'] = $user->groups()->wherePivot('is_active', true)->get();
