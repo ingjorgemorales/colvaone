@@ -98,17 +98,25 @@ class GroupController extends Controller
     {
         $this->authorizeGroup($group);
 
-        $group->load(['creator', 'managers', 'members', 'tasks.creator', 'tasks.responsible']);
+        $user = Auth::user();
+        $tasksQuery = $group->tasks()->visibleFor($user);
+        $tasks = (clone $tasksQuery)
+            ->with(['creator', 'responsible', 'assignees'])
+            ->latest()
+            ->get();
 
         $stats = [
-            'total' => $group->tasks()->count(),
-            'pending' => $group->tasks()->whereIn('status', ['pendiente', 'asignada'])->count(),
-            'in_progress' => $group->tasks()->where('status', 'en_progreso')->count(),
-            'blocked' => $group->tasks()->where('status', 'bloqueada')->count(),
-            'in_review' => $group->tasks()->where('status', 'en_revision')->count(),
-            'completed' => $group->tasks()->whereIn('status', ['finalizada', 'completada'])->count(),
-            'delayed' => $group->tasks()->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->whereDate('end_date', '<', today())->count(),
+            'total' => (clone $tasksQuery)->count(),
+            'pending' => (clone $tasksQuery)->whereIn('status', ['pendiente', 'asignada'])->count(),
+            'in_progress' => (clone $tasksQuery)->where('status', 'en_progreso')->count(),
+            'blocked' => (clone $tasksQuery)->where('status', 'bloqueada')->count(),
+            'in_review' => (clone $tasksQuery)->where('status', 'en_revision')->count(),
+            'completed' => (clone $tasksQuery)->whereIn('status', ['finalizada', 'completada'])->count(),
+            'delayed' => (clone $tasksQuery)->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->whereDate('end_date', '<', today())->count(),
         ];
+
+        $group->load(['creator', 'managers', 'members']);
+        $group->setRelation('tasks', $tasks);
 
         $allUsers = User::where('is_active', true)->orderBy('name')->get();
 

@@ -83,22 +83,22 @@ class Group extends BaseModel
 
     public function getTaskCountAttribute(): int
     {
-        return $this->tasks()->count();
+        return $this->visibleTasks()->count();
     }
 
     public function getPendingTaskCountAttribute(): int
     {
-        return $this->tasks()->whereIn('status', ['pendiente', 'asignada'])->count();
+        return $this->visibleTasks()->whereIn('status', ['pendiente', 'asignada'])->count();
     }
 
     public function getInProgressTaskCountAttribute(): int
     {
-        return $this->tasks()->where('status', 'en_progreso')->count();
+        return $this->visibleTasks()->where('status', 'en_progreso')->count();
     }
 
     public function getCompletedTaskCountAttribute(): int
     {
-        return $this->tasks()->where('status', 'finalizada')->count();
+        return $this->visibleTasks()->where('status', 'finalizada')->count();
     }
 
     public function scopeVisibleFor($query, User $user)
@@ -130,5 +130,16 @@ class Group extends BaseModel
     public function hasMember(User $user): bool
     {
         return $this->isMember($user);
+    }
+
+    private function visibleTasks()
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return $this->tasks();
+        }
+
+        return $this->tasks()->visibleFor($user);
     }
 }

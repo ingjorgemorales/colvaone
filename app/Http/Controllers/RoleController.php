@@ -200,7 +200,8 @@ class RoleController extends Controller
             'group_tasks' => [
                 'name' => 'Tareas',
                 'items' => [
-                    'group_tasks.view' => 'Ver tareas de mis grupos',
+                    'group_tasks.view' => 'Ver tareas propias/asignadas',
+                    'group_tasks.view_group' => 'Ver tareas de grupos que administro',
                     'group_tasks.view_all' => 'Ver todas las tareas',
                     'group_tasks.create' => 'Crear tareas',
                     'group_tasks.assign' => 'Asignar tareas',

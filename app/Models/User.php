@@ -101,6 +101,17 @@ class User extends Authenticatable implements MustVerifyEmail
         return in_array($permission, $permissions);
     }
 
+    public function hasAnyPermission(array $permissions): bool
+    {
+        foreach ($permissions as $permission) {
+            if ($this->hasPermission($permission)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     public function createdTasks(): HasMany
     {
         return $this->hasMany(Task::class, 'created_by');

@@ -133,12 +133,28 @@ class Task extends BaseModel
             return $query;
         }
 
-        if ($user->hasPermission('group_tasks.view')) {
-            $groupIds = $user->groups()->wherePivot('is_active', true)->pluck('groups.id');
-            return $query->whereIn('group_id', $groupIds)->orWhere('created_by', $user->id);
+        $canViewOwnTasks = $user->hasPermission('group_tasks.view');
+        $canViewManagedGroupTasks = $user->hasPermission('group_tasks.view_group');
+        $managedGroupIds = $canViewManagedGroupTasks
+            ? $user->managedGroups()->pluck('groups.id')
+            : collect();
+
+        if (!$canViewOwnTasks && (!$canViewManagedGroupTasks || $managedGroupIds->isEmpty())) {
+            return $query->whereRaw('1 = 0');
         }
 
-        return $query->where('responsible_user_id', $user->id)
-            ->orWhereHas('assignees', fn ($q) => $q->where('users.id', $user->id));
+        return $query->where(function ($q) use ($user, $canViewOwnTasks, $managedGroupIds) {
+            if ($canViewOwnTasks) {
+                $q->where('tasks.created_by', $user->id)
+                    ->orWhere('tasks.responsible_user_id', $user->id)
+                    ->orWhereHas('assignees', fn ($assignees) => $assignees->where('users.id', $user->id));
+            }
+
+            if ($managedGroupIds->isNotEmpty()) {
+                $canViewOwnTasks
+                    ? $q->orWhereIn('tasks.group_id', $managedGroupIds)
+                    : $q->whereIn('tasks.group_id', $managedGroupIds);
+            }
+        });
     }
 }

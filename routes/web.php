@@ -65,7 +65,7 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 
-    Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view');
+    Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view,group_tasks.view_group,group_tasks.view_all');
     Route::get('tasks-group-members/{group}', [TaskController::class, 'getGroupMembers'])->name('tasks.group-members')->middleware('auth');
     Route::post('tasks/{task}/progress', [TaskController::class, 'updateProgress'])->name('tasks.progress.update')->middleware('permission:group_tasks.update_progress');
     Route::post('tasks/{task}/comment', [TaskController::class, 'addComment'])->name('tasks.comments.add')->middleware('permission:group_tasks.comment');
@@ -93,21 +93,25 @@ Route::get('/dashboard', function () {
         $data['totalEvents'] = \App\Models\AuthEvent::count();
     } elseif ($isGerente) {
         $groupIds = $user->groups()->wherePivot('is_active', true)->pluck('groups.id');
+        $visibleTasks = \App\Models\Task::visibleFor($user);
+
         $data['myGroups'] = \App\Models\Group::whereIn('id', $groupIds)->count();
-        $data['teamTasks'] = \App\Models\Task::whereIn('group_id', $groupIds)->count();
-        $data['activeTeamTasks'] = \App\Models\Task::whereIn('group_id', $groupIds)->whereIn('status', ['pendiente', 'asignada', 'en_progreso'])->count();
-        $data['completedTeamTasks'] = \App\Models\Task::whereIn('group_id', $groupIds)->whereIn('status', ['finalizada', 'completada'])->count();
+        $data['teamTasks'] = (clone $visibleTasks)->count();
+        $data['activeTeamTasks'] = (clone $visibleTasks)->whereIn('tasks.status', ['pendiente', 'asignada', 'en_progreso'])->count();
+        $data['completedTeamTasks'] = (clone $visibleTasks)->whereIn('tasks.status', ['finalizada', 'completada'])->count();
         $data['myCreatedTasks'] = \App\Models\Task::where('created_by', $user->id)->count();
-        $data['tasksByStatus'] = \App\Models\Task::whereIn('group_id', $groupIds)->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-        $data['tasksByGroup'] = \App\Models\Task::join('groups', 'tasks.group_id', '=', 'groups.id')->whereIn('tasks.group_id', $groupIds)->selectRaw('groups.name as group_name, count(*) as total')->groupBy('groups.name')->pluck('total', 'group_name');
-        $data['recentTasks'] = \App\Models\Task::with(['creator', 'assignees', 'group'])->whereIn('group_id', $groupIds)->latest()->take(5)->get();
+        $data['tasksByStatus'] = (clone $visibleTasks)->selectRaw('tasks.status as status, count(*) as total')->groupBy('tasks.status')->pluck('total', 'status');
+        $data['tasksByGroup'] = (clone $visibleTasks)->join('groups', 'tasks.group_id', '=', 'groups.id')->selectRaw('groups.name as group_name, count(*) as total')->groupBy('groups.name')->pluck('total', 'group_name');
+        $data['recentTasks'] = (clone $visibleTasks)->with(['creator', 'assignees', 'group'])->latest()->take(5)->get();
     } else {
-        $data['myAssignedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->count();
-        $data['myActiveTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereIn('status', ['pendiente', 'asignada', 'en_progreso'])->count();
-        $data['myCompletedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereIn('status', ['finalizada', 'completada'])->count();
-        $data['myDelayedTasks'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->whereDate('end_date', '<', today())->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->count();
-        $data['myTasksByStatus'] = \App\Models\Task::whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->selectRaw('status, count(*) as total')->groupBy('status')->pluck('total', 'status');
-        $data['myRecentTasks'] = \App\Models\Task::with(['creator', 'group'])->whereHas('assignees', fn ($q) => $q->where('users.id', $user->id))->latest()->take(5)->get();
+        $visibleTasks = \App\Models\Task::visibleFor($user);
+
+        $data['myAssignedTasks'] = (clone $visibleTasks)->count();
+        $data['myActiveTasks'] = (clone $visibleTasks)->whereIn('tasks.status', ['pendiente', 'asignada', 'en_progreso'])->count();
+        $data['myCompletedTasks'] = (clone $visibleTasks)->whereIn('tasks.status', ['finalizada', 'completada'])->count();
+        $data['myDelayedTasks'] = (clone $visibleTasks)->whereDate('tasks.end_date', '<', today())->whereNotIn('tasks.status', ['finalizada', 'completada', 'cancelada', 'archivada'])->count();
+        $data['myTasksByStatus'] = (clone $visibleTasks)->selectRaw('tasks.status as status, count(*) as total')->groupBy('tasks.status')->pluck('total', 'status');
+        $data['myRecentTasks'] = (clone $visibleTasks)->with(['creator', 'group'])->latest()->take(5)->get();
         $data['myGroups'] = $user->groups()->wherePivot('is_active', true)->get();
     }
 

@@ -18,15 +18,7 @@ class TaskController extends Controller
 
         $user = $request->user();
 
-        if (!$user->hasPermission('group_tasks.view_all')) {
-            if ($user->hasPermission('group_tasks.view')) {
-                $groupIds = $user->groups()->wherePivot('is_active', true)->pluck('groups.id');
-                $query->whereIn('group_id', $groupIds)->orWhere('created_by', $user->id);
-            } else {
-                $query->where('responsible_user_id', $user->id)
-                    ->orWhereHas('assignees', fn ($q) => $q->where('users.id', $user->id));
-            }
-        }
+        $query->visibleFor($user);
 
         if ($request->filled('search')) {
             $search = $request->search;
@@ -436,7 +428,7 @@ class TaskController extends Controller
             return;
         }
 
-        if ($task->group_id && $task->group->isMember($user)) {
+        if ($user->hasPermission('group_tasks.view_group') && $task->group && $task->group->isManager($user)) {
             return;
         }
 

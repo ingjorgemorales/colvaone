@@ -250,7 +250,11 @@
                     @php
                         $isLinked = filled($item['route']);
                         $isActive = $isLinked && request()->routeIs($item['route']);
-                        $hasPermission = empty($item['permission']) || auth()->user()->hasPermission($item['permission']);
+                        $permissions = $item['permission'] ?? null;
+                        $hasPermission = empty($permissions)
+                            || (is_array($permissions)
+                                ? auth()->user()->hasAnyPermission($permissions)
+                                : auth()->user()->hasPermission($permissions));
                     @endphp
                     @if($hasPermission)
                     <a href="{{ $isLinked ? route($item['route']) : '#' }}"
