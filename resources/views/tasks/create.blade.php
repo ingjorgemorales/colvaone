@@ -48,7 +48,7 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Fecha de inicio *</label>
-                        <input name="start_date" type="date" value="{{ old('start_date', date('Y-m-d')) }}" required class="input-field @error('start_date') {{ 'error-field' }} @enderror">
+                        <input name="start_date" id="startDate" type="date" value="{{ old('start_date', today()->format('Y-m-d')) }}" min="{{ today()->format('Y-m-d') }}" required class="input-field @error('start_date') {{ 'error-field' }} @enderror">
                         @error('start_date')
                             <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
                                 <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i> {{ $message }}
@@ -57,7 +57,7 @@
                     </div>
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Fecha de fin *</label>
-                        <input name="end_date" type="date" value="{{ old('end_date') }}" required class="input-field @error('end_date') {{ 'error-field' }} @enderror">
+                        <input name="end_date" id="endDate" type="date" value="{{ old('end_date') }}" min="{{ old('start_date', today()->format('Y-m-d')) }}" required class="input-field @error('end_date') {{ 'error-field' }} @enderror">
                         @error('end_date')
                             <div style="display:flex;align-items:center;gap:6px;margin-top:6px;padding:8px 12px;border-radius:8px;font-size:12px;color:#dc2626;background:rgba(220,38,38,0.06);border:1px solid rgba(220,38,38,0.1)">
                                 <i data-lucide="alert-circle" style="width:14px;height:14px;flex-shrink:0"></i> {{ $message }}
@@ -150,6 +150,17 @@
         const select = document.getElementById('groupSelect');
         if (select.value) {
             loadGroupMembers(select.value);
+        }
+
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        if (startDate && endDate) {
+            startDate.addEventListener('change', function() {
+                endDate.min = this.value;
+                if (endDate.value && endDate.value < this.value) {
+                    endDate.value = this.value;
+                }
+            });
         }
     });
     </script>

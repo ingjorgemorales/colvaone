@@ -48,11 +48,11 @@
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Fecha de inicio *</label>
-                        <input name="start_date" type="date" value="{{ old('start_date', $task->start_date->format('Y-m-d')) }}" required class="input-field @error('start_date') {{ 'error-field' }} @enderror">
+                        <input name="start_date" id="startDate" type="date" value="{{ old('start_date', $task->start_date->format('Y-m-d')) }}" min="{{ today()->format('Y-m-d') }}" required class="input-field @error('start_date') {{ 'error-field' }} @enderror">
                     </div>
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Fecha de fin *</label>
-                        <input name="end_date" type="date" value="{{ old('end_date', $task->end_date->format('Y-m-d')) }}" required class="input-field @error('end_date') {{ 'error-field' }} @enderror">
+                        <input name="end_date" id="endDate" type="date" value="{{ old('end_date', $task->end_date->format('Y-m-d')) }}" min="{{ old('start_date', today()->format('Y-m-d')) }}" required class="input-field @error('end_date') {{ 'error-field' }} @enderror">
                     </div>
                 </div>
 
@@ -131,6 +131,19 @@
                 container.innerHTML = html;
             });
     }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const startDate = document.getElementById('startDate');
+        const endDate = document.getElementById('endDate');
+        if (startDate && endDate) {
+            startDate.addEventListener('change', function() {
+                endDate.min = this.value;
+                if (endDate.value && endDate.value < this.value) {
+                    endDate.value = this.value;
+                }
+            });
+        }
+    });
     </script>
     <script>setTimeout(() => lucide.createIcons(), 300);</script>
 </x-layouts.app>
