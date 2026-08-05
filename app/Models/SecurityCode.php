@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
-
-class SecurityCode extends Model
+class SecurityCode extends BaseModel
 {
     public $timestamps = false;
 
