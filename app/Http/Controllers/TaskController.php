@@ -2,16 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Mail\TaskNotificationMail;
 use App\Models\Group;
 use App\Models\Task;
-use App\Models\TaskComment;
 use App\Models\User;
-use App\Services\AuthEventService;
+use App\Services\TaskNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Mail;
 
 class TaskController extends Controller
 {
@@ -163,12 +160,13 @@ class TaskController extends Controller
 
         $assignedUsers = User::whereIn('id', $validated['assignees'])->get();
         foreach ($assignedUsers as $u) {
-            Mail::to($u->email)->send(new TaskNotificationMail(
-                $task, $u,
+            $this->notifyTask(
+                $u,
+                $task,
                 'assigned', 'Nueva tarea asignada',
                 'te han asignado la tarea que creaste en ColvaOne.',
                 Auth::user()
-            ));
+            );
         }
 
         return redirect()->route('tasks.index')->with('success', 'Tarea creada y notificaciones enviadas.');
@@ -255,12 +253,13 @@ class TaskController extends Controller
             if (!in_array($assigneeId, $notified)) {
                 $u = User::find($assigneeId);
                 if ($u) {
-                    Mail::to($u->email)->send(new TaskNotificationMail(
-                        $task, $u,
+                    $this->notifyTask(
+                        $u,
+                        $task,
                         'assigned', 'Tarea actualizada',
                         'la tarea que tienes asignada fue actualizada.',
                         Auth::user()
-                    ));
+                    );
                     $notified[] = $assigneeId;
                 }
             }
@@ -306,13 +305,14 @@ class TaskController extends Controller
         $userWhoUpdated = User::find($validated['user_id']);
 
         if ($task->creator && $task->creator->id !== Auth::id()) {
-            Mail::to($task->creator->email)->send(new TaskNotificationMail(
-                $task, $task->creator,
+            $this->notifyTask(
+                $task->creator,
+                $task,
                 'progress', 'Progreso actualizado',
                 "el usuario {$userWhoUpdated->name} actualizo el progreso de la tarea a {$validated['progress']}%.",
                 Auth::user(),
                 "Progreso: {$validated['progress']}%"
-            ));
+            );
         }
 
         return back()->with('success', 'Progreso actualizado.');
@@ -349,13 +349,14 @@ class TaskController extends Controller
         }
 
         foreach ($actors as $actor) {
-            Mail::to($actor->email)->send(new TaskNotificationMail(
-                $task, $actor,
+            $this->notifyTask(
+                $actor,
+                $task,
                 'comment', 'Nuevo comentario',
                 'se agrego un comentario en la tarea.',
                 Auth::user(),
                 $validated['comment']
-            ));
+            );
         }
 
         return back()->with('success', 'Comentario agregado.');
@@ -398,12 +399,13 @@ class TaskController extends Controller
         }
 
         foreach ($actors as $actor) {
-            Mail::to($actor->email)->send(new TaskNotificationMail(
-                $task, $actor,
+            $this->notifyTask(
+                $actor,
+                $task,
                 'status', 'Estado actualizado',
                 'el estado de la tarea cambio de "' . ($statusLabels[$oldStatus] ?? $oldStatus) . '" a "' . ($statusLabels[$validated['status']] ?? $validated['status']) . '".',
                 Auth::user()
-            ));
+            );
         }
 
         return back()->with('success', 'Estado actualizado.');
@@ -434,5 +436,25 @@ class TaskController extends Controller
         }
 
         abort(403, 'No tienes acceso a esta tarea.');
+    }
+
+    private function notifyTask(
+        User $recipient,
+        Task $task,
+        string $action,
+        string $actionLabel,
+        string $actionDetail,
+        User $actedBy,
+        ?string $extra = null,
+    ): void {
+        app(TaskNotificationService::class)->send(
+            $recipient,
+            $task,
+            $action,
+            $actionLabel,
+            $actionDetail,
+            $actedBy,
+            $extra,
+        );
     }
 }

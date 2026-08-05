@@ -285,25 +285,56 @@
                     @endif
                 </div>
                 @auth
-                    <div style="position:relative;margin-right:8px" x-data="{ notifOpen: false }" @click.outside="notifOpen = false">
-                        <button @click="notifOpen = !notifOpen" style="position:relative;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
+                    @php
+                        $bellNotifications = auth()->user()->notifications()->latest()->take(10)->get()->map(fn ($notification) => [
+                            'id' => $notification->id,
+                            'title' => $notification->data['title'] ?? 'Notificacion',
+                            'body' => $notification->data['body'] ?? '',
+                            'extra' => $notification->data['extra'] ?? null,
+                            'url' => $notification->data['url'] ?? '#',
+                            'read' => $notification->read_at !== null,
+                            'created_at' => $notification->created_at?->diffForHumans(),
+                        ])->values();
+                    @endphp
+
+                    <div style="position:relative;margin-right:8px" x-data="notificationBell({ userId: @js(auth()->id()), unreadCount: @js(auth()->user()->unreadNotifications()->count()), notifications: @js($bellNotifications) })" x-init="init()" @click.outside="open = false">
+                        <button @click="open = !open" style="position:relative;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
                             <i data-lucide="bell" style="width:18px;height:18px;color:#64748b"></i>
-                            <span style="position:absolute;top:5px;right:5px;width:8px;height:8px;border-radius:50%;background:#ef4444;border:2px solid white;display:none"></span>
+                            <span x-cloak x-show="unreadCount > 0" x-text="unreadCount > 9 ? '9+' : unreadCount" style="position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#ef4444;border:2px solid white;color:white;font-size:10px;font-weight:700;line-height:14px;text-align:center"></span>
                         </button>
-                        <div x-cloak x-show="notifOpen" x-transition style="position:absolute;right:0;top:calc(100% + 8px);width:360px;background:white;border-radius:14px;box-shadow:0 10px 40px rgba(18,63,110,0.12),0 0 0 1px rgba(18,63,110,0.06);z-index:50;overflow:hidden">
+                        <div x-cloak x-show="open" x-transition style="position:absolute;right:0;top:calc(100% + 8px);width:min(360px,calc(100vw - 32px));background:white;border-radius:14px;box-shadow:0 10px 40px rgba(18,63,110,0.12),0 0 0 1px rgba(18,63,110,0.06);z-index:50;overflow:hidden">
                             <div style="padding:14px 16px;border-bottom:1px solid rgba(18,63,110,0.06);display:flex;align-items:center;justify-content:space-between">
                                 <h4 style="font-size:14px;font-weight:600;color:#1e293b;margin:0">Notificaciones</h4>
-                                <span style="font-size:11px;color:#94a3b8">0 sin leer</span>
+                                <button x-show="unreadCount > 0" @click="markAllRead()" type="button" style="font-size:11px;color:#123f6e;background:none;border:none;cursor:pointer;font-weight:600">Marcar leidas</button>
+                                <span x-show="unreadCount === 0" style="font-size:11px;color:#94a3b8">0 sin leer</span>
                             </div>
-                            <div style="padding:40px 16px;text-align:center">
+                            <div x-show="notifications.length === 0" style="padding:40px 16px;text-align:center">
                                 <div style="width:48px;height:48px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.04);margin:0 auto 12px">
                                     <i data-lucide="bell-off" style="width:22px;height:22px;color:#94a3b8"></i>
                                 </div>
                                 <p style="font-size:13px;color:#94a3b8;margin:0">No hay notificaciones nuevas</p>
                                 <p style="font-size:11px;color:#cbd5e1;margin:4px 0 0">Las apareceran aqui cuando las tengas</p>
                             </div>
+                            <div x-show="notifications.length > 0" style="max-height:360px;overflow-y:auto">
+                                <template x-for="notification in notifications" :key="notification.id">
+                                    <button type="button" @click="openNotification(notification)" style="width:100%;display:flex;gap:10px;padding:12px 16px;border:0;border-bottom:1px solid rgba(18,63,110,0.05);background:white;text-align:left;cursor:pointer">
+                                        <span style="width:34px;height:34px;border-radius:10px;display:grid;place-items:center;flex-shrink:0;background:rgba(18,63,110,0.06)">
+                                            <i data-lucide="clipboard-check" style="width:17px;height:17px;color:#123f6e"></i>
+                                        </span>
+                                        <span style="min-width:0;flex:1">
+                                            <span style="display:flex;align-items:center;gap:6px;margin-bottom:3px">
+                                                <span x-text="notification.title" style="font-size:12px;font-weight:700;color:#1e293b;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                                                <span x-show="!notification.read" style="width:7px;height:7px;border-radius:50%;background:#ef4444;flex-shrink:0"></span>
+                                            </span>
+                                            <span x-text="notification.body" style="display:block;font-size:12px;color:#475569;line-height:1.4"></span>
+                                            <span x-show="notification.extra" x-text="notification.extra" style="display:block;margin-top:4px;font-size:11px;color:#64748b;line-height:1.35;overflow:hidden;text-overflow:ellipsis;white-space:nowrap"></span>
+                                            <span x-text="notification.created_at" style="display:block;margin-top:6px;font-size:11px;color:#94a3b8"></span>
+                                        </span>
+                                    </button>
+                                </template>
+                            </div>
                             <div style="padding:10px 16px;border-top:1px solid rgba(18,63,110,0.06);text-align:center">
-                                <span style="font-size:12px;color:#94a3b8">Centro de notificaciones — proximamente</span>
+                                <span x-text="unreadCount + ' sin leer'" style="font-size:12px;color:#94a3b8"></span>
                             </div>
                         </div>
                     </div>
@@ -348,6 +379,73 @@
 
 
     <script>
+        window.notificationBell = function ({ userId, unreadCount, notifications }) {
+            return {
+                open: false,
+                unreadCount,
+                notifications,
+                init() {
+                    this.listen();
+                },
+                listen() {
+                    if (!userId || !window.Echo) return;
+
+                    window.Echo.private(`App.Models.User.${userId}`)
+                        .notification((notification) => {
+                            this.addNotification(notification);
+                        });
+                },
+                addNotification(notification) {
+                    const item = {
+                        id: notification.id,
+                        title: notification.title ?? 'Notificacion',
+                        body: notification.body ?? '',
+                        extra: notification.extra ?? null,
+                        url: notification.url ?? '#',
+                        read: false,
+                        created_at: 'Ahora',
+                    };
+
+                    this.notifications = [
+                        item,
+                        ...this.notifications.filter((current) => current.id !== item.id),
+                    ].slice(0, 10);
+                    this.unreadCount += 1;
+                    this.$nextTick(() => lucide.createIcons());
+                },
+                async markRead(notification) {
+                    if (notification.read) return;
+
+                    try {
+                        const response = await window.axios.patch(`/notifications/${notification.id}/read`);
+                        notification.read = true;
+                        this.unreadCount = response.data.unread_count ?? Math.max(this.unreadCount - 1, 0);
+                    } catch (error) {
+                        console.error('No se pudo marcar la notificacion como leida.', error);
+                    }
+                },
+                async markAllRead() {
+                    if (this.unreadCount === 0) return;
+
+                    try {
+                        await window.axios.patch('/notifications/read-all');
+                        this.unreadCount = 0;
+                        this.notifications = this.notifications.map((notification) => ({ ...notification, read: true }));
+                    } catch (error) {
+                        console.error('No se pudieron marcar las notificaciones como leidas.', error);
+                    }
+                },
+                async openNotification(notification) {
+                    await this.markRead(notification);
+                    this.open = false;
+
+                    if (notification.url && notification.url !== '#') {
+                        showSpinner(() => { window.location.href = notification.url; });
+                    }
+                },
+            };
+        };
+
         if (localStorage.getItem('sidebarCollapsed') === 'true' && window.innerWidth >= 1024) {
             document.getElementById('sidebar').classList.add('collapsed');
             document.querySelector('.main-area').classList.add('sidebar-collapsed');
