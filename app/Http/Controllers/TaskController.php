@@ -31,7 +31,7 @@ class TaskController extends Controller
         if ($request->filled('status')) {
             if ($request->status === 'retrasada') {
                 $query->whereDate('end_date', '<', today())
-                    ->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada']);
+                    ->whereNotIn('status', Task::LOCKED_STATUSES);
             } else {
                 $query->where('status', $request->status);
             }
@@ -183,7 +183,7 @@ class TaskController extends Controller
     {
         $this->authorizeTask($task);
 
-        if (in_array($task->status, ['finalizada', 'cancelada', 'archivada'])) {
+        if ($task->isLocked()) {
             return redirect()->route('tasks.show', $task)->with('error', 'No se puede editar una tarea ' . $task->status . '.');
         }
 
@@ -205,6 +205,7 @@ class TaskController extends Controller
     public function update(Request $request, Task $task)
     {
         $this->authorizeTask($task);
+        $this->ensureTaskIsEditable($task);
 
         $validated = $request->validate([
             'title' => 'required|string|max:255',
@@ -268,6 +269,7 @@ class TaskController extends Controller
     public function archive(Task $task)
     {
         $this->authorizeTask($task);
+        $this->ensureTaskIsEditable($task);
 
         $task->update(['status' => 'archivada']);
         return redirect()->route('tasks.index')->with('success', 'Tarea archivada.');
@@ -276,6 +278,7 @@ class TaskController extends Controller
     public function updateProgress(Request $request, Task $task)
     {
         $this->authorizeTask($task);
+        $this->ensureTaskIsEditable($task);
 
         $validated = $request->validate([
             'user_id' => 'required|exists:users,id',
@@ -362,6 +365,7 @@ class TaskController extends Controller
     public function updateStatus(Request $request, Task $task)
     {
         $this->authorizeTask($task);
+        $this->ensureTaskIsEditable($task);
 
         $validated = $request->validate([
             'status' => 'required|in:asignada,en_progreso,finalizada,cancelada,archivada',
@@ -433,6 +437,13 @@ class TaskController extends Controller
         }
 
         abort(403, 'No tienes acceso a esta tarea.');
+    }
+
+    private function ensureTaskIsEditable(Task $task): void
+    {
+        if ($task->isLocked()) {
+            abort(403, 'No se puede modificar una tarea finalizada, cancelada o archivada.');
+        }
     }
 
     private function notifyTask(

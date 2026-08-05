@@ -1,4 +1,6 @@
 <x-layouts.app title="{{ $task->title }} | {{ config('app.name') }}" heading="{{ $task->title }}" subheading="Detalle de tarea">
+    @php($isLocked = $task->isLocked())
+
     <div style="display:grid;gap:20px;grid-template-columns:2fr 1fr">
         <div style="display:flex;flex-direction:column;gap:20px">
             <div class="card" style="padding:24px">
@@ -13,7 +15,7 @@
                         @endif
                     </div>
                     <div style="display:flex;gap:6px">
-                        @if(auth()->user()->hasPermission('group_tasks.update') && !in_array($task->status, ['finalizada','cancelada','archivada']))
+                        @if(auth()->user()->hasPermission('group_tasks.update') && !$isLocked)
                         <a href="{{ route('tasks.edit', $task) }}" class="btn-secondary" style="padding:7px 14px;font-size:12px">
                             <i data-lucide="pencil" style="width:14px;height:14px"></i> Editar
                         </a>
@@ -121,7 +123,7 @@
                                 <span style="font-size:12px;font-weight:500;color:#1e293b">{{ $assignee->name }}</span>
                                 <span style="font-size:11px;font-weight:600;color:{{ $assignee->pivot->progress >= 100 ? '#059669' : '#475569' }}">{{ $assignee->pivot->progress }}%</span>
                             </div>
-                            @if(auth()->user()->hasPermission('group_tasks.update_progress'))
+                            @if(!$isLocked && auth()->user()->hasPermission('group_tasks.update_progress'))
                             <form method="POST" action="{{ route('tasks.progress.update', $task) }}" style="display:flex;gap:6px;margin-top:8px;align-items:center" x-data="{ val: {{ $assignee->pivot->progress }}, orig: {{ $assignee->pivot->progress }} }">
                                 @csrf
                                 <input type="hidden" name="user_id" value="{{ $assignee->id }}">

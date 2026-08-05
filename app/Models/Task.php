@@ -12,6 +12,8 @@ class Task extends BaseModel
 {
     use HasFactory, SoftDeletes;
 
+    public const LOCKED_STATUSES = ['finalizada', 'completada', 'cancelada', 'archivada'];
+
     protected $fillable = [
         'created_by',
         'group_id',
@@ -69,8 +71,13 @@ class Task extends BaseModel
 
     public function isDelayed(): bool
     {
-        return !in_array($this->status, ['finalizada', 'completada', 'cancelada', 'archivada'])
+        return !$this->isLocked()
             && $this->end_date->startOfDay()->lt(today());
+    }
+
+    public function isLocked(): bool
+    {
+        return in_array($this->status, self::LOCKED_STATUSES, true);
     }
 
     public function getDaysDelayedAttribute(): int

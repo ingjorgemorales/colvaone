@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Group;
+use App\Models\Task;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -112,7 +113,7 @@ class GroupController extends Controller
             'blocked' => (clone $tasksQuery)->where('status', 'bloqueada')->count(),
             'in_review' => (clone $tasksQuery)->where('status', 'en_revision')->count(),
             'completed' => (clone $tasksQuery)->whereIn('status', ['finalizada', 'completada'])->count(),
-            'delayed' => (clone $tasksQuery)->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])->whereDate('end_date', '<', today())->count(),
+            'delayed' => (clone $tasksQuery)->whereNotIn('status', Task::LOCKED_STATUSES)->whereDate('end_date', '<', today())->count(),
         ];
 
         $group->load(['creator', 'managers', 'members']);

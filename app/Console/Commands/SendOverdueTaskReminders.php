@@ -24,7 +24,7 @@ class SendOverdueTaskReminders extends Command
         Task::query()
             ->with(['assignees', 'creator', 'group'])
             ->whereDate('end_date', '<', today())
-            ->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada'])
+            ->whereNotIn('status', Task::LOCKED_STATUSES)
             ->chunkById(100, function ($tasks) use ($now, $cutoff, &$sent): void {
                 foreach ($tasks as $task) {
                     $recipients = $task->assignees

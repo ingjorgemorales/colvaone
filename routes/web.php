@@ -109,7 +109,7 @@ Route::get('/dashboard', function () {
         $data['myAssignedTasks'] = (clone $visibleTasks)->count();
         $data['myActiveTasks'] = (clone $visibleTasks)->whereIn('tasks.status', ['pendiente', 'asignada', 'en_progreso'])->count();
         $data['myCompletedTasks'] = (clone $visibleTasks)->whereIn('tasks.status', ['finalizada', 'completada'])->count();
-        $data['myDelayedTasks'] = (clone $visibleTasks)->whereDate('tasks.end_date', '<', today())->whereNotIn('tasks.status', ['finalizada', 'completada', 'cancelada', 'archivada'])->count();
+        $data['myDelayedTasks'] = (clone $visibleTasks)->whereDate('tasks.end_date', '<', today())->whereNotIn('tasks.status', \App\Models\Task::LOCKED_STATUSES)->count();
         $data['myTasksByStatus'] = (clone $visibleTasks)->selectRaw('tasks.status as status, count(*) as total')->groupBy('tasks.status')->pluck('total', 'status');
         $data['myRecentTasks'] = (clone $visibleTasks)->with(['creator', 'group'])->latest()->take(5)->get();
         $data['myGroups'] = $user->groups()->wherePivot('is_active', true)->get();
