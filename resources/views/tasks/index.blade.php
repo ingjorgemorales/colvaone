@@ -39,6 +39,7 @@
                 <option value="">Todos los estados</option>
                 <option value="asignada" {{ request('status')=='asignada'?'selected':'' }}>Asignada</option>
                 <option value="en_progreso" {{ request('status')=='en_progreso'?'selected':'' }}>En progreso</option>
+                <option value="retrasada" {{ request('status')=='retrasada'?'selected':'' }}>Retrasadas</option>
                 <option value="finalizada" {{ request('status')=='finalizada'?'selected':'' }}>Finalizada</option>
                 <option value="cancelada" {{ request('status')=='cancelada'?'selected':'' }}>Cancelada</option>
                 <option value="archivada" {{ request('status')=='archivada'?'selected':'' }}>Archivada</option>

@@ -37,7 +37,12 @@ class TaskController extends Controller
         }
 
         if ($request->filled('status')) {
-            $query->where('status', $request->status);
+            if ($request->status === 'retrasada') {
+                $query->whereDate('end_date', '<', today())
+                    ->whereNotIn('status', ['finalizada', 'completada', 'cancelada', 'archivada']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         if ($request->filled('priority')) {
