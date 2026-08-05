@@ -389,13 +389,24 @@
                 },
                 listen() {
                     if (!userId || !window.Echo) return;
+                    window.ColvaOneNotificationListeners ??= {};
+                    const channelName = `App.Models.User.${userId}`;
 
-                    window.Echo.private(`App.Models.User.${userId}`)
+                    if (window.ColvaOneNotificationListeners[channelName]) return;
+                    window.ColvaOneNotificationListeners[channelName] = true;
+
+                    window.Echo.private(channelName)
                         .notification((notification) => {
-                            this.addNotification(notification);
+                            window.dispatchEvent(new CustomEvent('colvaone-notification', { detail: notification }));
                         });
+
+                    window.addEventListener('colvaone-notification', (event) => {
+                        this.addNotification(event.detail);
+                    });
                 },
                 addNotification(notification) {
+                    if (this.notifications.some((current) => current.id === notification.id)) return;
+
                     const item = {
                         id: notification.id,
                         title: notification.title ?? 'Notificacion',

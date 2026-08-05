@@ -7,6 +7,7 @@ use App\Models\Task;
 use App\Models\User;
 use App\Notifications\TaskBellNotification;
 use Illuminate\Support\Facades\Mail;
+use Throwable;
 
 class TaskNotificationService
 {
@@ -29,13 +30,17 @@ class TaskNotificationService
             $extra,
         ));
 
-        $recipient->notify(new TaskBellNotification(
-            $task,
-            $action,
-            $actionLabel,
-            $actionDetail,
-            $actedBy,
-            $extra,
-        ));
+        try {
+            $recipient->notify(new TaskBellNotification(
+                $task,
+                $action,
+                $actionLabel,
+                $actionDetail,
+                $actedBy,
+                $extra,
+            ));
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }
