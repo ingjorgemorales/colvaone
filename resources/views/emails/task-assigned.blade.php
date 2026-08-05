@@ -118,7 +118,7 @@
                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:24px">
                                 <tr>
                                     <td align="center">
-                                        <a href="{{ route('tasks.show', $task) }}" style="display:inline-block;background:linear-gradient(135deg,#123f6e,#059669);color:white;font-weight:600;font-size:14px;padding:14px 32px;border-radius:10px;text-decoration:none;box-shadow:0 4px 12px rgba(18,63,110,0.2)">Ver tarea en ColvaOne</a>
+                                        <a href="{{ route('tasks.show', $task) }}" style="display:inline-block;background-color:#123f6e;color:white;font-weight:600;font-size:14px;padding:14px 32px;border-radius:10px;text-decoration:none">Ver tarea en ColvaOne</a>
                                     </td>
                                 </tr>
                             </table>
