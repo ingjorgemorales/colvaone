@@ -186,11 +186,12 @@
                 @csrf
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Usuario</label>
-                    <select name="user_id" required class="input-field" style="cursor:pointer">
+                    <input type="text" id="groupUserSearch" placeholder="Buscar por nombre o cedula..." class="input-field" style="margin-bottom:8px">
+                    <select name="user_id" id="groupUserSelect" required class="input-field" style="cursor:pointer">
                         <option value="">Seleccionar usuario...</option>
                         @foreach($allUsers as $u)
                             @if(!$group->users->contains($u->id))
-                            <option value="{{ $u->id }}">{{ $u->name }} {{ $u->last_name }} ({{ $u->role_label }})</option>
+                            <option value="{{ $u->id }}" data-search="{{ $u->name }} {{ $u->last_name }} {{ $u->email }} {{ $u->document_number }}">{{ $u->name }} {{ $u->last_name }} - {{ $u->document_type }} {{ $u->document_number }} ({{ $u->role_label }})</option>
                             @endif
                         @endforeach
                     </select>
@@ -218,5 +219,16 @@
         </a>
     </div>
 
-    <script>setTimeout(() => lucide.createIcons(), 300);</script>
+    <script>
+        document.getElementById('groupUserSearch')?.addEventListener('input', function() {
+            const term = this.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+            document.querySelectorAll('#groupUserSelect option').forEach(option => {
+                if (!option.value) return;
+                const text = (option.dataset.search || option.textContent).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                option.hidden = !text.includes(term);
+            });
+        });
+
+        setTimeout(() => lucide.createIcons(), 300);
+    </script>
 </x-layouts.app>

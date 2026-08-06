@@ -507,6 +507,24 @@
             spinner.classList.remove('hidden');
             setTimeout(() => { if (callback) callback(); }, 100);
         }
+
+        window.filterMemberList = function(input) {
+            const target = document.querySelector(input.dataset.memberSearch);
+            if (!target) return;
+
+            const term = input.value.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+
+            target.querySelectorAll('[data-member-item]').forEach(item => {
+                const text = (item.dataset.search || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+                item.style.display = text.includes(term) ? 'flex' : 'none';
+            });
+        };
+
+        document.addEventListener('input', (event) => {
+            if (event.target.matches('[data-member-search]')) {
+                window.filterMemberList(event.target);
+            }
+        });
     </script>
     @livewireScripts
 </body>

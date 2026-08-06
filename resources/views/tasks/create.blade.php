@@ -68,15 +68,17 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Asignar a *</label>
+                    <input id="assigneeSearch" type="text" data-member-search="#membersContainer" placeholder="Buscar por nombre o cedula..." class="input-field" style="margin-bottom:8px">
                     <div id="membersContainer" style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:180px;overflow-y:auto;background:white">
                         @if($users->count() > 0)
                             @foreach($users as $u)
-                                <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
+                                <label data-member-item data-search="{{ $u->name }} {{ $u->last_name }} {{ $u->email }} {{ $u->document_number }}" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
                                     <input type="checkbox" name="assignees[]" value="{{ $u->id }}" {{ in_array($u->id, old('assignees', [])) ? 'checked' : '' }} style="accent-color:#123f6e">
                                     <div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">{{ strtoupper(substr($u->name,0,1).substr($u->last_name??'',0,1)) }}</div>
                                     <div>
                                         <span style="font-weight:500">{{ $u->name }} {{ $u->last_name }}</span>
                                         <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->role_label }}</span>
+                                        <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->document_type }} {{ $u->document_number }}</span>
                                     </div>
                                 </label>
                             @endforeach
@@ -135,14 +137,22 @@
                     return;
                 }
                 let html = '';
+                const selected = @json(array_map('intval', old('assignees', [])));
                 members.forEach(m => {
-                    html += '<label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background=\'rgba(18,63,110,0.04)\'" onmouseout="this.style.background=\'transparent\'">';
-                    html += '<input type="checkbox" name="assignees[]" value="' + m.id + '" style="accent-color:#123f6e">';
+                    const checked = selected.includes(m.id) ? 'checked' : '';
+                    const docLabel = ((m.document_type || '') + ' ' + (m.document_number || '')).trim();
+                    const search = [m.name, m.email, m.document_number].filter(Boolean).join(' ');
+                    html += '<label data-member-item data-search="' + search.replace(/"/g, '&quot;') + '" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background=\'rgba(18,63,110,0.04)\'" onmouseout="this.style.background=\'transparent\'">';
+                    html += '<input type="checkbox" name="assignees[]" value="' + m.id + '" ' + checked + ' style="accent-color:#123f6e">';
                     html += '<div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">' + m.initials + '</div>';
-                    html += '<div><span style="font-weight:500">' + m.name + '</span> <span style="font-size:11px;color:#94a3b8;margin-left:6px">' + m.role + '</span></div>';
+                    html += '<div><span style="font-weight:500">' + m.name + '</span> <span style="font-size:11px;color:#94a3b8;margin-left:6px">' + m.role + '</span> <span style="font-size:11px;color:#94a3b8;margin-left:6px">' + docLabel + '</span></div>';
                     html += '</label>';
                 });
                 container.innerHTML = html;
+                const searchInput = document.getElementById('assigneeSearch');
+                if (searchInput) {
+                    window.filterMemberList(searchInput);
+                }
             });
     }
 

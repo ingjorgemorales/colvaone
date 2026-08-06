@@ -117,7 +117,7 @@ class CommitteeController extends Controller
     {
         return $request->validate([
             'title' => ['required', 'string', 'max:255'],
-            'committee_date' => ['required', 'date'],
+            'committee_date' => ['required', 'date', 'after_or_equal:today'],
             'summary' => ['required', 'string'],
             'members' => ['required', 'array', 'min:1'],
             'members.*' => ['exists:users,id'],

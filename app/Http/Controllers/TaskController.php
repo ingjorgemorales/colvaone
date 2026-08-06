@@ -100,6 +100,8 @@ class TaskController extends Controller
                 'id' => $m->id,
                 'name' => $m->name . ' ' . ($m->last_name ?? ''),
                 'email' => $m->email,
+                'document_type' => $m->document_type,
+                'document_number' => $m->document_number,
                 'role' => $m->role_label,
                 'initials' => strtoupper(substr($m->name, 0, 1) . substr($m->last_name ?? '', 0, 1)),
             ]);

@@ -13,21 +13,23 @@
                     </div>
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Fecha *</label>
-                        <input name="committee_date" type="date" value="{{ old('committee_date', $committee->committee_date->format('Y-m-d')) }}" required class="input-field @error('committee_date') {{ 'error-field' }} @enderror">
+                        <input name="committee_date" type="date" value="{{ old('committee_date', $committee->committee_date->format('Y-m-d')) }}" min="{{ today()->format('Y-m-d') }}" required class="input-field @error('committee_date') {{ 'error-field' }} @enderror">
                         @error('committee_date') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                     </div>
                 </div>
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Integrantes *</label>
-                    <div style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:240px;overflow-y:auto;background:white">
+                    <input type="text" data-member-search="#committeeMembersContainer" placeholder="Buscar por nombre o cedula..." class="input-field" style="margin-bottom:8px">
+                    <div id="committeeMembersContainer" style="border:1px solid rgba(18,63,110,0.12);border-radius:10px;padding:10px;max-height:240px;overflow-y:auto;background:white">
                         @foreach($users as $u)
-                            <label style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
+                            <label data-member-item data-search="{{ $u->name }} {{ $u->last_name }} {{ $u->email }} {{ $u->document_number }}" style="display:flex;align-items:center;gap:8px;padding:8px;border-radius:8px;cursor:pointer;transition:background 0.15s;font-size:13px;color:#1e293b" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='transparent'">
                                 <input type="checkbox" name="members[]" value="{{ $u->id }}" {{ in_array($u->id, old('members', $committee->members->pluck('id')->toArray())) ? 'checked' : '' }} style="accent-color:#123f6e">
                                 <div style="width:28px;height:28px;border-radius:50%;display:grid;place-items:center;background:rgba(18,63,110,0.06);font-size:11px;font-weight:600;color:#123f6e;flex-shrink:0">{{ $u->initials }}</div>
                                 <div>
                                     <span style="font-weight:500">{{ $u->name }} {{ $u->last_name }}</span>
                                     <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->role_label }}</span>
+                                    <span style="font-size:11px;color:#94a3b8;margin-left:6px">{{ $u->document_type }} {{ $u->document_number }}</span>
                                 </div>
                             </label>
                         @endforeach
