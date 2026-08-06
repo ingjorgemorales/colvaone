@@ -5,6 +5,8 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Committee extends BaseModel
@@ -38,6 +40,18 @@ class Committee extends BaseModel
     {
         return $this->belongsToMany(User::class, 'committee_user')
             ->withTimestamps();
+    }
+
+    public function reports(): HasMany
+    {
+        return $this->hasMany(CommitteeReport::class)
+            ->orderByDesc('registered_at')
+            ->orderByDesc('id');
+    }
+
+    public function latestReport(): HasOne
+    {
+        return $this->hasOne(CommitteeReport::class)->latestOfMany('registered_at');
     }
 
     public function getStatusLabelAttribute(): string

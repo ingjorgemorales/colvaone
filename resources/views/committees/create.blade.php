@@ -38,8 +38,16 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Relatos *</label>
-                    <textarea name="summary" rows="9" required class="input-field @error('summary') {{ 'error-field' }} @enderror" style="resize:vertical" placeholder="Escribe el resumen de lo hablado, acuerdos o notas relevantes...">{{ old('summary') }}</textarea>
-                    @error('summary') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
+                    <div id="reportsContainer" style="display:flex;flex-direction:column;gap:10px">
+                        @foreach(old('reports', ['']) as $report)
+                            <textarea name="reports[]" rows="5" required class="input-field @error('reports') {{ 'error-field' }} @enderror @error('reports.*') {{ 'error-field' }} @enderror" style="resize:vertical" placeholder="Escribe el resumen de lo hablado, acuerdos o notas relevantes...">{{ $report }}</textarea>
+                        @endforeach
+                    </div>
+                    @error('reports') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
+                    @error('reports.*') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
+                    <button type="button" class="btn-secondary" style="margin-top:10px;padding:8px 12px;font-size:12px" onclick="addReportField()">
+                        <i data-lucide="plus" style="width:14px;height:14px"></i> Agregar relato
+                    </button>
                 </div>
 
                 <div style="display:flex;gap:12px;justify-content:flex-end">
@@ -56,5 +64,19 @@
         .error-field { border-color: rgba(220,38,38,0.4) !important; box-shadow: 0 0 0 3px rgba(220,38,38,0.06) !important; }
         @media (max-width: 720px) { form > div[style*="grid-template-columns"] { grid-template-columns: 1fr !important; } }
     </style>
-    <script>setTimeout(() => lucide.createIcons(), 300);</script>
+    <script>
+        function addReportField() {
+            const container = document.getElementById('reportsContainer');
+            const textarea = document.createElement('textarea');
+            textarea.name = 'reports[]';
+            textarea.rows = 5;
+            textarea.required = true;
+            textarea.className = 'input-field';
+            textarea.style.resize = 'vertical';
+            textarea.placeholder = 'Escribe otro relato del comite...';
+            container.appendChild(textarea);
+        }
+
+        setTimeout(() => lucide.createIcons(), 300);
+    </script>
 </x-layouts.app>

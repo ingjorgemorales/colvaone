@@ -37,12 +37,6 @@
                     @error('members') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                 </div>
 
-                <div>
-                    <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Relatos *</label>
-                    <textarea name="summary" rows="9" required class="input-field @error('summary') {{ 'error-field' }} @enderror" style="resize:vertical">{{ old('summary', $committee->summary) }}</textarea>
-                    @error('summary') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
-                </div>
-
                 <div style="display:flex;gap:12px;justify-content:flex-end">
                     <a href="{{ route('committees.show', $committee) }}" class="btn-secondary">Cancelar</a>
                     <button type="submit" class="btn-primary">

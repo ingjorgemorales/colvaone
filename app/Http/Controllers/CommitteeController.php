@@ -7,19 +7,22 @@ use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
 class CommitteeController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Committee::with(['creator', 'members']);
+        $query = Committee::with(['creator', 'members', 'latestReport'])
+            ->withCount('reports');
 
         if ($request->filled('search')) {
             $search = $request->input('search');
             $query->where(function ($q) use ($search): void {
                 $q->where('title', 'like', "%{$search}%")
-                    ->orWhere('summary', 'like', "%{$search}%");
+                    ->orWhere('summary', 'like', "%{$search}%")
+                    ->orWhereHas('reports', fn ($reports) => $reports->where('content', 'like', "%{$search}%"));
             });
         }
 
@@ -52,17 +55,38 @@ class CommitteeController extends Controller
 
     public function store(Request $request): RedirectResponse
     {
-        $validated = $this->validateCommittee($request);
+        $validated = $this->validateCommittee($request, true);
+        $reports = collect($validated['reports'])
+            ->map(fn ($report) => trim($report))
+            ->filter()
+            ->values();
 
-        $committee = Committee::create([
-            'title' => $validated['title'],
-            'committee_date' => $validated['committee_date'],
-            'summary' => $validated['summary'],
-            'status' => 'active',
-            'created_by' => Auth::id(),
-        ]);
+        if ($reports->isEmpty()) {
+            return back()->withInput()->withErrors(['reports' => 'Debes registrar al menos un relato.']);
+        }
 
-        $committee->members()->attach($validated['members']);
+        $committee = DB::transaction(function () use ($validated, $reports): Committee {
+            $firstReport = $reports->first();
+            $committee = Committee::create([
+                'title' => $validated['title'],
+                'committee_date' => $validated['committee_date'],
+                'summary' => $firstReport,
+                'status' => 'active',
+                'created_by' => Auth::id(),
+            ]);
+
+            $committee->members()->attach($validated['members']);
+
+            foreach ($reports as $report) {
+                $committee->reports()->create([
+                    'content' => $report,
+                    'registered_at' => now(),
+                    'created_by' => Auth::id(),
+                ]);
+            }
+
+            return $committee;
+        });
 
         return redirect()->route('committees.show', $committee)
             ->with('success', 'Comite creado correctamente.');
@@ -70,7 +94,7 @@ class CommitteeController extends Controller
 
     public function show(Committee $committee): View
     {
-        $committee->load(['creator', 'updater', 'members']);
+        $committee->load(['creator', 'updater', 'members', 'reports.creator']);
 
         return view('committees.show', compact('committee'));
     }
@@ -90,7 +114,6 @@ class CommitteeController extends Controller
         $committee->update([
             'title' => $validated['title'],
             'committee_date' => $validated['committee_date'],
-            'summary' => $validated['summary'],
             'updated_by' => Auth::id(),
         ]);
 
@@ -98,6 +121,31 @@ class CommitteeController extends Controller
 
         return redirect()->route('committees.show', $committee)
             ->with('success', 'Comite actualizado correctamente.');
+    }
+
+    public function addReport(Request $request, Committee $committee): RedirectResponse
+    {
+        $validated = $request->validate([
+            'content' => ['required', 'string'],
+        ]);
+
+        $content = trim($validated['content']);
+        if ($content === '') {
+            return back()->withInput()->withErrors(['content' => 'El relato es obligatorio.']);
+        }
+
+        $committee->reports()->create([
+            'content' => $content,
+            'registered_at' => now(),
+            'created_by' => Auth::id(),
+        ]);
+
+        $committee->update([
+            'summary' => $content,
+            'updated_by' => Auth::id(),
+        ]);
+
+        return back()->with('success', 'Relato agregado correctamente.');
     }
 
     public function toggle(Committee $committee): RedirectResponse
@@ -113,15 +161,21 @@ class CommitteeController extends Controller
             ->with('success', "Comite {$status} correctamente.");
     }
 
-    private function validateCommittee(Request $request): array
+    private function validateCommittee(Request $request, bool $includeReports = false): array
     {
-        return $request->validate([
+        $rules = [
             'title' => ['required', 'string', 'max:255'],
             'committee_date' => ['required', 'date', 'after_or_equal:today'],
-            'summary' => ['required', 'string'],
             'members' => ['required', 'array', 'min:1'],
             'members.*' => ['exists:users,id'],
-        ]);
+        ];
+
+        if ($includeReports) {
+            $rules['reports'] = ['required', 'array', 'min:1'];
+            $rules['reports.*'] = ['required', 'string'];
+        }
+
+        return $request->validate($rules);
     }
 
     private function activeUsers()

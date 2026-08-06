@@ -78,7 +78,12 @@
                                     <span style="padding:2px 8px;border-radius:20px;font-size:11px;color:#94a3b8;background:rgba(18,63,110,0.04)">+{{ $committee->members->count() - 2 }}</span>
                                 @endif
                             </td>
-                            <td style="padding:14px 16px;color:#64748b;max-width:340px">{{ Str::limit($committee->summary, 110) }}</td>
+                            <td style="padding:14px 16px;color:#64748b;max-width:300px">
+                                <span style="display:inline-flex;padding:2px 8px;border-radius:20px;font-size:11px;color:#123f6e;background:rgba(18,63,110,0.06);margin-bottom:4px">{{ $committee->reports_count }} relatos</span>
+                                <div style="font-size:13px;line-height:1.35;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden">
+                                    {{ Str::limit($committee->latestReport?->content ?? $committee->summary, 80) }}
+                                </div>
+                            </td>
                             <td style="padding:14px 16px">
                                 <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:{{ $committee->status === 'active' ? 'rgba(5,150,105,0.08)' : 'rgba(148,163,184,0.12)' }};color:{{ $committee->status_color }}">
                                     <span style="width:6px;height:6px;border-radius:50%;background:{{ $committee->status_color }}"></span> {{ $committee->status_label }}
