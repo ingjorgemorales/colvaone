@@ -7,6 +7,7 @@ use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordCodeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\AuditController;
+use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\NotificationController;
@@ -64,6 +65,14 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('groups/{group}/members/{user}', [GroupController::class, 'removeMember'])->name('groups.members.remove')->middleware('permission:groups.manage_members');
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
+
+    Route::get('committees', [CommitteeController::class, 'index'])->name('committees.index')->middleware('permission:committees.view');
+    Route::get('committees/create', [CommitteeController::class, 'create'])->name('committees.create')->middleware('permission:committees.create');
+    Route::post('committees', [CommitteeController::class, 'store'])->name('committees.store')->middleware('permission:committees.create');
+    Route::get('committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->middleware('permission:committees.view');
+    Route::get('committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit')->middleware('permission:committees.edit');
+    Route::put('committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update')->middleware('permission:committees.edit');
+    Route::post('committees/{committee}/toggle', [CommitteeController::class, 'toggle'])->name('committees.toggle')->middleware('permission:committees.toggle');
 
     Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view,group_tasks.view_group,group_tasks.view_all');
     Route::get('tasks-group-members/{group}', [TaskController::class, 'getGroupMembers'])->name('tasks.group-members')->middleware('auth');
