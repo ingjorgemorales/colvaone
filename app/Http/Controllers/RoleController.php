@@ -172,7 +172,8 @@ class RoleController extends Controller
             'committees' => [
                 'name' => 'Comites',
                 'items' => [
-                    'committees.view' => 'Ver comites',
+                    'committees.view' => 'Ver comites propios',
+                    'committees.view_all' => 'Ver todos los comites',
                     'committees.create' => 'Crear comites',
                     'committees.edit' => 'Editar comites',
                     'committees.toggle' => 'Activar/Desactivar comites',

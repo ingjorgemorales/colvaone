@@ -15,6 +15,7 @@ class CommitteeController extends Controller
     public function index(Request $request): View
     {
         $query = Committee::with(['creator', 'members', 'latestReport'])
+            ->visibleFor($request->user())
             ->withCount('reports');
 
         if ($request->filled('search')) {
@@ -94,6 +95,8 @@ class CommitteeController extends Controller
 
     public function show(Committee $committee): View
     {
+        $this->ensureCanViewCommittee($committee);
+
         $committee->load(['creator', 'updater', 'members', 'reports.creator']);
 
         return view('committees.show', compact('committee'));
@@ -101,6 +104,8 @@ class CommitteeController extends Controller
 
     public function edit(Committee $committee): View
     {
+        $this->ensureCanViewCommittee($committee);
+
         $committee->load('members');
         $users = $this->activeUsers();
 
@@ -109,6 +114,8 @@ class CommitteeController extends Controller
 
     public function update(Request $request, Committee $committee): RedirectResponse
     {
+        $this->ensureCanViewCommittee($committee);
+
         $validated = $this->validateCommittee($request);
 
         $committee->update([
@@ -125,6 +132,8 @@ class CommitteeController extends Controller
 
     public function addReport(Request $request, Committee $committee): RedirectResponse
     {
+        $this->ensureCanViewCommittee($committee);
+
         $validated = $request->validate([
             'content' => ['required', 'string'],
         ]);
@@ -150,6 +159,8 @@ class CommitteeController extends Controller
 
     public function toggle(Committee $committee): RedirectResponse
     {
+        $this->ensureCanViewCommittee($committee);
+
         $committee->update([
             'status' => $committee->status === 'active' ? 'inactive' : 'active',
             'updated_by' => Auth::id(),
@@ -183,5 +194,20 @@ class CommitteeController extends Controller
         return User::where('is_active', true)
             ->orderBy('name')
             ->get();
+    }
+
+    private function ensureCanViewCommittee(Committee $committee): void
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            abort(403, 'No tienes permiso para acceder a este comite.');
+        }
+
+        if ($user->hasPermission('committees.view_all') || (int) $committee->created_by === (int) $user->id) {
+            return;
+        }
+
+        abort(403, 'No tienes permiso para acceder a este comite.');
     }
 }

@@ -66,11 +66,11 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 
-    Route::get('committees', [CommitteeController::class, 'index'])->name('committees.index')->middleware('permission:committees.view');
+    Route::get('committees', [CommitteeController::class, 'index'])->name('committees.index')->middleware('permission:committees.view,committees.view_all');
     Route::get('committees/create', [CommitteeController::class, 'create'])->name('committees.create')->middleware('permission:committees.create');
     Route::post('committees', [CommitteeController::class, 'store'])->name('committees.store')->middleware('permission:committees.create');
     Route::post('committees/{committee}/reports', [CommitteeController::class, 'addReport'])->name('committees.reports.add')->middleware('permission:committees.edit');
-    Route::get('committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->middleware('permission:committees.view');
+    Route::get('committees/{committee}', [CommitteeController::class, 'show'])->name('committees.show')->middleware('permission:committees.view,committees.view_all');
     Route::get('committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit')->middleware('permission:committees.edit');
     Route::put('committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update')->middleware('permission:committees.edit');
     Route::post('committees/{committee}/toggle', [CommitteeController::class, 'toggle'])->name('committees.toggle')->middleware('permission:committees.toggle');

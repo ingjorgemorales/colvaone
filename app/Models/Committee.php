@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -62,5 +63,14 @@ class Committee extends BaseModel
     public function getStatusColorAttribute(): string
     {
         return $this->status === 'active' ? '#059669' : '#94a3b8';
+    }
+
+    public function scopeVisibleFor(Builder $query, User $user): Builder
+    {
+        if ($user->hasPermission('committees.view_all')) {
+            return $query;
+        }
+
+        return $query->where('committees.created_by', $user->id);
     }
 }
