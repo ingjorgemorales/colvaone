@@ -35,6 +35,8 @@ class TaskController extends Controller
             } else {
                 $query->where('status', $request->status);
             }
+        } else {
+            $query->where('status', '!=', 'archivada');
         }
 
         if ($request->filled('priority')) {
