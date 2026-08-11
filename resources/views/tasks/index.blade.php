@@ -152,7 +152,7 @@
                                     </button>
                                 </form>
                                 @endif
-                                @if(auth()->user()->hasPermission('group_tasks.archive') && !$task->isLocked())
+                                @if(auth()->user()->hasPermission('group_tasks.archive') && in_array($task->status, ['finalizada', 'completada'], true))
                                 <form method="POST" action="{{ route('tasks.archive', $task) }}" onsubmit="return confirm('Archivar esta tarea?')">
                                     @csrf
                                     <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(100,116,139,0.06);color:#64748b;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(100,116,139,0.14)'" onmouseout="this.style.background='rgba(100,116,139,0.06)'" title="Archivar">

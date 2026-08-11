@@ -271,7 +271,7 @@ class TaskController extends Controller
     public function archive(Task $task)
     {
         $this->authorizeTask($task);
-        $this->ensureTaskIsEditable($task);
+        $this->ensureTaskIsArchivable($task);
 
         $task->update(['status' => 'archivada']);
         return redirect()->route('tasks.index')->with('success', 'Tarea archivada.');
@@ -445,6 +445,13 @@ class TaskController extends Controller
     {
         if ($task->isLocked()) {
             abort(403, 'No se puede modificar una tarea finalizada, cancelada o archivada.');
+        }
+    }
+
+    private function ensureTaskIsArchivable(Task $task): void
+    {
+        if (!in_array($task->status, ['finalizada', 'completada'], true)) {
+            abort(403, 'Solo se pueden archivar tareas finalizadas.');
         }
     }
 
