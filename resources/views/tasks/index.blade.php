@@ -15,7 +15,7 @@
         .delay-cell { min-width: 94px; }
         .progress-cell { min-width: 110px; }
         .status-cell { min-width: 116px; }
-        .actions-cell { min-width: 116px; }
+        .actions-cell { min-width: 156px; }
         @media (max-width: 1100px) {
             .tasks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
         }
@@ -149,6 +149,14 @@
                                     <input type="hidden" name="status" value="cancelada">
                                     <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(239,68,68,0.04);color:#ef4444;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(239,68,68,0.1)'" onmouseout="this.style.background='rgba(239,68,68,0.04)'" title="Cancelar">
                                         <i data-lucide="x-circle" style="width:15px;height:15px"></i>
+                                    </button>
+                                </form>
+                                @endif
+                                @if(auth()->user()->hasPermission('group_tasks.archive') && !$task->isLocked())
+                                <form method="POST" action="{{ route('tasks.archive', $task) }}" onsubmit="return confirm('Archivar esta tarea?')">
+                                    @csrf
+                                    <button type="submit" style="width:32px;height:32px;border-radius:8px;display:grid;place-items:center;background:rgba(100,116,139,0.06);color:#64748b;border:none;cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='rgba(100,116,139,0.14)'" onmouseout="this.style.background='rgba(100,116,139,0.06)'" title="Archivar">
+                                        <i data-lucide="archive" style="width:15px;height:15px"></i>
                                     </button>
                                 </form>
                                 @endif
