@@ -452,8 +452,8 @@ class TaskController extends Controller
 
     private function ensureTaskIsArchivable(Task $task): void
     {
-        if (!in_array($task->status, ['finalizada', 'completada'], true)) {
-            abort(403, 'Solo se pueden archivar tareas finalizadas.');
+        if (!in_array($task->status, ['finalizada', 'completada', 'cancelada'], true)) {
+            abort(403, 'Solo se pueden archivar tareas finalizadas o canceladas.');
         }
     }
 
