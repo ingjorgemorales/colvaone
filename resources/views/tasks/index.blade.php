@@ -1,9 +1,11 @@
 <x-layouts.app title="Tareas | {{ config('app.name') }}" heading="Tareas" subheading="Gestion y asignacion de tareas por grupo de trabajo">
     <style>
         .content { max-width: none; }
-        .tasks-toolbar { width: 100%; }
-        .tasks-filters { display: grid !important; grid-template-columns: minmax(240px, 1.4fr) repeat(3, minmax(160px, 1fr)) auto auto; gap: 8px !important; flex: 1; min-width: 0; }
+        .tasks-toolbar { width: 100%; display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 12px; align-items: center; }
+        .tasks-filters { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr)); gap: 8px; align-items: center; min-width: 0; }
         .tasks-filter-field { width: 100% !important; min-width: 0; }
+        .tasks-filters .btn-secondary { width: 100%; justify-content: center; }
+        .tasks-new-button { justify-self: end; }
         .tasks-table-wrap { width: 100%; overflow-x: auto; }
         .tasks-table { width: 100%; min-width: 1180px; table-layout: auto; }
         .tasks-table th, .tasks-table td { padding-left: 14px !important; padding-right: 14px !important; vertical-align: middle; }
@@ -16,19 +18,15 @@
         .progress-cell { min-width: 110px; }
         .status-cell { min-width: 116px; }
         .actions-cell { min-width: 156px; }
-        @media (max-width: 1100px) {
-            .tasks-filters { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-        }
-        @media (max-width: 720px) {
-            .tasks-toolbar { align-items: stretch !important; }
-            .tasks-filters { grid-template-columns: 1fr; width: 100%; }
-            .tasks-new-button { justify-content: center; width: 100%; }
+        @media (max-width: 640px) {
+            .tasks-toolbar { grid-template-columns: 1fr; align-items: stretch; }
+            .tasks-new-button { justify-self: stretch; justify-content: center; }
         }
     </style>
 
-    <div class="tasks-toolbar" style="margin-bottom:20px;display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between">
-        <form method="GET" class="tasks-filters" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center">
-            <input class="tasks-filter-field" type="text" name="search" value="{{ request('search') }}" placeholder="Buscar tarea..." style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;width:220px;outline:none">
+    <div class="tasks-toolbar" style="margin-bottom:20px">
+        <form method="GET" class="tasks-filters">
+            <input class="tasks-filter-field" type="text" name="search" value="{{ request('search') }}" placeholder="Buscar tarea..." style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;outline:none">
             <select class="tasks-filter-field" name="group_id" style="padding:9px 14px;border-radius:10px;border:1px solid rgba(18,63,110,0.12);background:white;font-size:13px;color:#475569;outline:none;cursor:pointer">
                 <option value="">Todos los grupos</option>
                 @foreach($groups as $g)

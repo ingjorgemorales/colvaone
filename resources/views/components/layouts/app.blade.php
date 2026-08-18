@@ -117,16 +117,18 @@
         }
 
         .btn-primary {
-            display: inline-flex; align-items: center; gap: 8px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             padding: 10px 20px; border-radius: 10px; border: none;
+            white-space: nowrap; flex-shrink: 0;
             font-weight: 600; font-size: 14px; cursor: pointer; color: white;
             background: linear-gradient(135deg, #123f6e, #059669);
             text-decoration: none; transition: all 0.3s;
         }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(18,63,110,0.2); }
         .btn-secondary {
-            display: inline-flex; align-items: center; gap: 8px;
+            display: inline-flex; align-items: center; justify-content: center; gap: 8px;
             padding: 10px 20px; border-radius: 10px;
+            white-space: nowrap; flex-shrink: 0;
             border: 1px solid rgba(18,63,110,0.12);
             font-weight: 500; font-size: 14px; cursor: pointer; color: #123f6e;
             background: rgba(18,63,110,0.04); text-decoration: none; transition: all 0.3s;
