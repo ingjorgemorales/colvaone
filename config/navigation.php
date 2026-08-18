@@ -8,7 +8,7 @@ return [
         ['name' => 'Presupuesto', 'icon' => 'wallet-cards', 'route' => null, 'permission' => 'budgets.view', 'order' => 30, 'enabled' => true],
         ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => null, 'permission' => 'indicators.view', 'order' => 40, 'enabled' => true],
         ['name' => 'Ahorros', 'icon' => 'piggy-bank', 'route' => null, 'permission' => 'savings.view', 'order' => 50, 'enabled' => true],
-        ['name' => 'Aplicativos', 'icon' => 'blocks', 'route' => null, 'permission' => 'applications.view', 'order' => 60, 'enabled' => true],
+        ['name' => 'Aplicativos', 'icon' => 'blocks', 'route' => 'applications.index', 'permission' => 'applications.view', 'order' => 60, 'enabled' => true],
         ['name' => 'Contratos', 'icon' => 'file-signature', 'route' => null, 'permission' => 'contracts.view', 'order' => 70, 'enabled' => true],
         ['name' => 'Comites', 'icon' => 'users-round', 'route' => 'committees.index', 'permission' => ['committees.view', 'committees.view_all'], 'order' => 80, 'enabled' => true],
         ['name' => 'Usuarios', 'icon' => 'user-cog', 'route' => 'users.index', 'permission' => 'users.view', 'order' => 90, 'enabled' => true],

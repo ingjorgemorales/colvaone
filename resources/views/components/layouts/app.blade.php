@@ -301,6 +301,10 @@
                         ])->values();
                     @endphp
 
+                    <a href="{{ route('manual.show') }}" target="_blank" rel="noopener noreferrer" title="Manual de usuario" style="margin-right:8px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s;text-decoration:none;flex-shrink:0" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
+                        <i data-lucide="circle-help" style="width:18px;height:18px;color:#64748b"></i>
+                    </a>
+
                     <div style="position:relative;margin-right:8px" x-data="notificationBell({ userId: @js(auth()->id()), unreadCount: @js(auth()->user()->unreadNotifications()->count()), notifications: @js($bellNotifications) })" x-init="init()" @click.outside="open = false">
                         <button @click="open = !open" style="position:relative;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
                             <i data-lucide="bell" style="width:18px;height:18px;color:#64748b"></i>

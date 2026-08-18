@@ -1,0 +1,20 @@
+MANUAL DE USUARIO - ColvaOne
+============================
+
+Coloca aqui el PDF del manual de usuario.
+
+Nombre de archivo recomendado:
+    manual-usuario.pdf
+
+El boton "?" de la barra superior (junto a la campana de notificaciones)
+abre automaticamente ese archivo en una pestana nueva.
+
+Notas:
+- Si el archivo se llama distinto, el sistema toma el primer PDF que
+  encuentre en esta carpeta. Aun asi, se recomienda el nombre exacto.
+- Mientras no exista ningun PDF aqui, el boton muestra una pagina que
+  informa que el manual todavia no esta disponible.
+- Esta carpeta NO es publica: el archivo solo se entrega a usuarios que
+  hayan iniciado sesion en ColvaOne.
+- Para reemplazar el manual, sobrescribe el PDF. No hace falta reiniciar
+  nada ni limpiar cache.

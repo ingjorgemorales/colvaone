@@ -6,10 +6,12 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordCodeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CommitteeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GroupController;
+use App\Http\Controllers\ManualController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TaskController;
@@ -48,6 +50,8 @@ Route::middleware('auth')->group(function (): void {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::put('/profile', [ProfileController::class, 'update'])->name('profile.update');
 
+    Route::get('/manual', [ManualController::class, 'show'])->name('manual.show');
+
     Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
@@ -65,6 +69,13 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('groups/{group}/members/{user}', [GroupController::class, 'removeMember'])->name('groups.members.remove')->middleware('permission:groups.manage_members');
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
+
+    Route::get('applications', [ApplicationController::class, 'index'])->name('applications.index')->middleware('permission:applications.view');
+    Route::get('applications/create', [ApplicationController::class, 'create'])->name('applications.create')->middleware('permission:applications.create');
+    Route::post('applications', [ApplicationController::class, 'store'])->name('applications.store')->middleware('permission:applications.create');
+    Route::get('applications/{application}/edit', [ApplicationController::class, 'edit'])->name('applications.edit')->middleware('permission:applications.edit');
+    Route::put('applications/{application}', [ApplicationController::class, 'update'])->name('applications.update')->middleware('permission:applications.edit');
+    Route::post('applications/{application}/toggle', [ApplicationController::class, 'toggle'])->name('applications.toggle')->middleware('permission:applications.toggle');
 
     Route::get('committees', [CommitteeController::class, 'index'])->name('committees.index')->middleware('permission:committees.view,committees.view_all');
     Route::get('committees/create', [CommitteeController::class, 'create'])->name('committees.create')->middleware('permission:committees.create');
