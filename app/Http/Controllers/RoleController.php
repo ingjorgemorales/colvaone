@@ -139,7 +139,14 @@ class RoleController extends Controller
             'indicators' => [
                 'name' => 'Indicadores',
                 'items' => [
-                    'indicators.view' => 'Ver indicadores',
+                    'indicators.view' => 'Ver mis indicadores',
+                    'indicators.view_all' => 'Ver todos los indicadores',
+                    'indicators.create' => 'Crear indicadores',
+                    'indicators.edit' => 'Editar ficha tecnica',
+                    'indicators.toggle' => 'Activar/Desactivar indicadores',
+                    'indicators.results' => 'Registrar resultados',
+                    'indicators.results_edit' => 'Editar resultados registrados',
+                    'indicators.results_toggle' => 'Activar/Desactivar resultados',
                 ],
             ],
             'savings' => [

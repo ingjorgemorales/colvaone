@@ -13,7 +13,7 @@
 
                 <div>
                     <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Descripcion</label>
-                    <textarea name="description" rows="4" maxlength="1000" class="input-field @error('description') {{ 'error-field' }} @enderror" style="resize:vertical" placeholder="Para que sirve el aplicativo y quien lo usa...">{{ old('description', $application->description) }}</textarea>
+                    <textarea name="description" rows="4" class="input-field @error('description') {{ 'error-field' }} @enderror" style="resize:vertical" placeholder="Para que sirve el aplicativo y quien lo usa...">{{ old('description', $application->description) }}</textarea>
                     @error('description') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                 </div>
 

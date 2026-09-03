@@ -90,7 +90,7 @@ class ApplicationController extends Controller
 
         return $request->validate([
             'name' => ['required', 'string', 'max:255', $unique],
-            'description' => ['nullable', 'string', 'max:1000'],
+            'description' => ['nullable', 'string'],
             'url' => ['required', 'url:http,https', 'max:2048'],
         ], [
             'url.url' => 'La ruta debe ser una URL valida que inicie con http:// o https://.',

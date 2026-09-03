@@ -6,7 +6,11 @@ return [
         ['name' => 'Tareas', 'icon' => 'list-checks', 'route' => 'tasks.index', 'permission' => ['group_tasks.view', 'group_tasks.view_group', 'group_tasks.view_all'], 'order' => 20, 'enabled' => true],
         ['name' => 'Grupos', 'icon' => 'users-round', 'route' => 'groups.index', 'permission' => 'groups.view', 'order' => 25, 'enabled' => true],
         ['name' => 'Presupuesto', 'icon' => 'wallet-cards', 'route' => null, 'permission' => 'budgets.view', 'order' => 30, 'enabled' => true],
-        ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => null, 'permission' => 'indicators.view', 'order' => 40, 'enabled' => true],
+        ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => 'indicators.index', 'permission' => ['indicators.view', 'indicators.view_all'], 'order' => 40, 'enabled' => true, 'children' => [
+            ['name' => 'Indicador I', 'route' => 'indicators.index', 'params' => ['categoria' => 'I']],
+            ['name' => 'Indicador II', 'route' => 'indicators.index', 'params' => ['categoria' => 'II']],
+            ['name' => 'Indicador III', 'route' => 'indicators.index', 'params' => ['categoria' => 'III']],
+        ]],
         ['name' => 'Ahorros', 'icon' => 'piggy-bank', 'route' => null, 'permission' => 'savings.view', 'order' => 50, 'enabled' => true],
         ['name' => 'Aplicativos', 'icon' => 'blocks', 'route' => 'applications.index', 'permission' => 'applications.view', 'order' => 60, 'enabled' => true],
         ['name' => 'Contratos', 'icon' => 'file-signature', 'route' => null, 'permission' => 'contracts.view', 'order' => 70, 'enabled' => true],

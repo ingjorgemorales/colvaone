@@ -69,6 +69,33 @@
         .nav-link.active { background: rgba(18,63,110,0.08); color: #123f6e; font-weight: 600; }
         .nav-link i { width: 20px; height: 20px; flex-shrink: 0; }
 
+        /* Submenu */
+        .nav-sub-toggle {
+            margin-left: auto; display: flex; align-items: center; justify-content: center;
+            width: 20px; height: 20px; border-radius: 6px; color: #94a3b8;
+            transition: transform 0.2s, background 0.2s; flex-shrink: 0;
+        }
+        .nav-sub-toggle i { width: 14px !important; height: 14px !important; }
+        .nav-sub-toggle:hover { background: rgba(18,63,110,0.08); color: #123f6e; }
+        .nav-sub-toggle.is-open { transform: rotate(180deg); }
+        .nav-sub { display: flex; flex-direction: column; gap: 4px; padding: 6px 0 4px 34px; }
+        .nav-sub-link {
+            display: block; padding: 7px 12px; border-radius: 8px;
+            font-size: 12px; font-weight: 600; letter-spacing: 0.02em;
+            color: #475569; text-decoration: none;
+            background: rgba(18,63,110,0.04);
+            border: 1px solid rgba(18,63,110,0.06);
+            transition: all 0.2s; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .nav-sub-link:hover { background: rgba(18,63,110,0.08); color: #123f6e; }
+        .nav-sub-link.active {
+            background: rgba(18,63,110,0.10); color: #123f6e;
+            border-color: rgba(18,63,110,0.22); font-weight: 700;
+            box-shadow: inset 3px 0 0 #123f6e;
+        }
+        .sidebar.collapsed .nav-sub { display: none; }
+
         .sidebar-footer {
             padding: 16px; border-top: 1px solid rgba(18,63,110,0.06);
             position: relative; overflow: hidden;
@@ -259,14 +286,43 @@
                                 : auth()->user()->hasPermission($permissions));
                     @endphp
                     @if($hasPermission)
-                    <a href="{{ $isLinked ? route($item['route']) : '#' }}"
-                        class="nav-link {{ $isActive ? 'active' : '' }}"
-                        @click="if(window.innerWidth < 1024) sidebarOpen = false"
-                        style="position:relative">
-                        <i data-lucide="{{ $item['icon'] }}"></i>
-                        <span class="nav-label">{{ $item['name'] }}</span>
-                        <span class="nav-tooltip" x-show="collapsed && window.innerWidth >= 1024" x-cloak>{{ $item['name'] }}</span>
-                    </a>
+                    @php $children = $item['children'] ?? []; @endphp
+                    <div @if($children) x-data="{ openSub: {{ $isActive ? 'true' : 'false' }} }" @endif>
+                        <a href="{{ $isLinked ? route($item['route']) : '#' }}"
+                            class="nav-link {{ $isActive ? 'active' : '' }}"
+                            @click="if(window.innerWidth < 1024) sidebarOpen = false"
+                            style="position:relative">
+                            <i data-lucide="{{ $item['icon'] }}"></i>
+                            <span class="nav-label">{{ $item['name'] }}</span>
+                            @if($children)
+                                <span class="nav-label nav-sub-toggle" @click.prevent.stop="openSub = !openSub" :class="openSub ? 'is-open' : ''">
+                                    <i data-lucide="chevron-down"></i>
+                                </span>
+                            @endif
+                            <span class="nav-tooltip" x-show="collapsed && window.innerWidth >= 1024" x-cloak>{{ $item['name'] }}</span>
+                        </a>
+                        @if($children)
+                            <div class="nav-sub" x-show="openSub && !collapsed" x-transition x-cloak>
+                                @foreach($children as $child)
+                                    @php
+                                        $childLinked = filled($child['route'] ?? null);
+                                        $childParams = $child['params'] ?? [];
+                                        // Activo solo si coincide la ruta y ademas cada parametro del hijo.
+                                        $childActive = $childLinked
+                                            && request()->routeIs($child['route'])
+                                            && collect($childParams)->every(fn ($v, $k) => (string) request($k) === (string) $v);
+                                    @endphp
+                                    <a href="{{ $childLinked ? route($child['route'], $childParams) : '#' }}"
+                                        class="nav-sub-link {{ $childActive ? 'active' : '' }}"
+                                        @if($childActive) aria-current="page" @endif
+                                        @click="if(window.innerWidth < 1024) sidebarOpen = false"
+                                        @if(!$childLinked) @click.prevent @endif>
+                                        {{ $child['name'] }}
+                                    </a>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
                     @endif
                 @endforeach
             </nav>
