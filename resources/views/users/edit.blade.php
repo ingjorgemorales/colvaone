@@ -45,8 +45,8 @@
 
                 <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr">
                     <div>
-                        <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Telefono *</label>
-                        <input name="phone" type="text" value="{{ old('phone', $user->phone) }}" required class="input-field">
+                        <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Telefono</label>
+                        <input name="phone" type="text" value="{{ old('phone', $user->phone) }}" class="input-field">
                         @error('phone') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                     </div>
                     <div>
