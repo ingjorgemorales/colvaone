@@ -149,16 +149,8 @@
                     <h3 class="sheet-title">Ficha tecnica</h3>
                     <div class="data-grid">
                         <div class="data-item">
-                            <p class="data-label">Nombre</p>
-                            <p class="data-value">{{ $indicator->name }}</p>
-                        </div>
-                        <div class="data-item">
                             <p class="data-label">Categoria</p>
                             <p class="data-value">{{ $indicator->category_label }}</p>
-                        </div>
-                        <div class="data-item">
-                            <p class="data-label">Responsable</p>
-                            <p class="data-value">{{ $indicator->responsible->name ?? '-' }} {{ $indicator->responsible->last_name ?? '' }}</p>
                         </div>
                         <div class="data-item">
                             <p class="data-label">Proceso</p>
@@ -167,6 +159,14 @@
                         <div class="data-item">
                             <p class="data-label">Subproceso</p>
                             <p class="data-value">{{ $indicator->subprocess_label }}</p>
+                        </div>
+                        <div class="data-item">
+                            <p class="data-label">Nombre</p>
+                            <p class="data-value">{{ $indicator->name }}</p>
+                        </div>
+                        <div class="data-item">
+                            <p class="data-label">Responsable</p>
+                            <p class="data-value">{{ $indicator->responsible->name ?? '-' }} {{ $indicator->responsible->last_name ?? '' }}</p>
                         </div>
                         <div class="data-item">
                             <p class="data-label">Unidad de medicion</p>
@@ -185,12 +185,12 @@
                             <p class="data-value" style="font-weight:700;color:#123f6e">{{ $indicator->goal }}%</p>
                         </div>
                         <div class="data-item data-item-full">
-                            <p class="data-label">Formula</p>
-                            <p class="data-value">{{ $indicator->formula }}</p>
-                        </div>
-                        <div class="data-item data-item-full">
                             <p class="data-label">Objetivo del indicador</p>
                             @include('indicators.partials.clamped-text', ['text' => $indicator->objective, 'modalTitle' => 'Objetivo del indicador'])
+                        </div>
+                        <div class="data-item data-item-full">
+                            <p class="data-label">Formula</p>
+                            <p class="data-value">{{ $indicator->formula }}</p>
                         </div>
                         <div class="data-item data-item-full">
                             <p class="data-label">Aspectos metodologicos</p>
