@@ -7,6 +7,7 @@
     <h3 class="sheet-title">Ficha tecnica</h3>
 
     <div class="sheet-grid">
+        {{-- Fila 1: identificacion --}}
         <div class="field">
             <label class="field-label">Nombre <span class="req">*</span></label>
             <input name="name" type="text" maxlength="255" required
@@ -29,14 +30,6 @@
         </div>
 
         <div class="field">
-            <label class="field-label">Objetivo del indicador <span class="req">*</span></label>
-            <textarea name="objective" rows="4" required
-                class="input-field @error('objective') error-field @enderror"
-                placeholder="Que busca medir este indicador...">{{ old('objective', $indicator->objective ?? '') }}</textarea>
-            @error('objective') <p class="field-error">{{ $message }}</p> @enderror
-        </div>
-
-        <div class="field">
             <label class="field-label">Responsable <span class="req">*</span></label>
             <select name="responsible_user_id" required class="input-field @error('responsible_user_id') error-field @enderror">
                 <option value="">Seleccionar...</option>
@@ -49,13 +42,27 @@
             @error('responsible_user_id') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
+        {{-- Fila 2: ubicacion en el mapa de procesos --}}
         <div class="field">
-            <label class="field-label">Formula <span class="req">*</span></label>
-            <input name="formula" type="text" maxlength="255" required
-                value="{{ old('formula', $indicator->formula ?? '') }}"
-                class="input-field @error('formula') error-field @enderror"
-                placeholder="Ej: (Campo 2 / Campo 1) x 100">
-            @error('formula') <p class="field-error">{{ $message }}</p> @enderror
+            <label class="field-label">Proceso</label>
+            <select name="process_id" class="input-field @error('process_id') error-field @enderror">
+                <option value="">Seleccionar...</option>
+                @foreach($processes as $process)
+                    <option value="{{ $process->id }}" {{ (int) old('process_id', $indicator->process_id ?? 0) === $process->id ? 'selected' : '' }}>{{ $process->name }}</option>
+                @endforeach
+            </select>
+            @error('process_id') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="field">
+            <label class="field-label">Subproceso</label>
+            <select name="subprocess_id" class="input-field @error('subprocess_id') error-field @enderror">
+                <option value="">Seleccionar...</option>
+                @foreach($subprocesses as $subprocess)
+                    <option value="{{ $subprocess->id }}" {{ (int) old('subprocess_id', $indicator->subprocess_id ?? 0) === $subprocess->id ? 'selected' : '' }}>{{ $subprocess->full_name }}</option>
+                @endforeach
+            </select>
+            @error('subprocess_id') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
         <div class="field">
@@ -69,6 +76,7 @@
             @error('measurement_unit') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
+        {{-- Fila 3: medicion --}}
         <div class="field">
             <label class="field-label">Frecuencia <span class="req">*</span></label>
             <select name="frequency" required class="input-field @error('frequency') error-field @enderror">
@@ -92,14 +100,6 @@
         </div>
 
         <div class="field">
-            <label class="field-label">Aspectos metodologicos</label>
-            <textarea name="methodological_aspects" rows="4"
-                class="input-field @error('methodological_aspects') error-field @enderror"
-                placeholder="Fuente de datos, supuestos, exclusiones...">{{ old('methodological_aspects', $indicator->methodological_aspects ?? '') }}</textarea>
-            @error('methodological_aspects') <p class="field-error">{{ $message }}</p> @enderror
-        </div>
-
-        <div class="field">
             <label class="field-label">Meta <span class="req">*</span></label>
             <select name="goal" required class="input-field @error('goal') error-field @enderror">
                 @for($i = 1; $i <= $max; $i++)
@@ -108,6 +108,32 @@
             </select>
             <p class="field-hint">Desplegable de 1 a {{ $max }}%. El limite es {{ $max }}%.</p>
             @error('goal') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        {{-- Campos amplios: ocupan la fila completa --}}
+        <div class="field field-full">
+            <label class="field-label">Formula <span class="req">*</span></label>
+            <input name="formula" type="text" maxlength="255" required
+                value="{{ old('formula', $indicator->formula ?? '') }}"
+                class="input-field @error('formula') error-field @enderror"
+                placeholder="Ej: (Campo 2 / Campo 1) x 100">
+            @error('formula') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="field field-full">
+            <label class="field-label">Objetivo del indicador <span class="req">*</span></label>
+            <textarea name="objective" rows="4" required
+                class="input-field @error('objective') error-field @enderror"
+                placeholder="Que busca medir este indicador...">{{ old('objective', $indicator->objective ?? '') }}</textarea>
+            @error('objective') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="field field-full">
+            <label class="field-label">Aspectos metodologicos</label>
+            <textarea name="methodological_aspects" rows="5"
+                class="input-field @error('methodological_aspects') error-field @enderror"
+                placeholder="Fuente de datos, supuestos, exclusiones...">{{ old('methodological_aspects', $indicator->methodological_aspects ?? '') }}</textarea>
+            @error('methodological_aspects') <p class="field-error">{{ $message }}</p> @enderror
         </div>
     </div>
 </div>

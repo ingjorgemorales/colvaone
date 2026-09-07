@@ -7,9 +7,9 @@ return [
         ['name' => 'Grupos', 'icon' => 'users-round', 'route' => 'groups.index', 'permission' => 'groups.view', 'order' => 25, 'enabled' => true],
         ['name' => 'Presupuesto', 'icon' => 'wallet-cards', 'route' => null, 'permission' => 'budgets.view', 'order' => 30, 'enabled' => true],
         ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => 'indicators.index', 'permission' => ['indicators.view', 'indicators.view_all'], 'order' => 40, 'enabled' => true, 'children' => [
-            ['name' => 'Indicador I', 'route' => 'indicators.index', 'params' => ['categoria' => 'I']],
-            ['name' => 'Indicador II', 'route' => 'indicators.index', 'params' => ['categoria' => 'II']],
-            ['name' => 'Indicador III', 'route' => 'indicators.index', 'params' => ['categoria' => 'III']],
+            ['name' => 'Indicador SGC I', 'route' => 'indicators.index', 'params' => ['categoria' => 'I']],
+            ['name' => 'Indicador BSC II', 'route' => 'indicators.index', 'params' => ['categoria' => 'II']],
+            ['name' => 'Indicador CX III', 'route' => 'indicators.index', 'params' => ['categoria' => 'III']],
         ]],
         ['name' => 'Ahorros', 'icon' => 'piggy-bank', 'route' => null, 'permission' => 'savings.view', 'order' => 50, 'enabled' => true],
         ['name' => 'Aplicativos', 'icon' => 'blocks', 'route' => 'applications.index', 'permission' => 'applications.view', 'order' => 60, 'enabled' => true],
@@ -18,7 +18,9 @@ return [
         ['name' => 'Usuarios', 'icon' => 'user-cog', 'route' => 'users.index', 'permission' => 'users.view', 'order' => 90, 'enabled' => true],
         ['name' => 'Roles y permisos', 'icon' => 'shield-check', 'route' => 'roles.index', 'permission' => 'roles.view', 'order' => 100, 'enabled' => true],
         ['name' => 'Auditoria', 'icon' => 'scan-search', 'route' => 'audit.index', 'permission' => 'audit.view', 'order' => 110, 'enabled' => true],
-        ['name' => 'Configuracion', 'icon' => 'settings', 'route' => null, 'permission' => 'settings.view', 'order' => 120, 'enabled' => true],
+        ['name' => 'Configuracion', 'icon' => 'settings', 'route' => null, 'permission' => ['settings.view', 'processes.view'], 'order' => 120, 'enabled' => true, 'children' => [
+            ['name' => 'Procesos', 'route' => 'processes.index'],
+        ]],
         ['name' => 'Perfil', 'icon' => 'circle-user-round', 'route' => 'profile.edit', 'permission' => null, 'order' => 130, 'enabled' => true],
     ],
 ];

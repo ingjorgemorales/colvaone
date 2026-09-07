@@ -4,7 +4,7 @@
         @media (max-width: 760px) { .indicator-filters { grid-template-columns:1fr; } }
 
         /* Cada indicador es su propia tarjeta, con aire entre una y otra. */
-        .ind-table { width:100%; font-size:14px; border-collapse:separate; border-spacing:0 12px; min-width:940px; }
+        .ind-table { width:100%; font-size:14px; border-collapse:separate; border-spacing:0 12px; min-width:1120px; }
         .ind-table thead th {
             padding:0 18px 2px; text-align:left; font-size:12px; font-weight:600;
             color:#94a3b8; text-transform:uppercase; letter-spacing:0.05em;
@@ -84,6 +84,7 @@
                 <thead>
                     <tr>
                         <th style="width:78px">ID</th>
+                        <th>Proceso</th>
                         <th>Nombre</th>
                         <th>Cumplimiento</th>
                         <th>Responsable</th>
@@ -99,6 +100,14 @@
                                 <span style="display:inline-flex;align-items:center;justify-content:center;min-width:38px;height:26px;padding:0 9px;border-radius:7px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums;color:#123f6e;background:rgba(18,63,110,0.06)">
                                     {{ $indicator->id }}
                                 </span>
+                            </td>
+                            <td style="max-width:230px">
+                                @if($indicator->process_id || $indicator->subprocess_id)
+                                    <p style="font-size:12px;font-weight:600;color:#475569;margin:0;line-height:1.35">{{ $indicator->process_label }}</p>
+                                    <p style="font-size:11px;color:#94a3b8;margin:3px 0 0;line-height:1.35">{{ $indicator->subprocess_label }}</p>
+                                @else
+                                    <span style="font-size:12px;color:#cbd5e1">Sin asignar</span>
+                                @endif
                             </td>
                             <td style="max-width:320px">
                                 <a href="{{ route('indicators.show', $indicator) }}" style="font-weight:600;color:#1e293b;text-decoration:none">{{ $indicator->name }}</a>
@@ -151,7 +160,7 @@
                         </tr>
                     @empty
                         <tr class="is-empty">
-                            <td colspan="6" style="padding:48px 16px;text-align:center">
+                            <td colspan="7" style="padding:48px 16px;text-align:center">
                                 <div style="width:48px;height:48px;border-radius:12px;display:grid;place-items:center;background:rgba(18,63,110,0.04);margin:0 auto 12px">
                                     <i data-lucide="chart-no-axes-combined" style="width:24px;height:24px;color:#cbd5e1"></i>
                                 </div>

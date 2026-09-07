@@ -7,6 +7,8 @@
     @media (max-width: 620px) { .sheet-grid { grid-template-columns: 1fr; } }
 
     .field { display: flex; flex-direction: column; min-width: 0; }
+    /* Campos amplios (formula y los textos largos) ocupan la fila entera. */
+    .field-full { grid-column: 1 / -1; }
     .field-label { font-size: 12px; font-weight: 600; color: #475569; margin-bottom: 6px; }
     .field-label .req { color: #dc2626; font-weight: 700; }
     .field-hint { font-size: 11px; color: #94a3b8; margin: 4px 0 0; }

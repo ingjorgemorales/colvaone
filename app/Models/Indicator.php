@@ -36,9 +36,9 @@ class Indicator extends BaseModel
 
     /** Clasificacion que alimenta los sub-botones del menu. */
     public const CATEGORIES = [
-        'I' => 'Indicador I',
-        'II' => 'Indicador II',
-        'III' => 'Indicador III',
+        'I' => 'Indicador SGC I',
+        'II' => 'Indicador BSC II',
+        'III' => 'Indicador CX III',
     ];
 
     public const TYPES = [
@@ -52,6 +52,8 @@ class Indicator extends BaseModel
     protected $fillable = [
         'name',
         'category',
+        'process_id',
+        'subprocess_id',
         'objective',
         'responsible_user_id',
         'formula',
@@ -72,6 +74,26 @@ class Indicator extends BaseModel
         'threshold_acceptable' => 'integer',
         'threshold_satisfactory' => 'integer',
     ];
+
+    public function process(): BelongsTo
+    {
+        return $this->belongsTo(Process::class);
+    }
+
+    public function subprocess(): BelongsTo
+    {
+        return $this->belongsTo(Subprocess::class);
+    }
+
+    public function getProcessLabelAttribute(): string
+    {
+        return $this->process?->name ?? 'Sin asignar';
+    }
+
+    public function getSubprocessLabelAttribute(): string
+    {
+        return $this->subprocess?->full_name ?? 'Sin asignar';
+    }
 
     public function getCategoryLabelAttribute(): string
     {

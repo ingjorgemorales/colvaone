@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Indicator;
+use App\Models\Process;
 use App\Models\IndicatorResult;
+use App\Models\Subprocess;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -15,7 +17,7 @@ class IndicatorController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = Indicator::with(['responsible', 'latestResult'])->visibleFor($request->user());
+        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess'])->visibleFor($request->user());
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->input('search') . '%');
@@ -38,7 +40,7 @@ class IndicatorController extends Controller
 
     public function create(): View
     {
-        return view('indicators.create', ['users' => $this->activeUsers()]);
+        return view('indicators.create', $this->formData());
     }
 
     public function store(Request $request): RedirectResponse
@@ -58,7 +60,7 @@ class IndicatorController extends Controller
     {
         $this->ensureCanView($indicator);
 
-        $indicator->load(['responsible', 'creator', 'updater', 'results.creator']);
+        $indicator->load(['responsible', 'creator', 'updater', 'results.creator', 'process', 'subprocess']);
 
         return view('indicators.show', [
             'indicator' => $indicator,
@@ -71,10 +73,7 @@ class IndicatorController extends Controller
     {
         $this->ensureCanView($indicator);
 
-        return view('indicators.edit', [
-            'indicator' => $indicator,
-            'users' => $this->activeUsers(),
-        ]);
+        return view('indicators.edit', $this->formData(['indicator' => $indicator]));
     }
 
     public function update(Request $request, Indicator $indicator): RedirectResponse
@@ -171,6 +170,8 @@ class IndicatorController extends Controller
         $validator = validator($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', Rule::in(array_keys(Indicator::CATEGORIES))],
+            'process_id' => ['nullable', Rule::exists('processes', 'id')->where('is_active', true)],
+            'subprocess_id' => ['nullable', Rule::exists('subprocesses', 'id')->where('is_active', true)],
             'objective' => ['required', 'string'],
             'responsible_user_id' => ['required', 'exists:users,id'],
             'formula' => ['required', 'string', 'max:255'],
@@ -276,6 +277,16 @@ class IndicatorController extends Controller
         if ((int) $result->indicator_id !== (int) $indicator->id) {
             abort(404);
         }
+    }
+
+    /** Catalogos que alimentan los desplegables de la ficha tecnica. */
+    private function formData(array $extra = []): array
+    {
+        return $extra + [
+            'users' => $this->activeUsers(),
+            'processes' => Process::selectable()->get(),
+            'subprocesses' => Subprocess::selectable()->get(),
+        ];
     }
 
     private function activeUsers()

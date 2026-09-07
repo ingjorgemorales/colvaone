@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CommitteeController;
+use App\Http\Controllers\ProcessController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\IndicatorController;
@@ -70,6 +71,16 @@ Route::middleware('auth')->group(function (): void {
     Route::delete('groups/{group}/members/{user}', [GroupController::class, 'removeMember'])->name('groups.members.remove')->middleware('permission:groups.manage_members');
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
+
+    Route::prefix('configuracion/procesos')
+        ->where(['type' => 'procesos|subprocesos', 'id' => '[0-9]+'])
+        ->group(function (): void {
+        Route::get('/', [ProcessController::class, 'index'])->name('processes.index')->middleware('permission:processes.view');
+        Route::post('{type}', [ProcessController::class, 'store'])->name('processes.store')->middleware('permission:processes.create');
+        Route::put('{type}/{id}', [ProcessController::class, 'update'])->name('processes.update')->middleware('permission:processes.edit');
+        Route::post('{type}/{id}/toggle', [ProcessController::class, 'toggle'])->name('processes.toggle')->middleware('permission:processes.toggle');
+        Route::post('{type}/{id}/move', [ProcessController::class, 'move'])->name('processes.move')->middleware('permission:processes.edit');
+    });
 
     Route::get('indicators', [IndicatorController::class, 'index'])->name('indicators.index')->middleware('permission:indicators.view,indicators.view_all');
     Route::get('indicators/create', [IndicatorController::class, 'create'])->name('indicators.create')->middleware('permission:indicators.create');

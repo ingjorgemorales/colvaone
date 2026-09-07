@@ -15,6 +15,7 @@
         @media (max-width: 900px) { .data-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 620px) { .data-grid { grid-template-columns: 1fr; } }
         .data-item { min-width: 0; }
+        .data-item-full { grid-column: 1 / -1; }
         .data-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; margin: 0 0 5px; }
         .data-value {
             font-size: 13px; color: #1e293b; margin: 0; line-height: 1.6;
@@ -156,16 +157,16 @@
                             <p class="data-value">{{ $indicator->category_label }}</p>
                         </div>
                         <div class="data-item">
-                            <p class="data-label">Objetivo del indicador</p>
-                            @include('indicators.partials.clamped-text', ['text' => $indicator->objective, 'modalTitle' => 'Objetivo del indicador'])
-                        </div>
-                        <div class="data-item">
                             <p class="data-label">Responsable</p>
                             <p class="data-value">{{ $indicator->responsible->name ?? '-' }} {{ $indicator->responsible->last_name ?? '' }}</p>
                         </div>
                         <div class="data-item">
-                            <p class="data-label">Formula</p>
-                            <p class="data-value">{{ $indicator->formula }}</p>
+                            <p class="data-label">Proceso</p>
+                            <p class="data-value">{{ $indicator->process_label }}</p>
+                        </div>
+                        <div class="data-item">
+                            <p class="data-label">Subproceso</p>
+                            <p class="data-value">{{ $indicator->subprocess_label }}</p>
                         </div>
                         <div class="data-item">
                             <p class="data-label">Unidad de medicion</p>
@@ -180,12 +181,20 @@
                             <p class="data-value">{{ $indicator->type_label }}</p>
                         </div>
                         <div class="data-item">
-                            <p class="data-label">Aspectos metodologicos</p>
-                            @include('indicators.partials.clamped-text', ['text' => $indicator->methodological_aspects, 'modalTitle' => 'Aspectos metodologicos'])
-                        </div>
-                        <div class="data-item">
                             <p class="data-label">Meta</p>
                             <p class="data-value" style="font-weight:700;color:#123f6e">{{ $indicator->goal }}%</p>
+                        </div>
+                        <div class="data-item data-item-full">
+                            <p class="data-label">Formula</p>
+                            <p class="data-value">{{ $indicator->formula }}</p>
+                        </div>
+                        <div class="data-item data-item-full">
+                            <p class="data-label">Objetivo del indicador</p>
+                            @include('indicators.partials.clamped-text', ['text' => $indicator->objective, 'modalTitle' => 'Objetivo del indicador'])
+                        </div>
+                        <div class="data-item data-item-full">
+                            <p class="data-label">Aspectos metodologicos</p>
+                            @include('indicators.partials.clamped-text', ['text' => $indicator->methodological_aspects, 'modalTitle' => 'Aspectos metodologicos'])
                         </div>
                     </div>
                 </div>

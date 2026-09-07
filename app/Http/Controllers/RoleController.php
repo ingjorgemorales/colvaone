@@ -136,6 +136,15 @@ class RoleController extends Controller
                     'budgets.toggle' => 'Activar/Desactivar presupuesto',
                 ],
             ],
+            'processes' => [
+                'name' => 'Procesos y subprocesos',
+                'items' => [
+                    'processes.view' => 'Ver procesos y subprocesos',
+                    'processes.create' => 'Crear procesos y subprocesos',
+                    'processes.edit' => 'Editar y reordenar',
+                    'processes.toggle' => 'Activar/Desactivar',
+                ],
+            ],
             'indicators' => [
                 'name' => 'Indicadores',
                 'items' => [
