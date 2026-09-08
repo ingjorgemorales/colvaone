@@ -296,11 +296,23 @@ class TaskController extends Controller
         $this->ensureTaskIsEditable($task);
 
         $validated = $request->validate([
-            'user_id' => 'required|exists:users,id',
             'progress' => 'required|integer|min:0|max:100',
         ]);
 
-        $task->assignees()->updateExistingPivot($validated['user_id'], [
+        $user = Auth::user();
+        $assignment = $task->assignees()
+            ->where('users.id', $user->id)
+            ->first();
+
+        if (!$assignment) {
+            abort(403, 'Solo el usuario asignado puede actualizar su propio progreso.');
+        }
+
+        if ($validated['progress'] < (int) $assignment->pivot->progress) {
+            return back()->with('error', 'No puedes disminuir el progreso de la tarea.');
+        }
+
+        $task->assignees()->updateExistingPivot($user->id, [
             'progress' => $validated['progress'],
             'status' => $validated['progress'] >= 100 ? 'completada' : ($validated['progress'] > 0 ? 'en_progreso' : 'pendiente'),
         ]);
@@ -317,15 +329,13 @@ class TaskController extends Controller
             $task->update(['progress' => 0, 'status' => 'asignada']);
         }
 
-        $userWhoUpdated = User::find($validated['user_id']);
-
         if ($task->creator && $task->creator->id !== Auth::id()) {
             $this->notifyTask(
                 $task->creator,
                 $task,
                 'progress', 'Progreso actualizado',
-                "el usuario {$userWhoUpdated->name} actualizo el progreso de la tarea a {$validated['progress']}%.",
-                Auth::user(),
+                "el usuario {$user->name} actualizo su progreso de la tarea a {$validated['progress']}%.",
+                $user,
                 "Progreso: {$validated['progress']}%"
             );
         }

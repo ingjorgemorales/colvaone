@@ -123,10 +123,9 @@
                                 <span style="font-size:12px;font-weight:500;color:#1e293b">{{ $assignee->name }}</span>
                                 <span style="font-size:11px;font-weight:600;color:{{ $assignee->pivot->progress >= 100 ? '#059669' : '#475569' }}">{{ $assignee->pivot->progress }}%</span>
                             </div>
-                            @if(!$isLocked && auth()->user()->hasPermission('group_tasks.update_progress'))
+                            @if(!$isLocked && auth()->id() === $assignee->id && auth()->user()->hasPermission('group_tasks.update_progress'))
                             <form method="POST" action="{{ route('tasks.progress.update', $task) }}" style="display:flex;gap:6px;margin-top:8px;align-items:center" x-data="{ val: {{ $assignee->pivot->progress }}, orig: {{ $assignee->pivot->progress }} }">
                                 @csrf
-                                <input type="hidden" name="user_id" value="{{ $assignee->id }}">
                                 <input type="range" name="progress" min="0" max="100" step="5" x-model.number="val" @input="if(val < orig){ val = orig }" style="flex:1;accent-color:#123f6e;cursor:pointer">
                                 <span x-text="val + '%'" style="font-size:11px;font-weight:600;color:#475569;min-width:32px;text-align:right"></span>
                                 <button type="submit" x-show="val != orig" x-transition style="padding:4px 10px;border-radius:6px;font-size:11px;font-weight:600;color:white;background:#123f6e;border:none;cursor:pointer;white-space:nowrap">Guardar</button>
