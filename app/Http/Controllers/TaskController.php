@@ -296,23 +296,33 @@ class TaskController extends Controller
         $this->ensureTaskIsEditable($task);
 
         $validated = $request->validate([
+            'user_id' => 'nullable|exists:users,id',
             'progress' => 'required|integer|min:0|max:100',
         ]);
 
         $user = Auth::user();
+        $canManageAllProgress = $this->canManageAllProgress($task, $user);
+        $targetUserId = $canManageAllProgress
+            ? (int) ($validated['user_id'] ?? $user->id)
+            : $user->id;
+
         $assignment = $task->assignees()
-            ->where('users.id', $user->id)
+            ->where('users.id', $targetUserId)
             ->first();
 
         if (!$assignment) {
-            abort(403, 'Solo el usuario asignado puede actualizar su propio progreso.');
+            abort(403, 'Solo se puede actualizar el progreso de un usuario asignado a esta tarea.');
+        }
+
+        if (!$canManageAllProgress && $targetUserId !== $user->id) {
+            abort(403, 'Solo puedes actualizar tu propio progreso.');
         }
 
         if ($validated['progress'] < (int) $assignment->pivot->progress) {
             return back()->with('error', 'No puedes disminuir el progreso de la tarea.');
         }
 
-        $task->assignees()->updateExistingPivot($user->id, [
+        $task->assignees()->updateExistingPivot($targetUserId, [
             'progress' => $validated['progress'],
             'status' => $validated['progress'] >= 100 ? 'completada' : ($validated['progress'] > 0 ? 'en_progreso' : 'pendiente'),
         ]);
@@ -334,7 +344,7 @@ class TaskController extends Controller
                 $task->creator,
                 $task,
                 'progress', 'Progreso actualizado',
-                "el usuario {$user->name} actualizo su progreso de la tarea a {$validated['progress']}%.",
+                "el usuario {$user->name} actualizo el progreso de {$assignment->name} a {$validated['progress']}%.",
                 $user,
                 "Progreso: {$validated['progress']}%"
             );
@@ -483,6 +493,11 @@ class TaskController extends Controller
         if (!in_array($task->status, ['finalizada', 'completada', 'cancelada'], true)) {
             abort(403, 'Solo se pueden archivar tareas finalizadas o canceladas.');
         }
+    }
+
+    private function canManageAllProgress(Task $task, User $user): bool
+    {
+        return $user->role === 'superadmin' || (int) $task->created_by === (int) $user->id;
     }
 
     private function notifyTask(
