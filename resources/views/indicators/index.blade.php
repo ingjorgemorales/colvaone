@@ -68,11 +68,19 @@
                 registrados
             @endif
         </p>
-        @if(auth()->user()->hasPermission('indicators.create'))
-            <a href="{{ route('indicators.create') }}" class="btn-primary">
-                <i data-lucide="plus" style="width:16px;height:16px"></i> Nuevo indicador
-            </a>
-        @endif
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+            @if(auth()->user()->hasPermission('indicators.settings'))
+                <a href="{{ route('processes.index') }}" class="btn-secondary" title="Ajustes: procesos y subprocesos"
+                    style="width:42px;height:42px;padding:0;justify-content:center">
+                    <i data-lucide="settings" style="width:17px;height:17px"></i>
+                </a>
+            @endif
+            @if(auth()->user()->hasPermission('indicators.create'))
+                <a href="{{ route('indicators.create') }}" class="btn-primary">
+                    <i data-lucide="plus" style="width:16px;height:16px"></i> Nuevo indicador
+                </a>
+            @endif
+        </div>
     </div>
 
     @if(session('success'))

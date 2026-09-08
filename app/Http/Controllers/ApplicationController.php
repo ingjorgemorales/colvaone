@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Application;
+use App\Services\AuthEventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,10 @@ use Illuminate\View\View;
 
 class ApplicationController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
+
     public function index(Request $request): View
     {
         $query = Application::with('creator');
@@ -39,13 +44,15 @@ class ApplicationController extends Controller
     {
         $validated = $this->validateApplication($request);
 
-        Application::create([
+        $application = Application::create([
             'name' => $validated['name'],
             'description' => $validated['description'] ?? null,
             'url' => $validated['url'],
             'status' => 'active',
             'created_by' => Auth::id(),
         ]);
+
+        $this->events->record($request, 'application_created', true, reason: "Aplicativo '{$application->name}' creado");
 
         return redirect()->route('applications.index')
             ->with('success', 'Aplicativo creado correctamente.');
@@ -67,6 +74,8 @@ class ApplicationController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
+        $this->events->record($request, 'application_updated', true, reason: "Aplicativo '{$application->name}' actualizado");
+
         return redirect()->route('applications.index')
             ->with('success', 'Aplicativo actualizado correctamente.');
     }
@@ -79,6 +88,8 @@ class ApplicationController extends Controller
         ]);
 
         $status = $application->status === 'active' ? 'activado' : 'inactivado';
+
+        $this->events->record(request(), 'application_toggled', true, reason: "Aplicativo '{$application->name}' {$status}");
 
         return redirect()->route('applications.index')
             ->with('success', "Aplicativo {$status} correctamente.");

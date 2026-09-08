@@ -78,14 +78,14 @@ Route::middleware('auth')->group(function (): void {
 
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 
-    Route::prefix('configuracion/procesos')
+    Route::prefix('indicadores/ajustes')
         ->where(['type' => 'procesos|subprocesos', 'id' => '[0-9]+'])
         ->group(function (): void {
-        Route::get('/', [ProcessController::class, 'index'])->name('processes.index')->middleware('permission:processes.view');
-        Route::post('{type}', [ProcessController::class, 'store'])->name('processes.store')->middleware('permission:processes.create');
-        Route::put('{type}/{id}', [ProcessController::class, 'update'])->name('processes.update')->middleware('permission:processes.edit');
-        Route::post('{type}/{id}/toggle', [ProcessController::class, 'toggle'])->name('processes.toggle')->middleware('permission:processes.toggle');
-        Route::post('{type}/{id}/move', [ProcessController::class, 'move'])->name('processes.move')->middleware('permission:processes.edit');
+        Route::get('/', [ProcessController::class, 'index'])->name('processes.index')->middleware('permission:indicators.settings');
+        Route::post('{type}', [ProcessController::class, 'store'])->name('processes.store')->middleware('permission:indicators.settings');
+        Route::put('{type}/{id}', [ProcessController::class, 'update'])->name('processes.update')->middleware('permission:indicators.settings');
+        Route::post('{type}/{id}/toggle', [ProcessController::class, 'toggle'])->name('processes.toggle')->middleware('permission:indicators.settings');
+        Route::post('{type}/{id}/move', [ProcessController::class, 'move'])->name('processes.move')->middleware('permission:indicators.settings');
     });
 
     Route::get('configuracion/chat-ia', [AiChatSettingController::class, 'edit'])->name('ai-chat.settings.edit')->middleware('permission:ai_chat.configure');

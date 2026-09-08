@@ -34,6 +34,15 @@ class Indicator extends BaseModel
         'anual' => 'Anual',
     ];
 
+    public const GOAL_ASCENDING = 'ascendente';
+    public const GOAL_DESCENDING = 'descendente';
+
+    /** Define cual de las dos formulas de cumplimiento se aplica. */
+    public const GOAL_DIRECTIONS = [
+        self::GOAL_ASCENDING => 'Ascendente: mientras mas alto, mejor',
+        self::GOAL_DESCENDING => 'Descendente: mientras mas bajo, mejor (llegar a cero)',
+    ];
+
     /** Clasificacion que alimenta los sub-botones del menu. */
     public const CATEGORIES = [
         'I' => 'Indicador SGC I',
@@ -62,6 +71,7 @@ class Indicator extends BaseModel
         'type',
         'methodological_aspects',
         'goal',
+        'goal_direction',
         'threshold_acceptable',
         'threshold_satisfactory',
         'status',
@@ -93,6 +103,11 @@ class Indicator extends BaseModel
     public function getSubprocessLabelAttribute(): string
     {
         return $this->subprocess?->full_name ?? 'Sin asignar';
+    }
+
+    public function getGoalDirectionLabelAttribute(): string
+    {
+        return self::GOAL_DIRECTIONS[$this->goal_direction] ?? self::GOAL_DIRECTIONS[self::GOAL_ASCENDING];
     }
 
     public function getCategoryLabelAttribute(): string

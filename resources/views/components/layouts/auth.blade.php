@@ -261,7 +261,7 @@
             font-size: 15px;
             color: white;
             cursor: pointer;
-            background: linear-gradient(135deg, #123f6e 0%, #0d3158 50%, #059669 100%);
+            background: linear-gradient(135deg, #123f6e 0%, #0d3158 50%, #1d5f99 100%);
             background-size: 200% 200%;
             transition: all 0.4s ease;
             position: relative;
@@ -271,7 +271,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(135deg, #059669 0%, #123f6e 100%);
+            background: linear-gradient(135deg, #1d5f99 0%, #123f6e 100%);
             opacity: 0;
             transition: opacity 0.4s ease;
         }
@@ -298,7 +298,7 @@
             font-weight: 500;
             transition: color 0.2s;
         }
-        .auth-link:hover { color: #059669; }
+        .auth-link:hover { color: #1d5f99; }
 
         .auth-footer {
             color: #94a3b8;
@@ -321,7 +321,7 @@
         .spinner-ring {
             position: absolute; inset: 0; border-radius: 50%;
             border: 3px solid rgba(18,63,110,0.08);
-            border-top-color: #123f6e; border-right-color: #059669;
+            border-top-color: #123f6e; border-right-color: #1d5f99;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }

@@ -148,7 +148,7 @@
             padding: 10px 20px; border-radius: 10px; border: none;
             white-space: nowrap; flex-shrink: 0;
             font-weight: 600; font-size: 14px; cursor: pointer; color: white;
-            background: linear-gradient(135deg, #123f6e, #059669);
+            background: linear-gradient(135deg, #123f6e, #1d5f99);
             text-decoration: none; transition: all 0.3s;
         }
         .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(18,63,110,0.2); }
@@ -163,7 +163,7 @@
         .btn-secondary:hover { background: rgba(18,63,110,0.08); }
 
         .avatar {
-            background: linear-gradient(135deg, #123f6e, #059669);
+            background: linear-gradient(135deg, #123f6e, #1d5f99);
             color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center;
             font-weight: 700; font-size: 12px; flex-shrink: 0;
         }
@@ -227,7 +227,7 @@
         .spinner-ring {
             position: absolute; inset: 0; border-radius: 50%;
             border: 3px solid rgba(18,63,110,0.08);
-            border-top-color: #123f6e; border-right-color: #059669;
+            border-top-color: #123f6e; border-right-color: #1d5f99;
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
@@ -426,7 +426,7 @@
                             <div style="padding:12px 14px;border-bottom:1px solid rgba(18,63,110,0.06)">
                                 <p style="font-size:13px;font-weight:600;color:#1e293b">{{ auth()->user()->name }} {{ auth()->user()->last_name }}</p>
                                 <p style="font-size:11px;color:#94a3b8;margin-top:2px">{{ auth()->user()->email }}</p>
-                                <span style="display:inline-block;margin-top:6px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;color:white;background:linear-gradient(135deg,#123f6e,#059669)">{{ auth()->user()->role_label }}</span>
+                                <span style="display:inline-block;margin-top:6px;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;color:white;background:linear-gradient(135deg,#123f6e,#1d5f99)">{{ auth()->user()->role_label }}</span>
                             </div>
                             <div style="padding:4px">
                                 <a href="{{ route('profile.edit') }}" class="user-menu-item">

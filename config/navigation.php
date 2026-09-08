@@ -18,8 +18,7 @@ return [
         ['name' => 'Usuarios', 'icon' => 'user-cog', 'route' => 'users.index', 'permission' => 'users.view', 'order' => 90, 'enabled' => true],
         ['name' => 'Roles y permisos', 'icon' => 'shield-check', 'route' => 'roles.index', 'permission' => 'roles.view', 'order' => 100, 'enabled' => true],
         ['name' => 'Auditoria', 'icon' => 'scan-search', 'route' => 'audit.index', 'permission' => 'audit.view', 'order' => 110, 'enabled' => true],
-        ['name' => 'Configuracion', 'icon' => 'settings', 'route' => null, 'permission' => ['settings.view', 'processes.view', 'ai_chat.configure'], 'order' => 120, 'enabled' => true, 'children' => [
-            ['name' => 'Procesos', 'route' => 'processes.index', 'permission' => 'processes.view'],
+        ['name' => 'Configuracion', 'icon' => 'settings', 'route' => null, 'permission' => ['settings.view', 'ai_chat.configure'], 'order' => 120, 'enabled' => true, 'children' => [
             ['name' => 'Chat IA', 'route' => 'ai-chat.settings.edit', 'permission' => 'ai_chat.configure'],
         ]],
         ['name' => 'Perfil', 'icon' => 'circle-user-round', 'route' => 'profile.edit', 'permission' => null, 'order' => 130, 'enabled' => true],

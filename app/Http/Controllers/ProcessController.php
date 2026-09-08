@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Process;
 use App\Models\Subprocess;
+use App\Services\AuthEventService;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -19,6 +20,10 @@ class ProcessController extends Controller
 {
     private const TYPE_PROCESS = 'procesos';
     private const TYPE_SUBPROCESS = 'subprocesos';
+
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
 
     public function index(): View
     {
@@ -36,7 +41,10 @@ class ProcessController extends Controller
         $validated['position'] = ((int) $model::max('position')) + 10;
         $validated['is_active'] = true;
 
-        $model::create($validated);
+        $item = $model::create($validated);
+
+        $eventName = $type === self::TYPE_PROCESS ? 'process_created' : 'subprocess_created';
+        $this->events->record($request, $eventName, true, reason: "{$this->label($type)} '{$item->name}' creado");
 
         return $this->back($type, $this->label($type) . ' creado correctamente.');
     }
@@ -45,6 +53,9 @@ class ProcessController extends Controller
     {
         $item = $this->findOrFail($type, $id);
         $item->update($this->validateItem($request, $type, $item));
+
+        $eventName = $type === self::TYPE_PROCESS ? 'process_updated' : 'subprocess_updated';
+        $this->events->record($request, $eventName, true, reason: "{$this->label($type)} '{$item->name}' actualizado");
 
         return $this->back($type, $this->label($type) . ' actualizado correctamente.');
     }
@@ -55,6 +66,8 @@ class ProcessController extends Controller
         $item->update(['is_active' => ! $item->is_active]);
 
         $estado = $item->is_active ? 'activado' : 'inactivado';
+        $eventName = $type === self::TYPE_PROCESS ? 'process_toggled' : 'subprocess_toggled';
+        $this->events->record(request(), $eventName, true, reason: "{$this->label($type)} '{$item->name}' {$estado}");
 
         return $this->back($type, $this->label($type) . " {$estado} correctamente.");
     }
@@ -87,6 +100,10 @@ class ProcessController extends Controller
             $item->update(['position' => $neighbour->position]);
             $neighbour->update(['position' => $posItem]);
         });
+
+        $eventName = $type === self::TYPE_PROCESS ? 'process_moved' : 'subprocess_moved';
+        $dir = $up ? 'arriba' : 'abajo';
+        $this->events->record($request, $eventName, true, reason: "Orden de {$this->label($type)} '{$item->name}' movido hacia {$dir}");
 
         return $this->back($type, 'Orden actualizado.');
     }

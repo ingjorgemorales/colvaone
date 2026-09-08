@@ -24,7 +24,8 @@
             overflow-wrap: anywhere; white-space: pre-line;
         }
 
-        .results-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1020px; }
+        .results-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1320px; }
+        .num-cell { text-align: right; font-variant-numeric: tabular-nums; }
         .results-table th {
             padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700;
             letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8;
@@ -51,6 +52,7 @@
         @media (max-width: 900px) { .add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 560px) { .add-grid { grid-template-columns: 1fr; } }
         .add-grid .span-2 { grid-column: span 2; }
+        .add-grid .span-4 { grid-column: 1 / -1; }
         @media (max-width: 560px) { .add-grid .span-2 { grid-column: span 1; } }
 
         .preview-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: white; border: 1px solid rgba(18,63,110,0.08); border-radius: 10px; padding: 12px 14px; margin-top: 14px; }
@@ -185,6 +187,10 @@
                             <p class="data-value" style="font-weight:700;color:#123f6e">{{ $indicator->goal }}%</p>
                         </div>
                         <div class="data-item data-item-full">
+                            <p class="data-label">Sentido de la meta</p>
+                            <p class="data-value">{{ $indicator->goal_direction_label }}</p>
+                        </div>
+                        <div class="data-item data-item-full">
                             <p class="data-label">Objetivo del indicador</p>
                             @include('indicators.partials.clamped-text', ['text' => $indicator->objective, 'modalTitle' => 'Objetivo del indicador'])
                         </div>
@@ -233,24 +239,35 @@
                 x-data="{
                     open: {{ $errors->any() ? 'true' : 'false' }},
                     editingId: null,
-                    form: { periodStart: '', periodEnd: '', fieldOne: '', fieldTwo: '', description: '', actionNumber: '' },
+                    empty: { periodStart: '', periodEnd: '', numerator: '', denominator: '', periodGoal: '{{ $indicator->goal / 100 }}', analysis: '', actionNumber: '' },
+                    form: {},
                     base: '{{ $resultsBase }}',
                     acceptable: {{ $indicator->threshold_acceptable }},
                     satisfactory: {{ $indicator->threshold_satisfactory }},
+                    descending: {{ $indicator->goal_direction === \App\Models\Indicator::GOAL_DESCENDING ? 'true' : 'false' }},
+                    init() { this.form = { ...this.empty }; },
                     get action() { return this.editingId ? this.base + '/' + this.editingId : this.base; },
                     get method() { return this.editingId ? 'PUT' : 'POST'; },
-                    reset() {
-                        this.form = { periodStart: '', periodEnd: '', fieldOne: '', fieldTwo: '', description: '', actionNumber: '' };
-                        this.editingId = null;
-                    },
+                    reset() { this.form = { ...this.empty }; this.editingId = null; },
                     openCreate() { this.reset(); this.open = true; },
                     openEdit(row) { this.form = { ...row.data }; this.editingId = row.id; this.open = true; },
                     close() { this.reset(); this.open = false; },
+                    /** RESULTADO = NUMERADOR / DENOMINADOR */
+                    get result() {
+                        const num = parseFloat(this.form.numerator);
+                        const den = parseFloat(this.form.denominator);
+                        if (isNaN(num) || isNaN(den) || den === 0) return null;
+                        return Math.round((num / den) * 10000) / 10000;
+                    },
+                    /** (RESULTADO/META)x100, o (META/RESULTADO)x100 si la meta es descendente */
                     get compliance() {
-                        const a = parseFloat(this.form.fieldOne);
-                        const b = parseFloat(this.form.fieldTwo);
-                        if (!a || isNaN(a) || isNaN(b)) return null;
-                        return Math.round((b / a) * 10000) / 100;
+                        const res = this.result;
+                        const goal = parseFloat(this.form.periodGoal);
+                        if (res === null || isNaN(goal) || goal === 0) return null;
+                        if (this.descending) {
+                            return res === 0 ? null : Math.round((goal / res) * 10000) / 100;
+                        }
+                        return Math.round((res / goal) * 10000) / 100;
                     },
                     get evaluation() {
                         const c = this.compliance;
@@ -267,12 +284,14 @@
                         <thead>
                             <tr>
                                 <th>Periodo</th>
-                                <th>Campo 1</th>
-                                <th>Campo 2</th>
-                                <th>Cumplimiento ANS</th>
+                                <th style="text-align:right">Numerador</th>
+                                <th style="text-align:right">Denominador</th>
+                                <th style="text-align:right">Resultado</th>
+                                <th style="text-align:right">Meta periodo</th>
+                                <th style="text-align:right">Cumplimiento</th>
                                 <th>Evaluacion</th>
-                                <th>Descripcion</th>
-                                <th>Numero de accion</th>
+                                <th>Analisis</th>
+                                <th>Accion No</th>
                                 <th>Estado</th>
                                 @if($canEditResults || $canToggleResults)<th style="text-align:right">Acciones</th>@endif
                             </tr>
@@ -284,10 +303,12 @@
                                         <span style="font-weight:600;color:#1e293b">{{ $result->period_start->format('d/m/Y') }}</span>
                                         <p style="margin:2px 0 0;font-size:12px;color:#94a3b8">al {{ $result->period_end->format('d/m/Y') }}</p>
                                     </td>
-                                    <td class="nowrap">{{ rtrim(rtrim(number_format((float) $result->field_one, 2, ',', '.'), '0'), ',') }}</td>
-                                    <td class="nowrap">{{ rtrim(rtrim(number_format((float) $result->field_two, 2, ',', '.'), '0'), ',') }}</td>
-                                    <td class="nowrap" style="font-weight:700;color:{{ $result->evaluation_color }}">
-                                        {{ rtrim(rtrim(number_format((float) $result->compliance, 2, ',', '.'), '0'), ',') }}%
+                                    <td class="nowrap num-cell">{{ $result->formatted_numerator }}</td>
+                                    <td class="nowrap num-cell">{{ $result->formatted_denominator }}</td>
+                                    <td class="nowrap num-cell" style="font-weight:600;color:#1e293b">{{ $result->formatted_result }}</td>
+                                    <td class="nowrap num-cell">{{ $result->formatted_period_goal }}</td>
+                                    <td class="nowrap num-cell" style="font-weight:700;color:{{ $result->evaluation_color }}">
+                                        {{ $result->formatted_compliance }}%
                                     </td>
                                     <td>
                                         <span class="pill" style="background:{{ $result->evaluation_background }};color:{{ $result->evaluation_color }}">
@@ -296,7 +317,7 @@
                                         </span>
                                     </td>
                                     <td class="desc-cell">
-                                        @include('indicators.partials.clamped-text', ['text' => $result->description, 'modalTitle' => 'Descripcion del resultado', 'clampClass' => 'clamp-box-sm', 'threshold' => 80])
+                                        @include('indicators.partials.clamped-text', ['text' => $result->analysis, 'modalTitle' => 'Analisis del resultado', 'clampClass' => 'clamp-box-sm', 'threshold' => 80])
                                     </td>
                                     <td>{{ $result->action_number ?: '-' }}</td>
                                     <td>
@@ -315,9 +336,10 @@
                                                         data: {
                                                             periodStart: '{{ $result->period_start->format('Y-m-d') }}',
                                                             periodEnd: '{{ $result->period_end->format('Y-m-d') }}',
-                                                            fieldOne: '{{ (float) $result->field_one }}',
-                                                            fieldTwo: '{{ (float) $result->field_two }}',
-                                                            description: @js($result->description ?? ''),
+                                                            numerator: '{{ (float) $result->numerator }}',
+                                                            denominator: '{{ (float) $result->denominator }}',
+                                                            periodGoal: '{{ (float) $result->period_goal }}',
+                                                            analysis: @js($result->analysis ?? ''),
                                                             actionNumber: @js($result->action_number ?? '')
                                                         }
                                                     }); $nextTick(() => window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' }))">
@@ -340,7 +362,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ ($canEditResults || $canToggleResults) ? 9 : 8 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
+                                    <td colspan="{{ ($canEditResults || $canToggleResults) ? 11 : 10 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
                                         <div style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(18,63,110,0.04);margin:0 auto 10px">
                                             <i data-lucide="calendar-range" style="width:20px;height:20px;color:#cbd5e1"></i>
                                         </div>
@@ -377,27 +399,36 @@
                                     <input name="period_end" type="date" required x-model="form.periodEnd" class="input-field">
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Campo 1 <span class="req">*</span></label>
-                                    <input name="field_one" type="number" step="0.01" min="0" required x-model="form.fieldOne" class="input-field" placeholder="400">
+                                    <label class="field-label">Numerador <span class="req">*</span></label>
+                                    <input name="numerator" type="number" step="any" required x-model="form.numerator" class="input-field" placeholder="270">
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Campo 2 <span class="req">*</span></label>
-                                    <input name="field_two" type="number" step="0.01" min="0" required x-model="form.fieldTwo" class="input-field" placeholder="300">
+                                    <label class="field-label">Denominador <span class="req">*</span></label>
+                                    <input name="denominator" type="number" step="any" required x-model="form.denominator" class="input-field" placeholder="300">
                                 </div>
-                                <div class="field span-2">
-                                    <label class="field-label">Descripcion</label>
-                                    <textarea name="description" rows="4" x-model="form.description" class="input-field" placeholder="Se realizo..."></textarea>
+                                <div class="field">
+                                    <label class="field-label">Meta del periodo <span class="req">*</span></label>
+                                    <input name="period_goal" type="number" step="any" required x-model="form.periodGoal" class="input-field" placeholder="0,95">
+                                    <p class="field-hint">En la misma escala que el resultado.</p>
                                 </div>
-                                <div class="field span-2">
-                                    <label class="field-label">Numero de accion</label>
+                                <div class="field">
+                                    <label class="field-label">Accion No</label>
                                     <input name="action_number" type="text" maxlength="60" x-model="form.actionNumber" class="input-field" placeholder="Ej: ACC-2026-014">
+                                </div>
+                                <div class="field span-4">
+                                    <label class="field-label">Analisis</label>
+                                    <textarea name="analysis" rows="4" x-model="form.analysis" class="input-field" placeholder="Se evidencia..."></textarea>
                                 </div>
                             </div>
 
                             <div class="preview-box">
-                                <span class="preview-label">Cumplimiento ANS</span>
+                                <span class="preview-label">Resultado</span>
+                                <span style="font-size:15px;font-weight:700;color:#1e293b"
+                                    x-text="result === null ? '-' : result.toLocaleString('es-CO', { maximumFractionDigits: 4 })"></span>
+                                <span style="width:1px;height:22px;background:rgba(18,63,110,0.10)"></span>
+                                <span class="preview-label">Cumplimiento</span>
                                 <template x-if="compliance === null">
-                                    <span style="font-size:13px;color:#cbd5e1">Ingresa Campo 1 y Campo 2</span>
+                                    <span style="font-size:13px;color:#cbd5e1">Ingresa numerador, denominador y meta</span>
                                 </template>
                                 <template x-if="compliance !== null">
                                     <span style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -406,7 +437,7 @@
                                             <span style="width:7px;height:7px;border-radius:50%" :style="`background:${evaluation.color}`"></span>
                                             <span x-text="evaluation.label"></span>
                                         </span>
-                                        <span style="font-size:11px;color:#94a3b8">Se calcula solo: Campo 2 &divide; Campo 1</span>
+                                        <span style="font-size:11px;color:#94a3b8">{{ $indicator->goal_direction === \App\Models\Indicator::GOAL_DESCENDING ? '(Meta / Resultado) x 100' : '(Resultado / Meta) x 100' }}</span>
                                     </span>
                                 </template>
                             </div>

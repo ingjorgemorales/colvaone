@@ -11,6 +11,8 @@ class AuthEventService
 {
     public function record(Request $request, string $event, bool $successful, ?User $user = null, ?string $email = null, ?string $reason = null): void
     {
+        $user = $user ?? $request->user();
+
         AuthEvent::create([
             'user_id' => $user?->id,
             'email' => $email ?? $user?->email,

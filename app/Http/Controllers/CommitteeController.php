@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Committee;
 use App\Models\User;
+use App\Services\AuthEventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -12,6 +13,9 @@ use Illuminate\View\View;
 
 class CommitteeController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
     public function index(Request $request): View
     {
         $query = Committee::with(['creator', 'members', 'latestReport'])
@@ -89,6 +93,8 @@ class CommitteeController extends Controller
             return $committee;
         });
 
+        $this->events->record($request, 'committee_created', true, reason: "Comite '{$committee->title}' creado");
+
         return redirect()->route('committees.show', $committee)
             ->with('success', 'Comite creado correctamente.');
     }
@@ -126,6 +132,8 @@ class CommitteeController extends Controller
 
         $committee->members()->sync($validated['members']);
 
+        $this->events->record($request, 'committee_updated', true, reason: "Comite '{$committee->title}' actualizado");
+
         return redirect()->route('committees.show', $committee)
             ->with('success', 'Comite actualizado correctamente.');
     }
@@ -154,6 +162,8 @@ class CommitteeController extends Controller
             'updated_by' => Auth::id(),
         ]);
 
+        $this->events->record($request, 'committee_report_added', true, reason: "Relato agregado al comite '{$committee->title}'");
+
         return back()->with('success', 'Relato agregado correctamente.');
     }
 
@@ -167,6 +177,8 @@ class CommitteeController extends Controller
         ]);
 
         $status = $committee->status === 'active' ? 'activado' : 'desactivado';
+
+        $this->events->record(request(), 'committee_toggled', true, reason: "Comite '{$committee->title}' {$status}");
 
         return redirect()->route('committees.index')
             ->with('success', "Comite {$status} correctamente.");

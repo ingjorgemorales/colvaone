@@ -1,4 +1,4 @@
-<x-layouts.app title="Procesos y subprocesos | {{ config('app.name') }}" heading="Procesos y subprocesos" subheading="Maestro del mapa de procesos que alimenta la ficha tecnica de indicadores">
+<x-layouts.app title="Ajustes de indicadores | {{ config('app.name') }}" heading="Ajustes de indicadores" subheading="Procesos y subprocesos que alimentan la ficha tecnica">
     <style>
         .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
         .tab-btn {
@@ -52,9 +52,10 @@
 
     @php
         $tab = request('tab') === 'subprocesos' ? 'subprocesos' : 'procesos';
-        $canCreate = auth()->user()->hasPermission('processes.create');
-        $canEdit = auth()->user()->hasPermission('processes.edit');
-        $canToggle = auth()->user()->hasPermission('processes.toggle');
+        $puedeAjustar = auth()->user()->hasPermission('indicators.settings');
+        $canCreate = $puedeAjustar;
+        $canEdit = $puedeAjustar;
+        $canToggle = $puedeAjustar;
     @endphp
 
     <div x-data="{
@@ -66,7 +67,7 @@
         openEdit(type, item) { this.form = { code: item.code ?? '', name: item.name }; this.editing = item.id; this.panel = type; },
         close() { this.panel = null; this.editing = null; this.form = { code: '', name: '' }; },
         action(type) {
-            const base = '{{ url('configuracion/procesos') }}/' + type;
+            const base = '{{ url('indicadores/ajustes') }}/' + type;
             return this.editing ? base + '/' + this.editing : base;
         }
     }">
@@ -79,6 +80,10 @@
                 <i data-lucide="git-branch" style="width:15px;height:15px"></i>
                 Subprocesos <span class="tab-count">{{ $subprocesses->count() }}</span>
             </button>
+
+            <a href="{{ route('indicators.index') }}" class="btn-secondary" style="margin-left:auto;padding:9px 16px;font-size:13px">
+                <i data-lucide="arrow-left" style="width:15px;height:15px"></i> Volver a Indicadores
+            </a>
         </div>
 
         @if(session('success'))

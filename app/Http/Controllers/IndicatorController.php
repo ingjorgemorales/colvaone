@@ -7,6 +7,7 @@ use App\Models\Process;
 use App\Models\IndicatorResult;
 use App\Models\Subprocess;
 use App\Models\User;
+use App\Services\AuthEventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -15,6 +16,9 @@ use Illuminate\View\View;
 
 class IndicatorController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
     public function index(Request $request): View
     {
         $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess'])->visibleFor($request->user());
@@ -52,6 +56,8 @@ class IndicatorController extends Controller
             'created_by' => Auth::id(),
         ]);
 
+        $this->events->record($request, 'indicator_created', true, reason: "Indicador '{$indicator->name}' creado");
+
         return redirect()->route('indicators.show', $indicator)
             ->with('success', 'Indicador creado correctamente.');
     }
@@ -86,6 +92,8 @@ class IndicatorController extends Controller
 
         $this->recalculateResults($indicator);
 
+        $this->events->record($request, 'indicator_updated', true, reason: "Indicador '{$indicator->name}' actualizado");
+
         return redirect()->route('indicators.show', $indicator)
             ->with('success', 'Indicador actualizado correctamente.');
     }
@@ -101,6 +109,8 @@ class IndicatorController extends Controller
 
         $status = $indicator->status === 'active' ? 'activado' : 'inactivado';
 
+        $this->events->record(request(), 'indicator_toggled', true, reason: "Indicador '{$indicator->name}' {$status}");
+
         return redirect()->route('indicators.index')
             ->with('success', "Indicador {$status} correctamente.");
     }
@@ -111,16 +121,12 @@ class IndicatorController extends Controller
 
         $validated = $this->validateResult($request);
 
-        $compliance = IndicatorResult::calculateCompliance(
-            (float) $validated['field_one'],
-            (float) $validated['field_two'],
+        $result = $indicator->results()->create(
+            $this->withCalculations($validated, $indicator) + ['created_by' => Auth::id()]
         );
 
-        $indicator->results()->create($validated + [
-            'compliance' => $compliance,
-            'evaluation' => $indicator->evaluate($compliance),
-            'created_by' => Auth::id(),
-        ]);
+        $period = $result->period_start?->format('d/m/Y') . ' - ' . $result->period_end?->format('d/m/Y');
+        $this->events->record($request, 'indicator_result_created', true, reason: "Resultado registrado para indicador '{$indicator->name}' ({$period})");
 
         return $this->backToResults($indicator, 'Resultado registrado correctamente.');
     }
@@ -133,16 +139,12 @@ class IndicatorController extends Controller
 
         $validated = $this->validateResult($request);
 
-        $compliance = IndicatorResult::calculateCompliance(
-            (float) $validated['field_one'],
-            (float) $validated['field_two'],
+        $result->update(
+            $this->withCalculations($validated, $indicator) + ['updated_by' => Auth::id()]
         );
 
-        $result->update($validated + [
-            'compliance' => $compliance,
-            'evaluation' => $indicator->evaluate($compliance),
-            'updated_by' => Auth::id(),
-        ]);
+        $period = $result->period_start?->format('d/m/Y') . ' - ' . $result->period_end?->format('d/m/Y');
+        $this->events->record($request, 'indicator_result_updated', true, reason: "Resultado actualizado para indicador '{$indicator->name}' ({$period})");
 
         return $this->backToResults($indicator, 'Resultado actualizado correctamente.');
     }
@@ -159,6 +161,8 @@ class IndicatorController extends Controller
         ]);
 
         $status = $result->status === 'active' ? 'activado' : 'desactivado';
+        $period = $result->period_start?->format('d/m/Y') . ' - ' . $result->period_end?->format('d/m/Y');
+        $this->events->record(request(), 'indicator_result_toggled', true, reason: "Resultado ({$period}) {$status} para indicador '{$indicator->name}'");
 
         return $this->backToResults($indicator, "Resultado {$status} correctamente.");
     }
@@ -180,6 +184,7 @@ class IndicatorController extends Controller
             'type' => ['required', Rule::in(array_keys(Indicator::TYPES))],
             'methodological_aspects' => ['nullable', 'string'],
             'goal' => ['required', 'integer', 'min:1', 'max:' . $max],
+            'goal_direction' => ['required', Rule::in(array_keys(Indicator::GOAL_DIRECTIONS))],
             'threshold_acceptable' => ['required', 'integer', 'min:1', 'max:' . $max],
             'threshold_satisfactory' => ['required', 'integer', 'min:1', 'max:' . $max],
         ], [
@@ -208,12 +213,15 @@ class IndicatorController extends Controller
         return $request->validate([
             'period_start' => ['required', 'date'],
             'period_end' => ['required', 'date', 'after_or_equal:period_start'],
-            'field_one' => ['required', 'numeric', 'min:0'],
-            'field_two' => ['required', 'numeric', 'min:0'],
-            'description' => ['nullable', 'string'],
+            'numerator' => ['required', 'numeric'],
+            'denominator' => ['required', 'numeric', 'not_in:0'],
+            'period_goal' => ['required', 'numeric', 'not_in:0'],
+            'analysis' => ['nullable', 'string'],
             'action_number' => ['nullable', 'string', 'max:60'],
         ], [
             'period_end.after_or_equal' => 'La fecha fin no puede ser anterior a la fecha inicio.',
+            'denominator.not_in' => 'El denominador no puede ser cero.',
+            'period_goal.not_in' => 'La meta del periodo no puede ser cero.',
         ]);
     }
 
@@ -221,13 +229,47 @@ class IndicatorController extends Controller
      * Al cambiar los umbrales, las evaluaciones ya guardadas dejan de ser
      * coherentes con la ficha tecnica, asi que se reclasifican.
      */
+    /**
+     * Aplica las formulas del SGC: el resultado y el cumplimiento nunca se
+     * digitan, se derivan del numerador, el denominador y la meta.
+     */
+    private function withCalculations(array $validated, Indicator $indicator): array
+    {
+        $result = IndicatorResult::calculateResult(
+            (float) $validated['numerator'],
+            (float) $validated['denominator'],
+        );
+
+        $compliance = IndicatorResult::calculateCompliance(
+            $result,
+            (float) $validated['period_goal'],
+            $indicator->goal_direction ?? Indicator::GOAL_ASCENDING,
+        );
+
+        return $validated + [
+            'result' => $result,
+            'compliance' => $compliance,
+            'evaluation' => $indicator->evaluate($compliance),
+        ];
+    }
+
+    /**
+     * Cambiar los umbrales o el sentido de la meta deja las evaluaciones
+     * guardadas fuera de sintonia con la ficha, asi que se recalculan.
+     */
     private function recalculateResults(Indicator $indicator): void
     {
         $indicator->results()->get()->each(function (IndicatorResult $result) use ($indicator): void {
-            $evaluation = $indicator->evaluate((float) $result->compliance);
+            $compliance = IndicatorResult::calculateCompliance(
+                (float) $result->result,
+                $result->period_goal === null ? null : (float) $result->period_goal,
+                $indicator->goal_direction ?? Indicator::GOAL_ASCENDING,
+            );
 
-            if ($evaluation !== $result->evaluation) {
-                $result->update(['evaluation' => $evaluation]);
+            $evaluation = $indicator->evaluate($compliance);
+
+            if ((float) $result->compliance !== $compliance || $evaluation !== $result->evaluation) {
+                $result->update(['compliance' => $compliance, 'evaluation' => $evaluation]);
             }
         });
     }

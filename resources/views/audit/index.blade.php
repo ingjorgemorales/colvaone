@@ -10,7 +10,7 @@
                 <select name="event" class="input-field">
                     <option value="">Todos</option>
                     @foreach($eventTypes as $type)
-                        <option value="{{ $type }}" {{ request('event') === $type ? 'selected' : '' }}>{{ ucwords(str_replace('_', ' ', $type)) }}</option>
+                        <option value="{{ $type }}" {{ request('event') === $type ? 'selected' : '' }}>{{ \App\Models\AuthEvent::labelFor($type) }}</option>
                     @endforeach
                 </select>
             </div>
@@ -81,8 +81,11 @@
                                 @php
                                     $eventColors = [
                                         'login' => ['bg' => 'rgba(5,150,105,0.08)', 'text' => '#059669'],
+                                        'login_success' => ['bg' => 'rgba(5,150,105,0.08)', 'text' => '#059669'],
                                         'logout' => ['bg' => 'rgba(100,116,139,0.08)', 'text' => '#64748b'],
                                         'login_failed' => ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'],
+                                        'login_rate_limited' => ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'],
+                                        'login_blocked_inactive_user' => ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'],
                                         'password_reset' => ['bg' => 'rgba(245,158,11,0.08)', 'text' => '#d97706'],
                                         'password_changed' => ['bg' => 'rgba(245,158,11,0.08)', 'text' => '#d97706'],
                                         'user_created' => ['bg' => 'rgba(5,150,105,0.08)', 'text' => '#059669'],
@@ -94,11 +97,25 @@
                                         'role_deleted' => ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'],
                                         'profile_updated' => ['bg' => 'rgba(18,63,110,0.08)', 'text' => '#123f6e'],
                                     ];
-                                    $color = $eventColors[$event->event] ?? ['bg' => 'rgba(100,116,139,0.08)', 'text' => '#64748b'];
+
+                                    $ev = $event->event;
+                                    if (isset($eventColors[$ev])) {
+                                        $color = $eventColors[$ev];
+                                    } elseif (str_ends_with($ev, '_created') || str_ends_with($ev, '_added') || str_ends_with($ev, '_success')) {
+                                        $color = ['bg' => 'rgba(5,150,105,0.08)', 'text' => '#059669'];
+                                    } elseif (str_ends_with($ev, '_updated') || str_ends_with($ev, '_moved')) {
+                                        $color = ['bg' => 'rgba(18,63,110,0.08)', 'text' => '#123f6e'];
+                                    } elseif (str_ends_with($ev, '_toggled') || str_ends_with($ev, '_status_updated') || str_ends_with($ev, '_progress_updated')) {
+                                        $color = ['bg' => 'rgba(245,158,11,0.08)', 'text' => '#d97706'];
+                                    } elseif (str_ends_with($ev, '_deleted') || str_ends_with($ev, '_removed') || str_ends_with($ev, '_archived') || str_ends_with($ev, '_failed')) {
+                                        $color = ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'];
+                                    } else {
+                                        $color = ['bg' => 'rgba(100,116,139,0.08)', 'text' => '#64748b'];
+                                    }
                                 @endphp
-                                <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:{{ $color['bg'] }};color:{{ $color['text'] }}">{{ ucwords(str_replace('_', ' ', $event->event)) }}</span>
+                                <span style="display:inline-block;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;white-space:nowrap;background:{{ $color['bg'] }};color:{{ $color['text'] }}">{{ $event->event_label }}</span>
                             </td>
-                            <td style="padding:12px 16px;font-size:13px;color:#64748b;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ $event->reason ?: '-' }}</td>
+                            <td style="padding:12px 16px;font-size:13px;color:#64748b;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="{{ $event->reason }}">{{ $event->reason ?: '-' }}</td>
                             <td style="padding:12px 16px;font-size:13px;color:#94a3b8">{{ $event->ip_address }}</td>
                             <td style="padding:12px 16px">
                                 @if($event->successful)

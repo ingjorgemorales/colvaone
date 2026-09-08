@@ -17,11 +17,13 @@ class IndicatorResult extends BaseModel
         'indicator_id',
         'period_start',
         'period_end',
-        'field_one',
-        'field_two',
+        'numerator',
+        'denominator',
+        'result',
+        'period_goal',
         'compliance',
         'evaluation',
-        'description',
+        'analysis',
         'action_number',
         'status',
         'created_by',
@@ -36,8 +38,10 @@ class IndicatorResult extends BaseModel
     protected $casts = [
         'period_start' => 'date',
         'period_end' => 'date',
-        'field_one' => 'decimal:2',
-        'field_two' => 'decimal:2',
+        'numerator' => 'decimal:2',
+        'denominator' => 'decimal:2',
+        'result' => 'decimal:4',
+        'period_goal' => 'decimal:4',
         'compliance' => 'decimal:2',
     ];
 
@@ -56,16 +60,71 @@ class IndicatorResult extends BaseModel
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /**
-     * Cumplimiento = Campo 2 / Campo 1 * 100. Sin division por cero.
-     */
-    public static function calculateCompliance(float $fieldOne, float $fieldTwo): float
+    /** RESULTADO = NUMERADOR / DENOMINADOR. Sin division por cero. */
+    public static function calculateResult(float $numerator, float $denominator): float
     {
-        if ($fieldOne == 0.0) {
+        if ($denominator == 0.0) {
             return 0.0;
         }
 
-        return round(($fieldTwo / $fieldOne) * 100, 2);
+        return round($numerator / $denominator, 4);
+    }
+
+    /**
+     * CUMPLIMIENTO segun el sentido de la meta:
+     *   ascendente  -> (RESULTADO / META) * 100   la meta busca subir el valor
+     *   descendente -> (META / RESULTADO) * 100   la meta busca llegar a cero
+     */
+    public static function calculateCompliance(float $result, ?float $goal, string $direction): float
+    {
+        if ($goal === null || $goal == 0.0) {
+            return 0.0;
+        }
+
+        if ($direction === Indicator::GOAL_DESCENDING) {
+            return $result == 0.0 ? 0.0 : round(($goal / $result) * 100, 2);
+        }
+
+        return round(($result / $goal) * 100, 2);
+    }
+
+    /** Numeros con separador de miles y sin ceros sobrantes al final. */
+    private function tidy(?float $value, int $decimals = 2): string
+    {
+        if ($value === null) {
+            return '-';
+        }
+
+        $formatted = number_format($value, $decimals, ',', '.');
+
+        return str_contains($formatted, ',')
+            ? rtrim(rtrim($formatted, '0'), ',')
+            : $formatted;
+    }
+
+    public function getFormattedNumeratorAttribute(): string
+    {
+        return $this->tidy((float) $this->numerator);
+    }
+
+    public function getFormattedDenominatorAttribute(): string
+    {
+        return $this->tidy((float) $this->denominator);
+    }
+
+    public function getFormattedResultAttribute(): string
+    {
+        return $this->tidy((float) $this->result, 4);
+    }
+
+    public function getFormattedPeriodGoalAttribute(): string
+    {
+        return $this->tidy($this->period_goal === null ? null : (float) $this->period_goal, 4);
+    }
+
+    public function getFormattedComplianceAttribute(): string
+    {
+        return $this->tidy((float) $this->compliance);
     }
 
     public function isActive(): bool

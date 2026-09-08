@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\AuthEventService;
 use App\Services\TaskNotificationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -12,6 +13,9 @@ use Illuminate\Support\Facades\Auth;
 
 class TaskController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
     public function index(Request $request)
     {
         $query = Task::with(['creator', 'assignees', 'group']);
@@ -170,6 +174,8 @@ class TaskController extends Controller
             );
         }
 
+        $this->events->record($request, 'task_created', true, reason: "Tarea '{$task->title}' creada");
+
         return redirect()->route('tasks.index')->with('success', 'Tarea creada y notificaciones enviadas.');
     }
 
@@ -267,6 +273,8 @@ class TaskController extends Controller
             }
         }
 
+        $this->events->record($request, 'task_updated', true, reason: "Tarea '{$task->title}' actualizada");
+
         return redirect()->route('tasks.index')->with('success', 'Tarea actualizada.');
     }
 
@@ -276,6 +284,9 @@ class TaskController extends Controller
         $this->ensureTaskIsArchivable($task);
 
         $task->update(['status' => 'archivada']);
+
+        $this->events->record(request(), 'task_archived', true, reason: "Tarea '{$task->title}' archivada");
+
         return redirect()->route('tasks.index')->with('success', 'Tarea archivada.');
     }
 
@@ -318,6 +329,8 @@ class TaskController extends Controller
                 "Progreso: {$validated['progress']}%"
             );
         }
+
+        $this->events->record($request, 'task_progress_updated', true, reason: "Progreso de tarea '{$task->title}' actualizado a {$validated['progress']}%");
 
         return back()->with('success', 'Progreso actualizado.');
     }
@@ -362,6 +375,8 @@ class TaskController extends Controller
                 $validated['comment']
             );
         }
+
+        $this->events->record($request, 'task_comment_added', true, reason: "Comentario agregado en tarea '{$task->title}'");
 
         return back()->with('success', 'Comentario agregado.');
     }
@@ -412,6 +427,9 @@ class TaskController extends Controller
                 Auth::user()
             );
         }
+
+        $statusLabel = $statusLabels[$validated['status']] ?? $validated['status'];
+        $this->events->record($request, 'task_status_updated', true, reason: "Estado de tarea '{$task->title}' cambiado a {$statusLabel}");
 
         return back()->with('success', 'Estado actualizado.');
     }

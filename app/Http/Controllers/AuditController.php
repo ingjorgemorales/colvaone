@@ -14,14 +14,25 @@ class AuditController extends Controller
 
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->where(function ($q) use ($search) {
+
+            $matchingEvents = collect(AuthEvent::EVENT_LABELS)
+                ->filter(fn ($label, $key) => stripos($label, $search) !== false || stripos($key, $search) !== false)
+                ->keys()
+                ->all();
+
+            $query->where(function ($q) use ($search, $matchingEvents) {
                 $q->where('email', 'like', "%{$search}%")
                   ->orWhere('event', 'like', "%{$search}%")
-                  ->orWhere('reason', 'like', "%{$search}%")
-                  ->orWhereHas('user', function ($q2) use ($search) {
-                      $q2->where('name', 'like', "%{$search}%")
-                         ->orWhere('last_name', 'like', "%{$search}%");
-                  });
+                  ->orWhere('reason', 'like', "%{$search}%");
+
+                if (!empty($matchingEvents)) {
+                    $q->orWhereIn('event', $matchingEvents);
+                }
+
+                $q->orWhereHas('user', function ($q2) use ($search) {
+                    $q2->where('name', 'like', "%{$search}%")
+                       ->orWhere('last_name', 'like', "%{$search}%");
+                });
             });
         }
 
@@ -43,7 +54,11 @@ class AuditController extends Controller
 
         $events = $query->latest('occurred_at')->paginate(20)->withQueryString();
 
-        $eventTypes = AuthEvent::select('event')->distinct()->pluck('event');
+        $eventTypes = AuthEvent::select('event')
+            ->distinct()
+            ->pluck('event')
+            ->sortBy(fn ($type) => AuthEvent::labelFor($type))
+            ->values();
 
         return view('audit.index', compact('events', 'eventTypes'));
     }

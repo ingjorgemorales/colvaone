@@ -5,12 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use App\Models\Task;
 use App\Models\User;
+use App\Services\AuthEventService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
 class GroupController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
     public function index(Request $request)
     {
         $query = Group::with(['creator', 'managers']);
@@ -62,7 +66,8 @@ class GroupController extends Controller
             'members.*' => 'exists:users,id',
         ]);
 
-        DB::transaction(function () use ($validated, $request) {
+        $group = null;
+        DB::transaction(function () use ($validated, $request, &$group) {
             $group = Group::create([
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
@@ -91,6 +96,10 @@ class GroupController extends Controller
                 ]);
             }
         });
+
+        if ($group) {
+            $this->events->record($request, 'group_created', true, reason: "Grupo '{$group->name}' creado");
+        }
 
         return redirect()->route('groups.index')->with('success', 'Grupo creado correctamente.');
     }
@@ -197,6 +206,8 @@ class GroupController extends Controller
             }
         });
 
+        $this->events->record($request, 'group_updated', true, reason: "Grupo '{$group->name}' actualizado");
+
         return redirect()->route('groups.index')->with('success', 'Grupo actualizado.');
     }
 
@@ -208,7 +219,11 @@ class GroupController extends Controller
             return redirect()->route('groups.index')->with('error', 'No se puede eliminar un grupo con tareas asociadas. Desactivalo en su lugar.');
         }
 
+        $groupName = $group->name;
         $group->delete();
+
+        $this->events->record($request, 'group_deleted', true, reason: "Grupo '{$groupName}' eliminado");
+
         return redirect()->route('groups.index')->with('success', 'Grupo eliminado.');
     }
 
@@ -218,6 +233,8 @@ class GroupController extends Controller
 
         $group->update(['status' => $group->status === 'active' ? 'inactive' : 'active']);
         $status = $group->status === 'active' ? 'activado' : 'desactivado';
+
+        $this->events->record($request, 'group_toggled', true, reason: "Grupo '{$group->name}' {$status}");
 
         return redirect()->route('groups.index')->with('success', "Grupo {$status}.");
     }
@@ -242,6 +259,10 @@ class GroupController extends Controller
             'joined_at' => now(),
         ]);
 
+        $member = User::find($validated['user_id']);
+        $memberName = $member ? trim($member->name . ' ' . ($member->last_name ?? '')) : "ID #{$validated['user_id']}";
+        $this->events->record($request, 'group_member_added', true, reason: "Integrante {$memberName} agregado al grupo '{$group->name}' como {$validated['member_type']}");
+
         return back()->with('success', 'Integrante agregado.');
     }
 
@@ -253,6 +274,9 @@ class GroupController extends Controller
             'is_active' => false,
             'left_at' => now(),
         ]);
+
+        $memberName = trim($user->name . ' ' . ($user->last_name ?? ''));
+        $this->events->record(request(), 'group_member_removed', true, reason: "Integrante {$memberName} removido del grupo '{$group->name}'");
 
         return back()->with('success', 'Integrante removido del grupo.');
     }
