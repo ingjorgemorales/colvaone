@@ -6,6 +6,8 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordChangeController;
 use App\Http\Controllers\Auth\PasswordCodeController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
+use App\Http\Controllers\AiChatController;
+use App\Http\Controllers\AiChatSettingController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\AuditController;
 use App\Http\Controllers\CommitteeController;
@@ -58,6 +60,10 @@ Route::middleware('auth')->group(function (): void {
     Route::patch('/notifications/{id}/read', [NotificationController::class, 'read'])->name('notifications.read');
     Route::patch('/notifications/read-all', [NotificationController::class, 'readAll'])->name('notifications.read-all');
 
+    Route::get('/ai-chat/bootstrap', [AiChatController::class, 'bootstrap'])->name('ai-chat.bootstrap')->middleware('permission:ai_chat.view');
+    Route::post('/ai-chat/messages', [AiChatController::class, 'send'])->name('ai-chat.messages.send')->middleware('permission:ai_chat.view');
+    Route::delete('/ai-chat/history', [AiChatController::class, 'clear'])->name('ai-chat.history.clear')->middleware('permission:ai_chat.clear_own');
+
     Route::resource('users', UserController::class)->except(['show'])->middleware('permission:users.view');
     Route::post('users/{user}/toggle', [UserController::class, 'toggle'])->name('users.toggle')->middleware('permission:users.edit');
 
@@ -81,6 +87,9 @@ Route::middleware('auth')->group(function (): void {
         Route::post('{type}/{id}/toggle', [ProcessController::class, 'toggle'])->name('processes.toggle')->middleware('permission:processes.toggle');
         Route::post('{type}/{id}/move', [ProcessController::class, 'move'])->name('processes.move')->middleware('permission:processes.edit');
     });
+
+    Route::get('configuracion/chat-ia', [AiChatSettingController::class, 'edit'])->name('ai-chat.settings.edit')->middleware('permission:ai_chat.configure');
+    Route::put('configuracion/chat-ia', [AiChatSettingController::class, 'update'])->name('ai-chat.settings.update')->middleware('permission:ai_chat.configure');
 
     Route::get('indicators', [IndicatorController::class, 'index'])->name('indicators.index')->middleware('permission:indicators.view,indicators.view_all');
     Route::get('indicators/create', [IndicatorController::class, 'create'])->name('indicators.create')->middleware('permission:indicators.create');

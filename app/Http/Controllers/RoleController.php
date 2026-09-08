@@ -201,6 +201,14 @@ class RoleController extends Controller
                     'settings.edit' => 'Editar configuracion',
                 ],
             ],
+            'ai_chat' => [
+                'name' => 'Chat IA',
+                'items' => [
+                    'ai_chat.view' => 'Ver chat IA',
+                    'ai_chat.clear_own' => 'Limpiar historial propio',
+                    'ai_chat.configure' => 'Configurar chat IA',
+                ],
+            ],
             'groups' => [
                 'name' => 'Grupos de trabajo',
                 'items' => [

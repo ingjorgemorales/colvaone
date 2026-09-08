@@ -278,7 +278,13 @@
                 @foreach ($navigationItems ?? collect(config('navigation.items'))->where('enabled', true)->sortBy('order') as $item)
                     @php
                         $isLinked = filled($item['route']);
+                        $children = $item['children'] ?? [];
                         $isActive = $isLinked && request()->routeIs($item['route']);
+                        foreach ($children as $child) {
+                            if (filled($child['route'] ?? null) && request()->routeIs($child['route'])) {
+                                $isActive = true;
+                            }
+                        }
                         $permissions = $item['permission'] ?? null;
                         $hasPermission = empty($permissions)
                             || (is_array($permissions)
@@ -286,7 +292,6 @@
                                 : auth()->user()->hasPermission($permissions));
                     @endphp
                     @if($hasPermission)
-                    @php $children = $item['children'] ?? []; @endphp
                     <div @if($children) x-data="{ openSub: {{ $isActive ? 'true' : 'false' }} }" @endif>
                         <a href="{{ $isLinked ? route($item['route']) : '#' }}"
                             class="nav-link {{ $isActive ? 'active' : '' }}"
@@ -307,11 +312,17 @@
                                     @php
                                         $childLinked = filled($child['route'] ?? null);
                                         $childParams = $child['params'] ?? [];
+                                        $childPermissions = $child['permission'] ?? null;
+                                        $childHasPermission = empty($childPermissions)
+                                            || (is_array($childPermissions)
+                                                ? auth()->user()->hasAnyPermission($childPermissions)
+                                                : auth()->user()->hasPermission($childPermissions));
                                         // Activo solo si coincide la ruta y ademas cada parametro del hijo.
                                         $childActive = $childLinked
                                             && request()->routeIs($child['route'])
                                             && collect($childParams)->every(fn ($v, $k) => (string) request($k) === (string) $v);
                                     @endphp
+                                    @if($childHasPermission)
                                     <a href="{{ $childLinked ? route($child['route'], $childParams) : '#' }}"
                                         class="nav-sub-link {{ $childActive ? 'active' : '' }}"
                                         @if($childActive) aria-current="page" @endif
@@ -319,6 +330,7 @@
                                         @if(!$childLinked) @click.prevent @endif>
                                         {{ $child['name'] }}
                                     </a>
+                                    @endif
                                 @endforeach
                             </div>
                         @endif
@@ -441,6 +453,12 @@
             </main>
         </div>
     </div>
+
+    @auth
+        @if(auth()->user()->hasPermission('ai_chat.view'))
+            @include('ai-chat.widget')
+        @endif
+    @endauth
 
 
 
