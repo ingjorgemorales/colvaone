@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\AiChatSetting;
+use App\Services\AuthEventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -10,6 +11,10 @@ use Illuminate\View\View;
 
 class AiChatSettingController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
+
     public function edit(): View
     {
         $settings = AiChatSetting::current();
@@ -45,6 +50,17 @@ class AiChatSettingController extends Controller
         }
 
         $settings->update($data);
+
+        // Se deja constancia de que cambio, nunca del valor de la API key.
+        $detalle = sprintf(
+            'Proveedor: %s, modelo: %s, estado: %s%s',
+            $validated['provider'],
+            $validated['model'],
+            $data['is_active'] ? 'activo' : 'inactivo',
+            $request->filled('api_key') ? ', API key reemplazada' : '',
+        );
+
+        $this->events->record($request, 'ai_chat_settings_updated', true, reason: $detalle);
 
         return redirect()->route('ai-chat.settings.edit')
             ->with('success', 'Configuracion del chat IA actualizada correctamente.');

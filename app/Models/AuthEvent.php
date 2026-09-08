@@ -90,6 +90,9 @@ class AuthEvent extends BaseModel
         'committee_updated' => 'Comité actualizado',
         'committee_toggled' => 'Estado de comité cambiado',
         'committee_report_added' => 'Relato de comité agregado',
+
+        'ai_chat_settings_updated' => 'Configuración del Chat IA actualizada',
+        'ai_chat_history_cleared' => 'Historial de Chat IA borrado',
     ];
 
     public static function labelFor(?string $event): string

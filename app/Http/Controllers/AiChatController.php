@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\AiChatConversation;
 use App\Models\AiChatSetting;
 use App\Services\AiChatService;
+use App\Services\AuthEventService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +14,10 @@ use Throwable;
 
 class AiChatController extends Controller
 {
+    public function __construct(
+        protected AuthEventService $events
+    ) {}
+
     public function bootstrap(Request $request): JsonResponse
     {
         if (!$this->tablesReady()) {
@@ -100,9 +105,16 @@ class AiChatController extends Controller
             ]);
         }
 
-        AiChatConversation::query()
+        $borradas = AiChatConversation::query()
             ->where('user_id', $request->user()->id)
             ->delete();
+
+        $this->events->record(
+            $request,
+            'ai_chat_history_cleared',
+            true,
+            reason: "Conversaciones eliminadas: {$borradas}",
+        );
 
         $conversation = $this->conversation($request);
 

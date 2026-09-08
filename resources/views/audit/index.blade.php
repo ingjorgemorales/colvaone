@@ -96,6 +96,7 @@
                                         'role_updated' => ['bg' => 'rgba(18,63,110,0.08)', 'text' => '#123f6e'],
                                         'role_deleted' => ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'],
                                         'profile_updated' => ['bg' => 'rgba(18,63,110,0.08)', 'text' => '#123f6e'],
+                                        'ai_chat_history_cleared' => ['bg' => 'rgba(220,38,38,0.08)', 'text' => '#dc2626'],
                                     ];
 
                                     $ev = $event->event;

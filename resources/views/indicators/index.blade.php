@@ -70,9 +70,8 @@
         </p>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             @if(auth()->user()->hasPermission('indicators.settings'))
-                <a href="{{ route('processes.index') }}" class="btn-secondary" title="Ajustes: procesos y subprocesos"
-                    style="width:42px;height:42px;padding:0;justify-content:center">
-                    <i data-lucide="settings" style="width:17px;height:17px"></i>
+                <a href="{{ route('processes.index') }}" class="btn-secondary" title="Procesos y subprocesos">
+                    <i data-lucide="settings" style="width:17px;height:17px"></i> Ajustes
                 </a>
             @endif
             @if(auth()->user()->hasPermission('indicators.create'))
