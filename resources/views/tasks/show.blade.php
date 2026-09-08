@@ -1,6 +1,6 @@
 <x-layouts.app title="{{ $task->title }} | {{ config('app.name') }}" heading="{{ $task->title }}" subheading="Detalle de tarea">
     @php($isLocked = $task->isLocked())
-    @php($canManageAllProgress = auth()->user()->role === 'superadmin' || (int) $task->created_by === (int) auth()->id())
+    @php($canManageAllProgress = (int) $task->created_by === (int) auth()->id() || auth()->user()->hasPermission('group_tasks.manage_progress'))
 
     <div style="display:grid;gap:20px;grid-template-columns:2fr 1fr">
         <div style="display:flex;flex-direction:column;gap:20px">

@@ -224,6 +224,7 @@ class RoleController extends Controller
                     'group_tasks.reassign' => 'Reasignar tareas',
                     'group_tasks.update' => 'Editar tareas',
                     'group_tasks.update_progress' => 'Actualizar progreso',
+                    'group_tasks.manage_progress' => 'Actualizar progreso de cualquier asignado',
                     'group_tasks.comment' => 'Comentar en tareas',
                     'group_tasks.complete' => 'Finalizar tareas',
                     'group_tasks.cancel' => 'Cancelar tareas',

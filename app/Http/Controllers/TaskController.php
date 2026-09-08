@@ -497,7 +497,8 @@ class TaskController extends Controller
 
     private function canManageAllProgress(Task $task, User $user): bool
     {
-        return $user->role === 'superadmin' || (int) $task->created_by === (int) $user->id;
+        return (int) $task->created_by === (int) $user->id
+            || $user->hasPermission('group_tasks.manage_progress');
     }
 
     private function notifyTask(
