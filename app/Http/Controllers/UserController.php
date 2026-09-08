@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Mail\WelcomeMail;
+use App\Models\Role;
 use App\Models\User;
 use App\Services\AuthEventService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
@@ -16,7 +18,8 @@ class UserController extends Controller
 {
     public function index(Request $request): View
     {
-        $query = User::query();
+        $query = User::with('roleObject');
+        $roles = self::roles();
 
         if ($request->filled('search')) {
             $search = $request->input('search');
@@ -38,7 +41,7 @@ class UserController extends Controller
 
         $users = $query->latest()->paginate(15)->withQueryString();
 
-        return view('users.index', compact('users'));
+        return view('users.index', compact('users', 'roles'));
     }
 
     public function create(): View
@@ -59,7 +62,7 @@ class UserController extends Controller
             'position' => ['required', 'string', 'max:255'],
             'area' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
-            'role' => ['required', 'string', 'max:30'],
+            'role' => ['required', 'string', 'max:50', Rule::exists('roles', 'slug')],
         ]);
 
         $tempPassword = Str::random(12);
@@ -112,7 +115,7 @@ class UserController extends Controller
             'position' => ['required', 'string', 'max:255'],
             'area' => ['nullable', 'string', 'max:255'],
             'department' => ['nullable', 'string', 'max:255'],
-            'role' => ['required', 'string', 'max:30'],
+            'role' => ['required', 'string', 'max:50', Rule::exists('roles', 'slug')],
         ]);
 
         $user->update($request->only([
@@ -151,13 +154,9 @@ class UserController extends Controller
 
     public static function roles(): array
     {
-        return [
-            'superadmin' => 'Super Administrador',
-            'admin' => 'Administrador',
-            'gerente' => 'Gerente',
-            'jefe' => 'Jefe',
-            'operador' => 'Operador',
-            'auditor' => 'Auditor',
-        ];
+        return Role::query()
+            ->orderBy('name')
+            ->pluck('name', 'slug')
+            ->all();
     }
 }

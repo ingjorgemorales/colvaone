@@ -9,7 +9,7 @@
                 <label style="display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px">Rol</label>
                 <select name="role" class="input-field">
                     <option value="">Todos</option>
-                    @foreach(\App\Http\Controllers\UserController::roles() as $key => $label)
+                    @foreach($roles as $key => $label)
                         <option value="{{ $key }}" {{ request('role') === $key ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>

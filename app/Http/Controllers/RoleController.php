@@ -58,7 +58,6 @@ class RoleController extends Controller
 
         $role->update([
             'name' => $request->input('name'),
-            'slug' => \Illuminate\Support\Str::slug($request->input('name')),
             'description' => $request->input('description'),
             'permissions' => $request->input('permissions', []),
         ]);

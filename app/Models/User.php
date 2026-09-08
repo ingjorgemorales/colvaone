@@ -59,17 +59,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function getRoleLabelAttribute(): string
     {
-        return match ($this->role) {
-            'superadmin' => 'Super Administrador',
-            'admin' => 'Administrador',
-            'gerente' => 'Gerente',
-            'jefe' => 'Jefe',
-            'operador' => 'Operador',
-            'auditor' => 'Auditor',
-            'user' => 'Usuario',
-            'viewer' => 'Visualizador',
-            default => 'Sin rol',
-        };
+        return $this->roleObject?->name ?? 'Sin rol';
     }
 
     public function getInitialsAttribute(): string
