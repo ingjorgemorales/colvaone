@@ -13,6 +13,14 @@ class IndicatorResult extends BaseModel
     public const ACCEPTABLE = 'aceptable';
     public const SATISFACTORY = 'satisfactorio';
 
+    public const FORMULA_ASCENDING = 'ascendente';
+    public const FORMULA_DESCENDING = 'descendente';
+
+    public const COMPLIANCE_FORMULAS = [
+        self::FORMULA_ASCENDING => 'Ascendente: mientras mas alto, mejor',
+        self::FORMULA_DESCENDING => 'Descendente: mientras mas bajo, mejor (llegar a cero)',
+    ];
+
     protected $fillable = [
         'indicator_id',
         'period_start',
@@ -21,6 +29,7 @@ class IndicatorResult extends BaseModel
         'denominator',
         'result',
         'period_goal',
+        'compliance_formula',
         'compliance',
         'evaluation',
         'analysis',
@@ -33,6 +42,7 @@ class IndicatorResult extends BaseModel
     /** Que el objeto recien creado tenga el mismo estado que la fila en BD. */
     protected $attributes = [
         'status' => 'active',
+        'compliance_formula' => self::FORMULA_ASCENDING,
     ];
 
     protected $casts = [
@@ -71,21 +81,33 @@ class IndicatorResult extends BaseModel
     }
 
     /**
-     * CUMPLIMIENTO segun el sentido de la meta:
+     * CUMPLIMIENTO segun la formula seleccionada:
      *   ascendente  -> (RESULTADO / META) * 100   la meta busca subir el valor
      *   descendente -> (META / RESULTADO) * 100   la meta busca llegar a cero
      */
-    public static function calculateCompliance(float $result, ?float $goal, string $direction): float
+    public static function calculateCompliance(float $result, ?float $goal, ?string $direction = null): float
     {
         if ($goal === null || $goal == 0.0) {
             return 0.0;
         }
 
-        if ($direction === Indicator::GOAL_DESCENDING) {
+        if ($direction === self::FORMULA_DESCENDING || $direction === Indicator::GOAL_DESCENDING) {
             return $result == 0.0 ? 0.0 : round(($goal / $result) * 100, 2);
         }
 
         return round(($result / $goal) * 100, 2);
+    }
+
+    public function getComplianceFormulaLabelAttribute(): string
+    {
+        return self::COMPLIANCE_FORMULAS[$this->compliance_formula] ?? self::COMPLIANCE_FORMULAS[self::FORMULA_ASCENDING];
+    }
+
+    public function getComplianceFormulaMathAttribute(): string
+    {
+        return ($this->compliance_formula === self::FORMULA_DESCENDING || $this->compliance_formula === Indicator::GOAL_DESCENDING)
+            ? '(Meta / Resultado) x 100'
+            : '(Resultado / Meta) x 100';
     }
 
     /** Numeros con separador de miles y sin ceros sobrantes al final. */

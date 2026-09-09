@@ -110,17 +110,6 @@
             @error('goal') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
-        <div class="field field-full">
-            <label class="field-label">Sentido de la meta <span class="req">*</span></label>
-            <select name="goal_direction" required class="input-field @error('goal_direction') error-field @enderror">
-                @foreach(\App\Models\Indicator::GOAL_DIRECTIONS as $value => $label)
-                    <option value="{{ $value }}" {{ old('goal_direction', $indicator->goal_direction ?? \App\Models\Indicator::GOAL_ASCENDING) === $value ? 'selected' : '' }}>{{ $label }}</option>
-                @endforeach
-            </select>
-            <p class="field-hint">Define la formula del cumplimiento: ascendente usa (Resultado / Meta) x 100; descendente usa (Meta / Resultado) x 100.</p>
-            @error('goal_direction') <p class="field-error">{{ $message }}</p> @enderror
-        </div>
-
         {{-- Campos amplios: ocupan la fila completa --}}
         <div class="field field-full">
             <label class="field-label">Objetivo del indicador <span class="req">*</span></label>

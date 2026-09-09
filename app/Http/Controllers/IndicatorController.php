@@ -184,7 +184,6 @@ class IndicatorController extends Controller
             'type' => ['required', Rule::in(array_keys(Indicator::TYPES))],
             'methodological_aspects' => ['nullable', 'string'],
             'goal' => ['required', 'integer', 'min:1', 'max:' . $max],
-            'goal_direction' => ['required', Rule::in(array_keys(Indicator::GOAL_DIRECTIONS))],
             'threshold_acceptable' => ['required', 'integer', 'min:1', 'max:' . $max],
             'threshold_satisfactory' => ['required', 'integer', 'min:1', 'max:' . $max],
         ], [
@@ -216,12 +215,14 @@ class IndicatorController extends Controller
             'numerator' => ['required', 'numeric'],
             'denominator' => ['required', 'numeric', 'not_in:0'],
             'period_goal' => ['required', 'numeric', 'not_in:0'],
+            'compliance_formula' => ['required', Rule::in(array_keys(IndicatorResult::COMPLIANCE_FORMULAS))],
             'analysis' => ['nullable', 'string'],
             'action_number' => ['nullable', 'string', 'max:60'],
         ], [
             'period_end.after_or_equal' => 'La fecha fin no puede ser anterior a la fecha inicio.',
             'denominator.not_in' => 'El denominador no puede ser cero.',
             'period_goal.not_in' => 'La meta del periodo no puede ser cero.',
+            'compliance_formula.required' => 'La fórmula de cumplimiento es obligatoria.',
         ]);
     }
 
@@ -231,7 +232,7 @@ class IndicatorController extends Controller
      */
     /**
      * Aplica las formulas del SGC: el resultado y el cumplimiento nunca se
-     * digitan, se derivan del numerador, el denominador y la meta.
+     * digitan, se derivan del numerador, el denominador, la meta y la formula elegida.
      */
     private function withCalculations(array $validated, Indicator $indicator): array
     {
@@ -240,10 +241,12 @@ class IndicatorController extends Controller
             (float) $validated['denominator'],
         );
 
+        $formula = $validated['compliance_formula'] ?? IndicatorResult::FORMULA_ASCENDING;
+
         $compliance = IndicatorResult::calculateCompliance(
             $result,
             (float) $validated['period_goal'],
-            $indicator->goal_direction ?? Indicator::GOAL_ASCENDING,
+            $formula,
         );
 
         return $validated + [
@@ -254,8 +257,8 @@ class IndicatorController extends Controller
     }
 
     /**
-     * Cambiar los umbrales o el sentido de la meta deja las evaluaciones
-     * guardadas fuera de sintonia con la ficha, asi que se recalculan.
+     * Cambiar los umbrales deja las evaluaciones guardadas fuera de sintonia
+     * con la ficha, asi que se recalculan usando la formula de cada resultado.
      */
     private function recalculateResults(Indicator $indicator): void
     {
@@ -263,7 +266,7 @@ class IndicatorController extends Controller
             $compliance = IndicatorResult::calculateCompliance(
                 (float) $result->result,
                 $result->period_goal === null ? null : (float) $result->period_goal,
-                $indicator->goal_direction ?? Indicator::GOAL_ASCENDING,
+                $result->compliance_formula ?? IndicatorResult::FORMULA_ASCENDING,
             );
 
             $evaluation = $indicator->evaluate($compliance);
