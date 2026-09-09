@@ -10,6 +10,7 @@ return [
             ['name' => 'Indicador SGC I', 'route' => 'indicators.index', 'params' => ['categoria' => 'I']],
             ['name' => 'Indicador BSC II', 'route' => 'indicators.index', 'params' => ['categoria' => 'II']],
             ['name' => 'Indicador CX III', 'route' => 'indicators.index', 'params' => ['categoria' => 'III']],
+            ['name' => 'Indicador Bono IV', 'route' => 'indicators.index', 'params' => ['categoria' => 'IV']],
         ]],
         ['name' => 'Ahorros', 'icon' => 'piggy-bank', 'route' => null, 'permission' => 'savings.view', 'order' => 50, 'enabled' => true],
         ['name' => 'Aplicativos', 'icon' => 'blocks', 'route' => 'applications.index', 'permission' => 'applications.view', 'order' => 60, 'enabled' => true],

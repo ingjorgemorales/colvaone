@@ -48,6 +48,7 @@ class Indicator extends BaseModel
         'I' => 'Indicador SGC I',
         'II' => 'Indicador BSC II',
         'III' => 'Indicador CX III',
+        'IV' => 'Indicador Bono IV',
     ];
 
     public const TYPES = [
