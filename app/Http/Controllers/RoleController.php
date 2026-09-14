@@ -146,7 +146,7 @@ class RoleController extends Controller
                     'indicators.results' => 'Registrar resultados',
                     'indicators.results_edit' => 'Editar resultados registrados',
                     'indicators.results_toggle' => 'Activar/Desactivar resultados',
-                    'indicators.settings' => 'Ajustes: procesos y subprocesos',
+                    'indicators.settings' => 'Ajustes: procesos, subprocesos y objetivos de calidad',
                 ],
             ],
             'savings' => [

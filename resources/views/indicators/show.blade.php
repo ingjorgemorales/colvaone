@@ -198,6 +198,10 @@
                             <p class="data-label">Aspectos metodologicos</p>
                             @include('indicators.partials.clamped-text', ['text' => $indicator->methodological_aspects, 'modalTitle' => 'Aspectos metodologicos'])
                         </div>
+                        <div class="data-item data-item-full">
+                            <p class="data-label">Objetivo de calidad</p>
+                            <p class="data-value">{{ $indicator->quality_objective_label }}</p>
+                        </div>
                     </div>
                 </div>
 

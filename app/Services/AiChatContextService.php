@@ -102,7 +102,7 @@ class AiChatContextService
             return '';
         }
 
-        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess'])->visibleFor($user);
+        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess', 'qualityObjective'])->visibleFor($user);
         $this->applyTerms($query, ['indicators.name', 'indicators.objective', 'indicators.type', 'indicators.category'], $terms);
 
         $indicators = $query->orderBy('name')->limit(8)->get();
@@ -118,7 +118,7 @@ class AiChatContextService
                 ? $indicator->latestResult->compliance . '% (' . $indicator->latestResult->evaluation_label . ')'
                 : 'sin resultado vigente';
 
-            $lines[] = "- {$indicator->name}; categoria: {$indicator->category_label}; proceso: {$indicator->process_label}; responsable: " . ($indicator->responsible->name ?? 'Sin responsable') . "; meta: {$indicator->goal}%; ultimo resultado: {$latest}.";
+            $lines[] = "- {$indicator->name}; categoria: {$indicator->category_label}; objetivo de calidad: {$indicator->quality_objective_label}; proceso: {$indicator->process_label}; responsable: " . ($indicator->responsible->name ?? 'Sin responsable') . "; meta: {$indicator->goal}%; ultimo resultado: {$latest}.";
         }
 
         return implode("\n", $lines);

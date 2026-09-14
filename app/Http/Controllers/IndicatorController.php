@@ -3,8 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\Indicator;
-use App\Models\Process;
 use App\Models\IndicatorResult;
+use App\Models\Process;
+use App\Models\QualityObjective;
 use App\Models\Subprocess;
 use App\Models\User;
 use App\Services\AuthEventService;
@@ -21,7 +22,7 @@ class IndicatorController extends Controller
     ) {}
     public function index(Request $request): View
     {
-        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess'])->visibleFor($request->user());
+        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess', 'qualityObjective'])->visibleFor($request->user());
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->input('search') . '%');
@@ -66,7 +67,7 @@ class IndicatorController extends Controller
     {
         $this->ensureCanView($indicator);
 
-        $indicator->load(['responsible', 'creator', 'updater', 'results.creator', 'process', 'subprocess']);
+        $indicator->load(['responsible', 'creator', 'updater', 'results.creator', 'process', 'subprocess', 'qualityObjective']);
 
         return view('indicators.show', [
             'indicator' => $indicator,
@@ -86,7 +87,7 @@ class IndicatorController extends Controller
     {
         $this->ensureCanView($indicator);
 
-        $validated = $this->validateIndicator($request);
+        $validated = $this->validateIndicator($request, $indicator);
 
         $indicator->update($validated + ['updated_by' => Auth::id()]);
 
@@ -167,7 +168,7 @@ class IndicatorController extends Controller
         return $this->backToResults($indicator, "Resultado {$status} correctamente.");
     }
 
-    private function validateIndicator(Request $request): array
+    private function validateIndicator(Request $request, ?Indicator $indicator = null): array
     {
         $max = Indicator::SCALE_MAX;
 
@@ -176,6 +177,16 @@ class IndicatorController extends Controller
             'category' => ['nullable', Rule::in(array_keys(Indicator::CATEGORIES))],
             'process_id' => ['nullable', Rule::exists('processes', 'id')->where('is_active', true)],
             'subprocess_id' => ['nullable', Rule::exists('subprocesses', 'id')->where('is_active', true)],
+            'quality_objective_id' => [
+                'required',
+                Rule::exists('quality_objectives', 'id')->where(function ($query) use ($indicator): void {
+                    $query->where('is_active', true);
+
+                    if ($indicator?->quality_objective_id) {
+                        $query->orWhere('id', $indicator->quality_objective_id);
+                    }
+                }),
+            ],
             'objective' => ['required', 'string'],
             'responsible_user_id' => ['required', 'exists:users,id'],
             'formula' => ['required', 'string', 'max:255'],
@@ -190,6 +201,7 @@ class IndicatorController extends Controller
             'goal.max' => 'La meta no puede superar ' . $max . '%.',
             'threshold_acceptable.max' => 'El umbral aceptable no puede superar ' . $max . '%.',
             'threshold_satisfactory.max' => 'El umbral satisfactorio no puede superar ' . $max . '%.',
+            'quality_objective_id.required' => 'El objetivo de calidad es obligatorio.',
         ]);
 
         $validator->after(function ($validator) use ($request): void {
@@ -331,7 +343,23 @@ class IndicatorController extends Controller
             'users' => $this->activeUsers(),
             'processes' => Process::selectable()->get(),
             'subprocesses' => Subprocess::selectable()->get(),
+            'qualityObjectives' => $this->qualityObjectives($extra['indicator'] ?? null),
         ];
+    }
+
+    private function qualityObjectives(?Indicator $indicator = null)
+    {
+        $objectives = QualityObjective::selectable()->get();
+
+        if ($indicator?->quality_objective_id && ! $objectives->contains('id', $indicator->quality_objective_id)) {
+            $current = QualityObjective::find($indicator->quality_objective_id);
+
+            if ($current) {
+                $objectives->push($current);
+            }
+        }
+
+        return $objectives->sortBy([['position', 'asc'], ['name', 'asc']])->values();
     }
 
     private function activeUsers()

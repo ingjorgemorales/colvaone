@@ -135,6 +135,19 @@
                 placeholder="Fuente de datos, supuestos, exclusiones...">{{ old('methodological_aspects', $indicator->methodological_aspects ?? '') }}</textarea>
             @error('methodological_aspects') <p class="field-error">{{ $message }}</p> @enderror
         </div>
+
+        <div class="field field-full">
+            <label class="field-label">Objetivo de calidad <span class="req">*</span></label>
+            <select name="quality_objective_id" required class="input-field @error('quality_objective_id') error-field @enderror">
+                <option value="">Seleccionar...</option>
+                @foreach($qualityObjectives as $qualityObjective)
+                    <option value="{{ $qualityObjective->id }}" {{ (int) old('quality_objective_id', $indicator->quality_objective_id ?? 0) === $qualityObjective->id ? 'selected' : '' }}>
+                        {{ $qualityObjective->name }}{{ $qualityObjective->is_active ? '' : ' (Inactivo)' }}
+                    </option>
+                @endforeach
+            </select>
+            @error('quality_objective_id') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
     </div>
 </div>
 

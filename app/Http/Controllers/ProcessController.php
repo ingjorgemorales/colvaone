@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Process;
+use App\Models\QualityObjective;
 use App\Models\Subprocess;
 use App\Services\AuthEventService;
 use Illuminate\Database\Eloquent\Model;
@@ -20,6 +21,7 @@ class ProcessController extends Controller
 {
     private const TYPE_PROCESS = 'procesos';
     private const TYPE_SUBPROCESS = 'subprocesos';
+    private const TYPE_QUALITY_OBJECTIVE = 'objetivos-calidad';
 
     public function __construct(
         protected AuthEventService $events
@@ -30,6 +32,7 @@ class ProcessController extends Controller
         return view('processes.index', [
             'processes' => Process::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
             'subprocesses' => Subprocess::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
+            'qualityObjectives' => QualityObjective::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
         ]);
     }
 
@@ -43,7 +46,7 @@ class ProcessController extends Controller
 
         $item = $model::create($validated);
 
-        $eventName = $type === self::TYPE_PROCESS ? 'process_created' : 'subprocess_created';
+        $eventName = $this->eventName($type, 'created');
         $this->events->record($request, $eventName, true, reason: "{$this->label($type)} '{$item->name}' creado");
 
         return $this->back($type, $this->label($type) . ' creado correctamente.');
@@ -54,7 +57,7 @@ class ProcessController extends Controller
         $item = $this->findOrFail($type, $id);
         $item->update($this->validateItem($request, $type, $item));
 
-        $eventName = $type === self::TYPE_PROCESS ? 'process_updated' : 'subprocess_updated';
+        $eventName = $this->eventName($type, 'updated');
         $this->events->record($request, $eventName, true, reason: "{$this->label($type)} '{$item->name}' actualizado");
 
         return $this->back($type, $this->label($type) . ' actualizado correctamente.');
@@ -66,7 +69,7 @@ class ProcessController extends Controller
         $item->update(['is_active' => ! $item->is_active]);
 
         $estado = $item->is_active ? 'activado' : 'inactivado';
-        $eventName = $type === self::TYPE_PROCESS ? 'process_toggled' : 'subprocess_toggled';
+        $eventName = $this->eventName($type, 'toggled');
         $this->events->record(request(), $eventName, true, reason: "{$this->label($type)} '{$item->name}' {$estado}");
 
         return $this->back($type, $this->label($type) . " {$estado} correctamente.");
@@ -101,7 +104,7 @@ class ProcessController extends Controller
             $neighbour->update(['position' => $posItem]);
         });
 
-        $eventName = $type === self::TYPE_PROCESS ? 'process_moved' : 'subprocess_moved';
+        $eventName = $this->eventName($type, 'moved');
         $dir = $up ? 'arriba' : 'abajo';
         $this->events->record($request, $eventName, true, reason: "Orden de {$this->label($type)} '{$item->name}' movido hacia {$dir}");
 
@@ -115,6 +118,14 @@ class ProcessController extends Controller
                 'name' => ['required', 'string', 'max:150', Rule::unique('processes', 'name')->ignore($current)],
             ], [
                 'name.unique' => 'Ya existe un proceso con ese nombre.',
+            ]);
+        }
+
+        if ($type === self::TYPE_QUALITY_OBJECTIVE) {
+            return $request->validate([
+                'name' => ['required', 'string', 'max:255', Rule::unique('quality_objectives', 'name')->ignore($current)],
+            ], [
+                'name.unique' => 'Ya existe un objetivo de calidad con ese nombre.',
             ]);
         }
 
@@ -135,6 +146,7 @@ class ProcessController extends Controller
         return match ($type) {
             self::TYPE_PROCESS => Process::class,
             self::TYPE_SUBPROCESS => Subprocess::class,
+            self::TYPE_QUALITY_OBJECTIVE => QualityObjective::class,
             default => abort(404),
         };
     }
@@ -146,7 +158,22 @@ class ProcessController extends Controller
 
     private function label(string $type): string
     {
-        return $type === self::TYPE_PROCESS ? 'Proceso' : 'Subproceso';
+        return match ($type) {
+            self::TYPE_PROCESS => 'Proceso',
+            self::TYPE_SUBPROCESS => 'Subproceso',
+            self::TYPE_QUALITY_OBJECTIVE => 'Objetivo de calidad',
+            default => abort(404),
+        };
+    }
+
+    private function eventName(string $type, string $action): string
+    {
+        return match ($type) {
+            self::TYPE_PROCESS => "process_{$action}",
+            self::TYPE_SUBPROCESS => "subprocess_{$action}",
+            self::TYPE_QUALITY_OBJECTIVE => "quality_objective_{$action}",
+            default => abort(404),
+        };
     }
 
     private function back(string $type, string $message): RedirectResponse

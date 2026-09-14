@@ -81,6 +81,10 @@ class AuthEvent extends BaseModel
         'subprocess_updated' => 'Subproceso actualizado',
         'subprocess_toggled' => 'Estado de subproceso cambiado',
         'subprocess_moved' => 'Orden de subproceso modificado',
+        'quality_objective_created' => 'Objetivo de calidad creado',
+        'quality_objective_updated' => 'Objetivo de calidad actualizado',
+        'quality_objective_toggled' => 'Estado de objetivo de calidad cambiado',
+        'quality_objective_moved' => 'Orden de objetivo de calidad modificado',
 
         'application_created' => 'Aplicativo creado',
         'application_updated' => 'Aplicativo actualizado',

@@ -1,4 +1,4 @@
-<x-layouts.app title="Ajustes de indicadores | {{ config('app.name') }}" heading="Ajustes de indicadores" subheading="Procesos y subprocesos que alimentan la ficha tecnica">
+<x-layouts.app title="Ajustes de indicadores | {{ config('app.name') }}" heading="Ajustes de indicadores" subheading="Catalogos que alimentan la ficha tecnica">
     <style>
         .tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; align-items: center; }
         .tab-btn {
@@ -51,7 +51,9 @@
     </style>
 
     @php
-        $tab = request('tab') === 'subprocesos' ? 'subprocesos' : 'procesos';
+        $tab = in_array(request('tab'), ['procesos', 'subprocesos', 'objetivos-calidad'], true)
+            ? request('tab')
+            : 'procesos';
         $puedeAjustar = auth()->user()->hasPermission('indicators.settings');
         $canCreate = $puedeAjustar;
         $canEdit = $puedeAjustar;
@@ -79,6 +81,10 @@
             <button type="button" class="tab-btn" :class="tab === 'subprocesos' ? 'is-active' : ''" @click="tab = 'subprocesos'; close()">
                 <i data-lucide="git-branch" style="width:15px;height:15px"></i>
                 Subprocesos <span class="tab-count">{{ $subprocesses->count() }}</span>
+            </button>
+            <button type="button" class="tab-btn" :class="tab === 'objetivos-calidad' ? 'is-active' : ''" @click="tab = 'objetivos-calidad'; close()">
+                <i data-lucide="target" style="width:15px;height:15px"></i>
+                Objetivos de calidad <span class="tab-count">{{ $qualityObjectives->count() }}</span>
             </button>
 
             <a href="{{ route('indicators.index') }}" class="btn-secondary" style="margin-left:auto;padding:9px 16px;font-size:13px">
@@ -338,6 +344,123 @@
                                     <input name="name" type="text" maxlength="200" required x-model="form.name"
                                         class="input-field" placeholder="Ej: GESTION DE COMUNICACIONES">
                                 </div>
+                            </div>
+
+                            <div class="form-actions">
+                                <button type="button" class="btn-secondary" @click="close()">Cancelar</button>
+                                <button type="submit" class="btn-primary">
+                                    <i data-lucide="save" style="width:16px;height:16px"></i> Guardar
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                @endif
+            </div>
+        </div>
+
+        {{-- ============ OBJETIVOS DE CALIDAD ============ --}}
+        <div x-show="tab === 'objetivos-calidad'" x-cloak>
+            <div class="card" style="padding:24px">
+                <div style="overflow-x:auto;border:1px solid rgba(18,63,110,0.06);border-radius:12px;background:white">
+                    <table class="proc-table">
+                        <thead>
+                            <tr>
+                                <th style="width:90px">Orden</th>
+                                <th>Objetivo de calidad</th>
+                                <th style="width:130px">Indicadores</th>
+                                <th style="width:110px">Estado</th>
+                                @if($canEdit || $canToggle)<th style="width:120px;text-align:right">Acciones</th>@endif
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($qualityObjectives as $i => $qualityObjective)
+                                <tr class="{{ $qualityObjective->is_active ? '' : 'is-inactive' }}">
+                                    <td>
+                                        @if($canEdit)
+                                            <div style="display:flex;gap:4px">
+                                                <form method="POST" action="{{ route('processes.move', ['type' => 'objetivos-calidad', 'id' => $qualityObjective->id]) }}" style="margin:0">
+                                                    @csrf
+                                                    <input type="hidden" name="direction" value="up">
+                                                    <button type="submit" class="row-action" title="Subir" style="color:#64748b" {{ $i === 0 ? 'disabled' : '' }}>
+                                                        <i data-lucide="chevron-up" style="width:14px;height:14px"></i>
+                                                    </button>
+                                                </form>
+                                                <form method="POST" action="{{ route('processes.move', ['type' => 'objetivos-calidad', 'id' => $qualityObjective->id]) }}" style="margin:0">
+                                                    @csrf
+                                                    <input type="hidden" name="direction" value="down">
+                                                    <button type="submit" class="row-action" title="Bajar" style="color:#64748b" {{ $i === $qualityObjectives->count() - 1 ? 'disabled' : '' }}>
+                                                        <i data-lucide="chevron-down" style="width:14px;height:14px"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        @else
+                                            <span class="use-count">{{ $i + 1 }}</span>
+                                        @endif
+                                    </td>
+                                    <td style="font-weight:600;color:#1e293b">{{ $qualityObjective->name }}</td>
+                                    <td>
+                                        <span class="use-count">
+                                            {{ $qualityObjective->indicators_count }} {{ $qualityObjective->indicators_count === 1 ? 'indicador' : 'indicadores' }}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <span class="pill" style="background:{{ $qualityObjective->is_active ? 'rgba(5,150,105,0.08)' : 'rgba(148,163,184,0.12)' }};color:{{ $qualityObjective->is_active ? '#059669' : '#94a3b8' }}">
+                                            <span style="width:6px;height:6px;border-radius:50%;background:{{ $qualityObjective->is_active ? '#059669' : '#94a3b8' }}"></span>
+                                            {{ $qualityObjective->is_active ? 'Activo' : 'Inactivo' }}
+                                        </span>
+                                    </td>
+                                    @if($canEdit || $canToggle)
+                                        <td class="actions-cell">
+                                            <div style="display:flex;gap:4px;justify-content:flex-end">
+                                                @if($canEdit)
+                                                    <button type="button" class="row-action" title="Renombrar" style="color:#6366f1"
+                                                        @click="openEdit('objetivos-calidad', { id: {{ $qualityObjective->id }}, name: @js($qualityObjective->name), code: null })">
+                                                        <i data-lucide="pencil" style="width:14px;height:14px"></i>
+                                                    </button>
+                                                @endif
+                                                @if($canToggle)
+                                                    <form method="POST" action="{{ route('processes.toggle', ['type' => 'objetivos-calidad', 'id' => $qualityObjective->id]) }}" style="margin:0">
+                                                        @csrf
+                                                        <button type="submit" class="row-action" title="{{ $qualityObjective->is_active ? 'Inactivar' : 'Activar' }}"
+                                                            style="color:{{ $qualityObjective->is_active ? '#94a3b8' : '#059669' }}">
+                                                            <i data-lucide="{{ $qualityObjective->is_active ? 'power-off' : 'power' }}" style="width:14px;height:14px"></i>
+                                                        </button>
+                                                    </form>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    @endif
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="{{ ($canEdit || $canToggle) ? 5 : 4 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
+                                        <p style="font-size:13px;color:#94a3b8;margin:0">No hay objetivos de calidad registrados.</p>
+                                    </td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                @if($canCreate || $canEdit)
+                    <button type="button" class="btn-primary" style="margin-top:16px;padding:9px 16px;font-size:13px"
+                        x-show="panel !== 'objetivos-calidad'" @click="openCreate('objetivos-calidad')">
+                        <i data-lucide="plus" style="width:15px;height:15px"></i> Nuevo objetivo de calidad
+                    </button>
+
+                    <div class="edit-panel" x-show="panel === 'objetivos-calidad'" x-cloak x-transition>
+                        <p class="panel-title">
+                            <i data-lucide="square-pen" style="width:15px;height:15px"></i>
+                            <span x-text="editing ? 'Renombrar objetivo de calidad' : 'Nuevo objetivo de calidad'"></span>
+                        </p>
+                        <form method="POST" :action="action('objetivos-calidad')">
+                            @csrf
+                            <template x-if="editing"><input type="hidden" name="_method" value="PUT"></template>
+
+                            <div class="field">
+                                <label class="field-label">Nombre del objetivo de calidad <span class="req">*</span></label>
+                                <input name="name" type="text" maxlength="255" required x-model="form.name"
+                                    class="input-field" placeholder="Ej: Asegurar la calidad de los procesos">
                             </div>
 
                             <div class="form-actions">

@@ -71,6 +71,7 @@ class Indicator extends BaseModel
         'frequency',
         'type',
         'methodological_aspects',
+        'quality_objective_id',
         'goal',
         'goal_direction',
         'threshold_acceptable',
@@ -96,6 +97,11 @@ class Indicator extends BaseModel
         return $this->belongsTo(Subprocess::class);
     }
 
+    public function qualityObjective(): BelongsTo
+    {
+        return $this->belongsTo(QualityObjective::class);
+    }
+
     public function getProcessLabelAttribute(): string
     {
         return $this->process?->name ?? 'Sin asignar';
@@ -104,6 +110,11 @@ class Indicator extends BaseModel
     public function getSubprocessLabelAttribute(): string
     {
         return $this->subprocess?->full_name ?? 'Sin asignar';
+    }
+
+    public function getQualityObjectiveLabelAttribute(): string
+    {
+        return $this->qualityObjective?->name ?? 'Sin asignar';
     }
 
     public function getGoalDirectionLabelAttribute(): string
