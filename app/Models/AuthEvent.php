@@ -72,6 +72,7 @@ class AuthEvent extends BaseModel
         'indicator_result_created' => 'Resultado registrado',
         'indicator_result_updated' => 'Resultado actualizado',
         'indicator_result_toggled' => 'Estado de resultado cambiado',
+        'indicator_exported' => 'Indicador exportado a Excel',
 
         'process_created' => 'Proceso creado',
         'process_updated' => 'Proceso actualizado',

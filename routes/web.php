@@ -95,6 +95,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('indicators/create', [IndicatorController::class, 'create'])->name('indicators.create')->middleware('permission:indicators.create');
     Route::post('indicators', [IndicatorController::class, 'store'])->name('indicators.store')->middleware('permission:indicators.create');
     Route::get('indicators/{indicator}', [IndicatorController::class, 'show'])->name('indicators.show')->middleware('permission:indicators.view,indicators.view_all');
+    Route::get('indicators/{indicator}/exportar', [IndicatorController::class, 'export'])->name('indicators.export')->middleware('permission:indicators.view,indicators.view_all');
     Route::get('indicators/{indicator}/edit', [IndicatorController::class, 'edit'])->name('indicators.edit')->middleware('permission:indicators.edit');
     Route::put('indicators/{indicator}', [IndicatorController::class, 'update'])->name('indicators.update')->middleware('permission:indicators.edit');
     Route::post('indicators/{indicator}/toggle', [IndicatorController::class, 'toggle'])->name('indicators.toggle')->middleware('permission:indicators.toggle');

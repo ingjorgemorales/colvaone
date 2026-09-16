@@ -54,14 +54,88 @@
 
         <div class="field">
             <label class="field-label">Responsable <span class="req">*</span></label>
-            <select name="responsible_user_id" required class="input-field @error('responsible_user_id') error-field @enderror">
-                <option value="">Seleccionar...</option>
-                @foreach($users as $u)
-                    <option value="{{ $u->id }}" {{ (int) old('responsible_user_id', $indicator->responsible_user_id ?? 0) === $u->id ? 'selected' : '' }}>
-                        {{ $u->name }} {{ $u->last_name }}
-                    </option>
-                @endforeach
-            </select>
+            @php
+                $listaUsuarios = $users->map(fn ($u) => [
+                    'id' => $u->id,
+                    'nombre' => trim($u->name . ' ' . ($u->last_name ?? '')),
+                    'buscar' => mb_strtolower(trim($u->name . ' ' . ($u->last_name ?? '') . ' ' . ($u->document_number ?? ''))),
+                ])->values();
+                $responsableActual = (int) old('responsible_user_id', $indicator->responsible_user_id ?? 0);
+                $responsable = $listaUsuarios->firstWhere('id', $responsableActual);
+            @endphp
+            {{-- Buscador con sugerencias: lo que viaja al servidor es el id del campo oculto. --}}
+            <div class="combo" @click.outside="cerrar()"
+                x-data="{
+                    usuarios: @js($listaUsuarios),
+                    elegido: '{{ $responsable['id'] ?? '' }}',
+                    busqueda: @js($responsable['nombre'] ?? ''),
+                    abierto: false,
+                    indice: 0,
+                    tope: 50,
+                    get coincidencias() {
+                        const q = this.busqueda.trim().toLowerCase();
+                        return q === '' ? this.usuarios : this.usuarios.filter(u => u.buscar.includes(q));
+                    },
+                    get filtrados() { return this.coincidencias.slice(0, this.tope); },
+                    get sobrantes() { return this.coincidencias.length - this.filtrados.length; },
+                    abrir() { this.abierto = true; this.indice = 0; },
+                    escribir() { this.elegido = ''; this.abrir(); },
+                    elegir(u) { if (!u) return; this.elegido = u.id; this.busqueda = u.nombre; this.abierto = false; },
+                    limpiar() { this.elegido = ''; this.busqueda = ''; this.$refs.campo.focus(); this.abrir(); },
+                    mover(paso) {
+                        if (! this.abierto) { this.abrir(); return; }
+                        const total = this.filtrados.length;
+                        if (total === 0) return;
+                        this.indice = (this.indice + paso + total) % total;
+                        this.$nextTick(() => this.$refs.lista?.children[this.indice]?.scrollIntoView({ block: 'nearest' }));
+                    },
+                    /**
+                     * Texto escrito sin elegir a nadie no vale como responsable. Si quedo
+                     * una sola coincidencia se toma esa; si no, se restaura lo que habia.
+                     */
+                    cerrar() {
+                        this.abierto = false;
+                        if (! this.elegido && this.busqueda.trim() !== '' && this.coincidencias.length === 1) {
+                            this.elegir(this.coincidencias[0]);
+                            return;
+                        }
+                        const actual = this.usuarios.find(u => String(u.id) === String(this.elegido));
+                        this.busqueda = actual ? actual.nombre : '';
+                    }
+                }">
+                <div class="combo-input">
+                    <i data-lucide="search" class="combo-icon"></i>
+                    <input type="text" x-ref="campo" x-model="busqueda" required
+                        class="input-field @error('responsible_user_id') error-field @enderror"
+                        placeholder="Buscar por nombre o cedula..." autocomplete="off"
+                        role="combobox" aria-autocomplete="list" :aria-expanded="abierto"
+                        @focus="abrir()" @input="escribir()"
+                        @keydown.arrow-down.prevent="mover(1)"
+                        @keydown.arrow-up.prevent="mover(-1)"
+                        @keydown.enter.prevent="elegir(filtrados[indice])"
+                        @keydown.escape.prevent="cerrar()"
+                        @keydown.tab="cerrar()">
+                    <button type="button" class="combo-clear" title="Limpiar" tabindex="-1"
+                        x-show="busqueda !== ''" x-cloak @click="limpiar()">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+
+                <input type="hidden" name="responsible_user_id" x-model="elegido">
+
+                <div class="combo-list" x-show="abierto" x-cloak>
+                    <div x-ref="lista">
+                        <template x-for="(u, i) in filtrados" :key="u.id">
+                            <button type="button" class="combo-item"
+                                :class="{ 'is-active': i === indice, 'is-chosen': String(u.id) === String(elegido) }"
+                                @click="elegir(u)" @mouseenter="indice = i" x-text="u.nombre"></button>
+                        </template>
+                    </div>
+                    <p class="combo-note" x-show="filtrados.length === 0">Ningun usuario coincide.</p>
+                    <p class="combo-note" x-show="sobrantes > 0" x-cloak
+                        x-text="sobrantes + ' usuarios mas. Escribe para afinar la busqueda.'"></p>
+                </div>
+            </div>
             @error('responsible_user_id') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 

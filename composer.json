@@ -11,6 +11,7 @@
         "laravel/reverb": "^1.11",
         "laravel/tinker": "^3.0",
         "livewire/livewire": "^4.3",
+        "phpoffice/phpspreadsheet": "^5.9",
         "predis/predis": "^3.5"
     },
     "require-dev": {

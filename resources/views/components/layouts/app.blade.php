@@ -564,6 +564,8 @@
                 const href = link.getAttribute('href');
                 if (!href || href.startsWith('#') || href.startsWith('javascript:') || link.target === '_blank') return;
                 if (link.hasAttribute('data-no-spinner')) return;
+                // Una descarga no cambia de pagina, asi que el spinner se quedaria girando.
+                if (link.hasAttribute('download')) return;
                 if (link.closest('form')) return;
                 e.preventDefault();
                 showSpinner(() => { window.location.href = href; });

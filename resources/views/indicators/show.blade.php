@@ -24,7 +24,7 @@
             overflow-wrap: anywhere; white-space: pre-line;
         }
 
-        .results-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1320px; }
+        .results-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1400px; }
         .num-cell { text-align: right; font-variant-numeric: tabular-nums; }
         .results-table th {
             padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700;
@@ -44,6 +44,13 @@
             background: rgba(18,63,110,0.04); cursor: pointer; transition: background 0.15s;
         }
         .row-action:hover { background: rgba(18,63,110,0.10); }
+
+        .id-chip {
+            display: inline-flex; align-items: center; justify-content: center;
+            min-width: 38px; height: 26px; padding: 0 9px; border-radius: 7px;
+            font-size: 12px; font-weight: 700; font-variant-numeric: tabular-nums;
+            color: #123f6e; background: rgba(18,63,110,0.06);
+        }
 
         .pill { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; white-space: nowrap; }
 
@@ -121,6 +128,12 @@
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
                 <a href="{{ route('indicators.index') }}" class="btn-secondary" style="padding:9px 16px;font-size:13px">
                     <i data-lucide="arrow-left" style="width:15px;height:15px"></i> Volver
+                </a>
+
+                {{-- Descarga ficha tecnica y resultados en un mismo .xlsx. --}}
+                <a href="{{ route('indicators.export', $indicator) }}" class="btn-primary" data-no-spinner
+                    style="padding:9px 16px;font-size:13px">
+                    <i data-lucide="file-spreadsheet" style="width:15px;height:15px"></i> Exportar
                 </a>
                 @if(auth()->user()->hasPermission('indicators.edit'))
                     {{-- Editar ficha solo tiene sentido en la pestana de ficha tecnica. --}}
@@ -239,7 +252,7 @@
                 x-data="{
                     open: {{ $errors->any() ? 'true' : 'false' }},
                     editingId: null,
-                    empty: { periodStart: '', periodEnd: '', numerator: '', denominator: '', periodGoal: '{{ $indicator->goal / 100 }}', complianceFormula: 'ascendente', analysis: '', actionNumber: '' },
+                    empty: { periodStart: '', periodEnd: '', numerator: '', denominator: '', periodGoal: '{{ $indicator->goal }}', complianceFormula: 'ascendente', analysis: '', actionNumber: '' },
                     form: {},
                     base: '{{ $resultsBase }}',
                     acceptable: {{ $indicator->threshold_acceptable }},
@@ -251,12 +264,12 @@
                     openCreate() { this.reset(); this.open = true; },
                     openEdit(row) { this.form = { ...row.data }; this.editingId = row.id; this.open = true; },
                     close() { this.reset(); this.open = false; },
-                    /** RESULTADO = NUMERADOR / DENOMINADOR */
+                    /** RESULTADO = (NUMERADOR / DENOMINADOR) x 100, en porcentaje */
                     get result() {
                         const num = parseFloat(this.form.numerator);
                         const den = parseFloat(this.form.denominator);
                         if (isNaN(num) || isNaN(den) || den === 0) return null;
-                        return Math.round((num / den) * 10000) / 10000;
+                        return Math.round((num / den) * 10000) / 100;
                     },
                     /** (RESULTADO/META)x100, o (META/RESULTADO)x100 si la formula es descendente */
                     get compliance() {
@@ -282,6 +295,7 @@
                     <table class="results-table">
                         <thead>
                             <tr>
+                                <th style="width:78px">ID</th>
                                 <th>Periodo</th>
                                 <th style="text-align:right">Numerador</th>
                                 <th style="text-align:right">Denominador</th>
@@ -299,14 +313,15 @@
                         <tbody>
                             @forelse($indicator->results as $result)
                                 <tr class="{{ $result->status === 'inactive' ? 'is-inactive' : '' }}">
+                                    <td style="width:78px"><span class="id-chip">{{ $result->id }}</span></td>
                                     <td class="nowrap">
                                         <span style="font-weight:600;color:#1e293b">{{ $result->period_start->format('d/m/Y') }}</span>
                                         <p style="margin:2px 0 0;font-size:12px;color:#94a3b8">al {{ $result->period_end->format('d/m/Y') }}</p>
                                     </td>
                                     <td class="nowrap num-cell">{{ $result->formatted_numerator }}</td>
                                     <td class="nowrap num-cell">{{ $result->formatted_denominator }}</td>
-                                    <td class="nowrap num-cell" style="font-weight:600;color:#1e293b">{{ $result->formatted_result }}</td>
-                                    <td class="nowrap num-cell">{{ $result->formatted_period_goal }}</td>
+                                    <td class="nowrap num-cell" style="font-weight:600;color:#1e293b">{{ $result->formatted_result }}%</td>
+                                    <td class="nowrap num-cell">{{ $result->formatted_period_goal }}%</td>
                                     <td class="nowrap" style="font-size:12px;color:#475569">
                                         <span style="font-weight:600">{{ $result->compliance_formula === \App\Models\IndicatorResult::FORMULA_DESCENDING ? 'Descendente' : 'Ascendente' }}</span>
                                         <p style="margin:2px 0 0;font-size:11px;color:#94a3b8">{{ $result->compliance_formula_math }}</p>
@@ -367,7 +382,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ ($canEditResults || $canToggleResults) ? 12 : 11 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
+                                    <td colspan="{{ ($canEditResults || $canToggleResults) ? 13 : 12 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
                                         <div style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(18,63,110,0.04);margin:0 auto 10px">
                                             <i data-lucide="calendar-range" style="width:20px;height:20px;color:#cbd5e1"></i>
                                         </div>
@@ -413,8 +428,8 @@
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Meta del periodo <span class="req">*</span></label>
-                                    <input name="period_goal" type="number" step="any" required x-model="form.periodGoal" class="input-field" placeholder="0,95">
-                                    <p class="field-hint">En la misma escala que el resultado.</p>
+                                    <input name="period_goal" type="number" step="any" required x-model="form.periodGoal" class="input-field" placeholder="95">
+                                    <p class="field-hint">En porcentaje, igual que el resultado. Ej: 95 para una meta del 95%.</p>
                                 </div>
                                 <div class="field span-2">
                                     <label class="field-label">Formula Cumplimiento <span class="req">*</span></label>
@@ -438,7 +453,7 @@
                             <div class="preview-box">
                                 <span class="preview-label">Resultado</span>
                                 <span style="font-size:15px;font-weight:700;color:#1e293b"
-                                    x-text="result === null ? '-' : result.toLocaleString('es-CO', { maximumFractionDigits: 4 })"></span>
+                                    x-text="result === null ? '-' : result.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + '%'"></span>
                                 <span style="width:1px;height:22px;background:rgba(18,63,110,0.10)"></span>
                                 <span class="preview-label">Cumplimiento</span>
                                 <template x-if="compliance === null">

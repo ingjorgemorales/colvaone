@@ -9,11 +9,14 @@ use App\Models\QualityObjective;
 use App\Models\Subprocess;
 use App\Models\User;
 use App\Services\AuthEventService;
+use App\Services\IndicatorExportService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
 use Illuminate\View\View;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class IndicatorController extends Controller
 {
@@ -73,6 +76,27 @@ class IndicatorController extends Controller
             'indicator' => $indicator,
             'canEditResults' => $this->canEditResults(),
             'canToggleResults' => $this->canToggleResults(),
+        ]);
+    }
+
+    /**
+     * Descarga la ficha tecnica y los resultados del indicador en un .xlsx,
+     * una hoja para cada uno. Lo puede bajar quien puede ver el indicador.
+     */
+    public function export(Request $request, Indicator $indicator, IndicatorExportService $exporter): StreamedResponse
+    {
+        $this->ensureCanView($indicator);
+
+        $libro = $exporter->build($indicator);
+
+        $this->events->record($request, 'indicator_exported', true, reason: "Indicador '{$indicator->name}' exportado a Excel");
+
+        return response()->streamDownload(function () use ($libro): void {
+            (new Xlsx($libro))->save('php://output');
+            $libro->disconnectWorksheets();
+        }, $exporter->filename($indicator), [
+            'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
         ]);
     }
 

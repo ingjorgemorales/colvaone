@@ -70,14 +70,18 @@ class IndicatorResult extends BaseModel
         return $this->belongsTo(User::class, 'updated_by');
     }
 
-    /** RESULTADO = NUMERADOR / DENOMINADOR. Sin division por cero. */
+    /**
+     * RESULTADO = (NUMERADOR / DENOMINADOR) x 100, expresado en porcentaje
+     * para que quede en la misma escala que la meta del periodo.
+     * Sin division por cero.
+     */
     public static function calculateResult(float $numerator, float $denominator): float
     {
         if ($denominator == 0.0) {
             return 0.0;
         }
 
-        return round($numerator / $denominator, 4);
+        return round(($numerator / $denominator) * 100, 2);
     }
 
     /**

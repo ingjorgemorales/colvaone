@@ -37,5 +37,33 @@
     }
     .range-hint i { flex-shrink: 0; margin-top: 2px; color: #123f6e; }
 
+    /* Buscador de responsable: campo de texto con lista de sugerencias. */
+    .combo { position: relative; }
+    .combo-input { position: relative; }
+    .combo-icon { position: absolute; left: 11px; top: 50%; transform: translateY(-50%); width: 14px; height: 14px; color: #94a3b8; pointer-events: none; }
+    .combo .input-field { padding-left: 33px; padding-right: 34px; }
+    .combo-clear {
+        position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+        display: flex; align-items: center; justify-content: center;
+        width: 22px; height: 22px; border: none; border-radius: 6px;
+        background: transparent; color: #94a3b8; cursor: pointer; padding: 0;
+    }
+    .combo-clear:hover { background: rgba(18,63,110,0.07); color: #123f6e; }
+    .combo-clear svg { width: 13px; height: 13px; }
+    .combo-list {
+        position: absolute; z-index: 40; top: calc(100% + 5px); left: 0; right: 0;
+        max-height: 232px; overflow-y: auto; padding: 5px;
+        background: white; border: 1px solid rgba(18,63,110,0.12); border-radius: 10px;
+        box-shadow: 0 12px 30px rgba(15,23,42,0.13);
+    }
+    .combo-item {
+        display: block; width: 100%; text-align: left; padding: 8px 10px;
+        border: none; border-radius: 7px; background: transparent;
+        font-family: inherit; font-size: 13px; color: #475569; cursor: pointer;
+    }
+    .combo-item.is-active { background: rgba(18,63,110,0.07); color: #123f6e; }
+    .combo-item.is-chosen { font-weight: 700; color: #123f6e; }
+    .combo-note { margin: 0; padding: 9px 10px; font-size: 11.5px; color: #94a3b8; }
+
     .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 20px; flex-wrap: wrap; }
 </style>
