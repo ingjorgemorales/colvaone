@@ -527,6 +527,7 @@ class IndicatorController extends Controller
 
         return [
             'labels' => $labels,
+            'counts' => collect($groups)->pluck('total')->values(),
             'compliance' => collect($groups)->map(function (array $group): float {
                 if ($group['compliance_count'] === 0) {
                     return 0;
@@ -537,7 +538,14 @@ class IndicatorController extends Controller
             'statusDatasets' => collect($states)->map(function (array $state, string $key) use ($groups): array {
                 return [
                     'label' => $state['label'],
-                    'data' => collect($groups)->map(fn (array $group) => $group['states'][$key] ?? 0)->values(),
+                    'data' => collect($groups)->map(function (array $group) use ($key): float {
+                        if ($group['total'] === 0) {
+                            return 0;
+                        }
+
+                        return round((($group['states'][$key] ?? 0) / $group['total']) * 100, 2);
+                    })->values(),
+                    'countData' => collect($groups)->map(fn (array $group) => $group['states'][$key] ?? 0)->values(),
                     'backgroundColor' => $state['color'],
                     'borderRadius' => 7,
                     'barPercentage' => 0.72,
@@ -550,9 +558,9 @@ class IndicatorController extends Controller
     private function dashboardStates(): array
     {
         return [
-            IndicatorResult::SATISFACTORY => ['label' => 'Satisfactorio', 'color' => '#059669'],
-            IndicatorResult::ACCEPTABLE => ['label' => 'Aceptable', 'color' => '#f59e0b'],
-            IndicatorResult::UNSATISFACTORY => ['label' => 'Insatisfactorio', 'color' => '#ef4444'],
+            IndicatorResult::SATISFACTORY => ['label' => 'Satisfactorio', 'color' => '#70ad47'],
+            IndicatorResult::ACCEPTABLE => ['label' => 'Aceptable', 'color' => '#ffff00'],
+            IndicatorResult::UNSATISFACTORY => ['label' => 'Insatisfactorio', 'color' => '#ff0000'],
             'en_espera' => ['label' => 'En espera', 'color' => '#94a3b8'],
         ];
     }

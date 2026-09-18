@@ -137,7 +137,7 @@
                 <div class="card chart-card">
                     <div class="chart-title">
                         <h3>Cumplimiento de objetivos de calidad</h3>
-                        <span>Promedio por objetivo</span>
+                        <span>Cantidad y cumplimiento</span>
                     </div>
                     <div class="chart-wrap compact">
                         <canvas id="qualityComplianceChart"></canvas>
@@ -147,7 +147,7 @@
                 <div class="card chart-card wide">
                     <div class="chart-title">
                         <h3>Estado de objetivos de calidad</h3>
-                        <span>Indicadores por evaluacion</span>
+                        <span>Distribucion porcentual</span>
                     </div>
                     <div class="chart-wrap compact">
                         <canvas id="qualityStatusChart"></canvas>
@@ -167,7 +167,7 @@
                 <div class="card chart-card wide">
                     <div class="chart-title">
                         <h3>Estado de subprocesos</h3>
-                        <span>Indicadores por evaluacion</span>
+                        <span>Distribucion porcentual</span>
                     </div>
                     <div class="chart-wrap tall">
                         <canvas id="subprocessStatusChart"></canvas>
@@ -187,6 +187,47 @@
                 const shortTick = function(value) {
                     const label = this.getLabelForValue(value);
                     return label.length > 38 ? `${label.slice(0, 35)}...` : label;
+                };
+                const labelPlugin = {
+                    id: 'colvaoneValueLabels',
+                    afterDatasetsDraw(chart) {
+                        const { ctx } = chart;
+                        ctx.save();
+                        ctx.font = '600 10px Inter, sans-serif';
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        chart.data.datasets.forEach((dataset, datasetIndex) => {
+                            const meta = chart.getDatasetMeta(datasetIndex);
+                            if (meta.hidden) return;
+
+                            meta.data.forEach((element, index) => {
+                                const value = Number(dataset.data[index] || 0);
+                                const count = Number(dataset.countData?.[index] ?? value);
+                                if (value <= 0 && count <= 0) return;
+
+                                const position = element.tooltipPosition();
+
+                                if (dataset.type === 'line') {
+                                    ctx.fillStyle = '#1e293b';
+                                    ctx.fillText(`${Math.round(value)}%`, position.x, position.y - 14);
+                                    return;
+                                }
+
+                                if (chart.options.indexAxis === 'y') {
+                                    if (value < 8) return;
+                                    ctx.fillStyle = dataset.backgroundColor === '#ffff00' ? '#1e293b' : '#ffffff';
+                                    ctx.fillText(String(count), position.x, position.y);
+                                    return;
+                                }
+
+                                ctx.fillStyle = '#1e293b';
+                                ctx.fillText(String(count), position.x, position.y - 10);
+                            });
+                        });
+
+                        ctx.restore();
+                    },
                 };
 
                 const sharedOptions = {
@@ -220,6 +261,72 @@
                     options: {
                         ...sharedOptions,
                         cutout: '64%',
+                    },
+                });
+
+                const qualityCompliance = () => new Chart(document.getElementById('qualityComplianceChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: dashboard.qualityObjectives.labels,
+                        datasets: [
+                            {
+                                type: 'bar',
+                                label: 'Cantidad',
+                                data: dashboard.qualityObjectives.counts,
+                                backgroundColor: '#5b9bd5',
+                                borderRadius: 6,
+                                yAxisID: 'y',
+                                barPercentage: 0.6,
+                                categoryPercentage: 0.7,
+                            },
+                            {
+                                type: 'line',
+                                label: 'Cumplimiento',
+                                data: dashboard.qualityObjectives.compliance,
+                                borderColor: '#ed7d31',
+                                backgroundColor: '#ed7d31',
+                                yAxisID: 'y1',
+                                tension: 0.25,
+                                pointRadius: 4,
+                                pointHoverRadius: 5,
+                                borderWidth: 3,
+                            },
+                        ],
+                    },
+                    plugins: [labelPlugin],
+                    options: {
+                        ...sharedOptions,
+                        scales: {
+                            x: {
+                                ticks: { color: textColor, callback: shortTick, maxRotation: 0, minRotation: 0 },
+                                grid: { display: false },
+                            },
+                            y: {
+                                beginAtZero: true,
+                                ticks: { color: textColor, precision: 0 },
+                                grid: { color: gridColor },
+                                title: { display: true, text: 'Cantidad', color: textColor },
+                            },
+                            y1: {
+                                beginAtZero: true,
+                                max: 120,
+                                position: 'right',
+                                ticks: { color: textColor, callback: value => `${value}%` },
+                                grid: { drawOnChartArea: false },
+                                title: { display: true, text: 'Cumplimiento', color: textColor },
+                            },
+                        },
+                        plugins: {
+                            ...sharedOptions.plugins,
+                            tooltip: {
+                                ...sharedOptions.plugins.tooltip,
+                                callbacks: {
+                                    label: context => context.dataset.type === 'line'
+                                        ? ` Cumplimiento: ${Number(context.raw || 0).toFixed(2)}%`
+                                        : ` Cantidad: ${context.raw}`,
+                                },
+                            },
+                        },
                     },
                 });
 
@@ -264,6 +371,7 @@
                 const stackedStatus = (elementId, labels, datasets) => new Chart(document.getElementById(elementId), {
                     type: 'bar',
                     data: { labels, datasets },
+                    plugins: [labelPlugin],
                     options: {
                         ...sharedOptions,
                         indexAxis: 'y',
@@ -271,7 +379,8 @@
                             x: {
                                 stacked: true,
                                 beginAtZero: true,
-                                ticks: { color: textColor, precision: 0 },
+                                max: 100,
+                                ticks: { color: textColor, precision: 0, callback: value => `${value}%` },
                                 grid: { color: gridColor },
                             },
                             y: {
@@ -280,10 +389,22 @@
                                 grid: { display: false },
                             },
                         },
+                        plugins: {
+                            ...sharedOptions.plugins,
+                            tooltip: {
+                                ...sharedOptions.plugins.tooltip,
+                                callbacks: {
+                                    label: context => {
+                                        const count = context.dataset.countData?.[context.dataIndex] ?? 0;
+                                        return ` ${context.dataset.label}: ${count} (${Number(context.raw || 0).toFixed(2)}%)`;
+                                    },
+                                },
+                            },
+                        },
                     },
                 });
 
-                horizontalCompliance('qualityComplianceChart', dashboard.qualityObjectives.labels, dashboard.qualityObjectives.compliance);
+                qualityCompliance();
                 stackedStatus('qualityStatusChart', dashboard.qualityObjectives.labels, dashboard.qualityObjectives.statusDatasets);
                 horizontalCompliance('subprocessComplianceChart', dashboard.subprocesses.labels, dashboard.subprocesses.compliance);
                 stackedStatus('subprocessStatusChart', dashboard.subprocesses.labels, dashboard.subprocesses.statusDatasets);
