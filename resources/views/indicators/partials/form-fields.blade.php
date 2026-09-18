@@ -210,7 +210,7 @@
             @error('methodological_aspects') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
-        <div class="field field-full">
+        <div class="field">
             <label class="field-label">Objetivo de calidad <span class="req">*</span></label>
             <select name="quality_objective_id" required class="input-field @error('quality_objective_id') error-field @enderror">
                 <option value="">Seleccionar...</option>
@@ -221,6 +221,19 @@
                 @endforeach
             </select>
             @error('quality_objective_id') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="field">
+            <label class="field-label">Perspectiva BSC <span class="req">*</span></label>
+            <select name="bsc_perspective_id" required class="input-field @error('bsc_perspective_id') error-field @enderror">
+                <option value="">Seleccionar...</option>
+                @foreach($bscPerspectives as $bscPerspective)
+                    <option value="{{ $bscPerspective->id }}" {{ (int) old('bsc_perspective_id', $indicator->bsc_perspective_id ?? 0) === $bscPerspective->id ? 'selected' : '' }}>
+                        {{ $bscPerspective->name }}{{ $bscPerspective->is_active ? '' : ' (Inactiva)' }}
+                    </option>
+                @endforeach
+            </select>
+            @error('bsc_perspective_id') <p class="field-error">{{ $message }}</p> @enderror
         </div>
     </div>
 </div>

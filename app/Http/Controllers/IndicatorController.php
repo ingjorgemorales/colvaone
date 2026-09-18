@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BscPerspective;
 use App\Models\Indicator;
 use App\Models\IndicatorResult;
 use App\Models\Process;
@@ -25,7 +26,7 @@ class IndicatorController extends Controller
     ) {}
     public function index(Request $request): View
     {
-        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess', 'qualityObjective'])->visibleFor($request->user());
+        $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess', 'bscPerspective', 'qualityObjective'])->visibleFor($request->user());
 
         if ($request->filled('search')) {
             $query->where('name', 'like', '%' . $request->input('search') . '%');
@@ -70,7 +71,7 @@ class IndicatorController extends Controller
     {
         $this->ensureCanView($indicator);
 
-        $indicator->load(['responsible', 'creator', 'updater', 'results.creator', 'process', 'subprocess', 'qualityObjective']);
+        $indicator->load(['responsible', 'creator', 'updater', 'results.creator', 'process', 'subprocess', 'bscPerspective', 'qualityObjective']);
 
         return view('indicators.show', [
             'indicator' => $indicator,
@@ -199,6 +200,16 @@ class IndicatorController extends Controller
         $validator = validator($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'category' => ['nullable', Rule::in(array_keys(Indicator::CATEGORIES))],
+            'bsc_perspective_id' => [
+                'required',
+                Rule::exists('bsc_perspectives', 'id')->where(function ($query) use ($indicator): void {
+                    $query->where('is_active', true);
+
+                    if ($indicator?->bsc_perspective_id) {
+                        $query->orWhere('id', $indicator->bsc_perspective_id);
+                    }
+                }),
+            ],
             'process_id' => ['nullable', Rule::exists('processes', 'id')->where('is_active', true)],
             'subprocess_id' => ['nullable', Rule::exists('subprocesses', 'id')->where('is_active', true)],
             'quality_objective_id' => [
@@ -225,6 +236,7 @@ class IndicatorController extends Controller
             'goal.max' => 'La meta no puede superar ' . $max . '%.',
             'threshold_acceptable.max' => 'El umbral aceptable no puede superar ' . $max . '%.',
             'threshold_satisfactory.max' => 'El umbral satisfactorio no puede superar ' . $max . '%.',
+            'bsc_perspective_id.required' => 'La perspectiva BSC es obligatoria.',
             'quality_objective_id.required' => 'El objetivo de calidad es obligatorio.',
         ]);
 
@@ -367,8 +379,24 @@ class IndicatorController extends Controller
             'users' => $this->activeUsers(),
             'processes' => Process::selectable()->get(),
             'subprocesses' => Subprocess::selectable()->get(),
+            'bscPerspectives' => $this->bscPerspectives($extra['indicator'] ?? null),
             'qualityObjectives' => $this->qualityObjectives($extra['indicator'] ?? null),
         ];
+    }
+
+    private function bscPerspectives(?Indicator $indicator = null)
+    {
+        $perspectives = BscPerspective::selectable()->get();
+
+        if ($indicator?->bsc_perspective_id && ! $perspectives->contains('id', $indicator->bsc_perspective_id)) {
+            $current = BscPerspective::find($indicator->bsc_perspective_id);
+
+            if ($current) {
+                $perspectives->push($current);
+            }
+        }
+
+        return $perspectives->sortBy([['position', 'asc'], ['name', 'asc']])->values();
     }
 
     private function qualityObjectives(?Indicator $indicator = null)

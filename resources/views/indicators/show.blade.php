@@ -168,6 +168,10 @@
                             <p class="data-value">{{ $indicator->category_label }}</p>
                         </div>
                         <div class="data-item">
+                            <p class="data-label">Perspectiva BSC</p>
+                            <p class="data-value">{{ $indicator->bsc_perspective_label }}</p>
+                        </div>
+                        <div class="data-item">
                             <p class="data-label">Proceso</p>
                             <p class="data-value">{{ $indicator->process_label }}</p>
                         </div>

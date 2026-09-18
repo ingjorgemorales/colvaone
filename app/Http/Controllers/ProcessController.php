@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BscPerspective;
 use App\Models\Process;
 use App\Models\QualityObjective;
 use App\Models\Subprocess;
@@ -21,6 +22,7 @@ class ProcessController extends Controller
 {
     private const TYPE_PROCESS = 'procesos';
     private const TYPE_SUBPROCESS = 'subprocesos';
+    private const TYPE_BSC_PERSPECTIVE = 'perspectivas-bsc';
     private const TYPE_QUALITY_OBJECTIVE = 'objetivos-calidad';
 
     public function __construct(
@@ -32,6 +34,7 @@ class ProcessController extends Controller
         return view('processes.index', [
             'processes' => Process::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
             'subprocesses' => Subprocess::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
+            'bscPerspectives' => BscPerspective::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
             'qualityObjectives' => QualityObjective::withCount('indicators')->orderBy('position')->orderBy('name')->get(),
         ]);
     }
@@ -129,6 +132,14 @@ class ProcessController extends Controller
             ]);
         }
 
+        if ($type === self::TYPE_BSC_PERSPECTIVE) {
+            return $request->validate([
+                'name' => ['required', 'string', 'max:150', Rule::unique('bsc_perspectives', 'name')->ignore($current)],
+            ], [
+                'name.unique' => 'Ya existe una perspectiva BSC con ese nombre.',
+            ]);
+        }
+
         return $request->validate([
             'code' => ['nullable', 'string', 'max:10'],
             'name' => ['required', 'string', 'max:200'],
@@ -146,6 +157,7 @@ class ProcessController extends Controller
         return match ($type) {
             self::TYPE_PROCESS => Process::class,
             self::TYPE_SUBPROCESS => Subprocess::class,
+            self::TYPE_BSC_PERSPECTIVE => BscPerspective::class,
             self::TYPE_QUALITY_OBJECTIVE => QualityObjective::class,
             default => abort(404),
         };
@@ -161,6 +173,7 @@ class ProcessController extends Controller
         return match ($type) {
             self::TYPE_PROCESS => 'Proceso',
             self::TYPE_SUBPROCESS => 'Subproceso',
+            self::TYPE_BSC_PERSPECTIVE => 'Perspectiva BSC',
             self::TYPE_QUALITY_OBJECTIVE => 'Objetivo de calidad',
             default => abort(404),
         };
@@ -171,6 +184,7 @@ class ProcessController extends Controller
         return match ($type) {
             self::TYPE_PROCESS => "process_{$action}",
             self::TYPE_SUBPROCESS => "subprocess_{$action}",
+            self::TYPE_BSC_PERSPECTIVE => "bsc_perspective_{$action}",
             self::TYPE_QUALITY_OBJECTIVE => "quality_objective_{$action}",
             default => abort(404),
         };

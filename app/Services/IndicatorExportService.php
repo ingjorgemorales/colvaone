@@ -46,7 +46,7 @@ class IndicatorExportService
 
     public function build(Indicator $indicator): Spreadsheet
     {
-        $indicator->loadMissing(['responsible', 'creator', 'updater', 'process', 'subprocess', 'qualityObjective', 'results']);
+        $indicator->loadMissing(['responsible', 'creator', 'updater', 'process', 'subprocess', 'bscPerspective', 'qualityObjective', 'results']);
 
         $libro = new Spreadsheet();
         $libro->getProperties()
@@ -115,6 +115,7 @@ class IndicatorExportService
         $fila = $this->dato($hoja, $fila, 'ID', (string) $indicator->id);
         $fila = $this->dato($hoja, $fila, 'Nombre', $indicator->name);
         $fila = $this->dato($hoja, $fila, 'Categoria', $indicator->category_label);
+        $fila = $this->dato($hoja, $fila, 'Perspectiva BSC', $indicator->bsc_perspective_label);
         $fila = $this->dato($hoja, $fila, 'Proceso', $indicator->process_label);
         $fila = $this->dato($hoja, $fila, 'Subproceso', $indicator->subprocess_label);
         $fila = $this->dato($hoja, $fila, 'Objetivo de calidad', $indicator->quality_objective_label);

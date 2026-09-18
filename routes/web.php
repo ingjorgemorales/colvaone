@@ -79,7 +79,7 @@ Route::middleware('auth')->group(function (): void {
     Route::get('audit', [AuditController::class, 'index'])->name('audit.index')->middleware('permission:audit.view');
 
     Route::prefix('indicadores/ajustes')
-        ->where(['type' => 'procesos|subprocesos|objetivos-calidad', 'id' => '[0-9]+'])
+        ->where(['type' => 'procesos|subprocesos|perspectivas-bsc|objetivos-calidad', 'id' => '[0-9]+'])
         ->group(function (): void {
         Route::get('/', [ProcessController::class, 'index'])->name('processes.index')->middleware('permission:indicators.settings');
         Route::post('{type}', [ProcessController::class, 'store'])->name('processes.store')->middleware('permission:indicators.settings');

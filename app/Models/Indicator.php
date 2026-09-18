@@ -62,6 +62,7 @@ class Indicator extends BaseModel
     protected $fillable = [
         'name',
         'category',
+        'bsc_perspective_id',
         'process_id',
         'subprocess_id',
         'objective',
@@ -97,6 +98,11 @@ class Indicator extends BaseModel
         return $this->belongsTo(Subprocess::class);
     }
 
+    public function bscPerspective(): BelongsTo
+    {
+        return $this->belongsTo(BscPerspective::class);
+    }
+
     public function qualityObjective(): BelongsTo
     {
         return $this->belongsTo(QualityObjective::class);
@@ -110,6 +116,11 @@ class Indicator extends BaseModel
     public function getSubprocessLabelAttribute(): string
     {
         return $this->subprocess?->full_name ?? 'Sin asignar';
+    }
+
+    public function getBscPerspectiveLabelAttribute(): string
+    {
+        return $this->bscPerspective?->name ?? 'Sin asignar';
     }
 
     public function getQualityObjectiveLabelAttribute(): string
