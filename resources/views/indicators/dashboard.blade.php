@@ -184,6 +184,10 @@
                 const dashboard = @json($dashboard);
                 const gridColor = 'rgba(18,63,110,0.08)';
                 const textColor = '#475569';
+                const countAxisMax = (counts) => {
+                    const highest = Math.max(0, ...counts.map((value) => Number(value || 0)));
+                    return Math.max(5, Math.ceil(highest * 1.2));
+                };
                 const shortTick = function(value) {
                     const label = this.getLabelForValue(value);
                     return label.length > 38 ? `${label.slice(0, 35)}...` : label;
@@ -313,7 +317,8 @@
                             },
                             y: {
                                 beginAtZero: true,
-                                ticks: { color: textColor, precision: 0 },
+                                max: countAxisMax(dashboard.qualityObjectives.counts),
+                                ticks: { color: textColor, precision: 0, stepSize: 1 },
                                 grid: { color: gridColor },
                                 title: { display: true, text: 'Cantidad', color: textColor },
                             },
