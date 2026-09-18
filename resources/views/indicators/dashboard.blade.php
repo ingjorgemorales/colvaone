@@ -21,17 +21,6 @@
             opacity:0.55;
             transition:opacity 0.28s ease;
         }
-        .indicator-dashboard .card::after {
-            content:"";
-            position:absolute;
-            top:0;
-            left:-45%;
-            width:38%;
-            height:2px;
-            background:linear-gradient(90deg, transparent, rgba(14,165,233,0.95), rgba(5,150,105,0.82), transparent);
-            animation:dashboardScan 3.8s ease-in-out infinite;
-            opacity:0.9;
-        }
         .indicator-dashboard .card:hover {
             transform:translateY(-4px);
             border-color:rgba(14,165,233,0.54);
@@ -93,18 +82,12 @@
             from { opacity:0; transform:translateY(14px) scale(0.985); }
             to { opacity:1; transform:translateY(0) scale(1); }
         }
-        @keyframes dashboardScan {
-            0%, 18% { left:-45%; opacity:0; }
-            32% { opacity:0.95; }
-            64%, 100% { left:110%; opacity:0; }
-        }
         @keyframes metricPulse {
             0%, 100% { transform:scale(1); box-shadow:inset 0 0 0 1px rgba(18,63,110,0.08), 0 0 20px rgba(14,165,233,0.12); }
             50% { transform:scale(1.04); box-shadow:inset 0 0 0 1px rgba(14,165,233,0.18), 0 0 30px rgba(5,150,105,0.20); }
         }
         @media (prefers-reduced-motion: reduce) {
             .indicator-dashboard .card,
-            .indicator-dashboard .card::after,
             .metric-icon {
                 animation:none;
                 transition:none;
