@@ -92,6 +92,7 @@ Route::middleware('auth')->group(function (): void {
     Route::put('configuracion/chat-ia', [AiChatSettingController::class, 'update'])->name('ai-chat.settings.update')->middleware('permission:ai_chat.configure');
 
     Route::get('indicators', [IndicatorController::class, 'index'])->name('indicators.index')->middleware('permission:indicators.view,indicators.view_all');
+    Route::get('indicators/listado', [IndicatorController::class, 'list'])->name('indicators.list')->middleware('permission:indicators.view,indicators.view_all');
     Route::get('indicators/create', [IndicatorController::class, 'create'])->name('indicators.create')->middleware('permission:indicators.create');
     Route::post('indicators', [IndicatorController::class, 'store'])->name('indicators.store')->middleware('permission:indicators.create');
     Route::get('indicators/{indicator}', [IndicatorController::class, 'show'])->name('indicators.show')->middleware('permission:indicators.view,indicators.view_all');

@@ -29,7 +29,7 @@
     </style>
 
     <div class="card" style="padding:20px;margin-bottom:8px">
-        <form method="GET" action="{{ route('indicators.index') }}" class="indicator-filters">
+        <form method="GET" action="{{ route('indicators.list') }}" class="indicator-filters">
             <div>
                 <label style="display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px">Buscar</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Nombre del indicador..." class="input-field">
@@ -46,7 +46,7 @@
                 <i data-lucide="search" style="width:16px;height:16px"></i> Filtrar
             </button>
             @if(request()->hasAny(['search','status']))
-                <a href="{{ route('indicators.index') }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
+                <a href="{{ route('indicators.list') }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
                     <i data-lucide="x" style="width:16px;height:16px"></i>
                 </a>
             @endif
@@ -60,7 +60,7 @@
                 en
                 <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;color:#123f6e;background:rgba(18,63,110,0.07)">
                     {{ \App\Models\Indicator::CATEGORIES[$category] }}
-                    <a href="{{ route('indicators.index', request()->except(['categoria','page'])) }}" title="Quitar filtro" style="display:flex;color:#94a3b8">
+                    <a href="{{ route('indicators.list', request()->except(['categoria','page'])) }}" title="Quitar filtro" style="display:flex;color:#94a3b8">
                         <i data-lucide="x" style="width:12px;height:12px"></i>
                     </a>
                 </span>

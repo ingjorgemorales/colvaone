@@ -9,7 +9,7 @@
                 @include('indicators.partials.form-fields', ['indicator' => null])
 
                 <div class="form-actions">
-                    <a href="{{ route('indicators.index') }}" class="btn-secondary">Cancelar</a>
+                    <a href="{{ route('indicators.list') }}" class="btn-secondary">Cancelar</a>
                     <button type="submit" class="btn-primary">
                         <i data-lucide="plus" style="width:16px;height:16px"></i> Guardar
                     </button>

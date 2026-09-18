@@ -26,6 +26,44 @@ class IndicatorController extends Controller
     ) {}
     public function index(Request $request): View
     {
+        $validated = $request->validate([
+            'from' => ['nullable', 'date'],
+            'to' => ['nullable', 'date', 'after_or_equal:from'],
+        ], [
+            'to.after_or_equal' => 'La fecha final no puede ser anterior a la fecha inicial.',
+        ]);
+
+        $from = $validated['from'] ?? null;
+        $to = $validated['to'] ?? null;
+
+        $indicators = Indicator::with(['qualityObjective', 'subprocess'])
+            ->visibleFor($request->user())
+            ->orderBy('name')
+            ->get();
+
+        $latestResults = IndicatorResult::with(['indicator.qualityObjective', 'indicator.subprocess'])
+            ->where('status', 'active')
+            ->whereIn('indicator_id', $indicators->pluck('id'))
+            ->when($from, fn ($query) => $query->whereDate('period_end', '>=', $from))
+            ->when($to, fn ($query) => $query->whereDate('period_start', '<=', $to))
+            ->orderByDesc('period_end')
+            ->orderByDesc('period_start')
+            ->orderByDesc('id')
+            ->get()
+            ->unique('indicator_id')
+            ->keyBy('indicator_id');
+
+        return view('indicators.dashboard', [
+            'dashboard' => $this->dashboardData($indicators, $latestResults),
+            'filters' => [
+                'from' => $from,
+                'to' => $to,
+            ],
+        ]);
+    }
+
+    public function list(Request $request): View
+    {
         $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess', 'bscPerspective', 'qualityObjective'])->visibleFor($request->user());
 
         if ($request->filled('search')) {
@@ -137,7 +175,7 @@ class IndicatorController extends Controller
 
         $this->events->record(request(), 'indicator_toggled', true, reason: "Indicador '{$indicator->name}' {$status}");
 
-        return redirect()->route('indicators.index')
+        return redirect()->route('indicators.list')
             ->with('success', "Indicador {$status} correctamente.");
     }
 
@@ -417,5 +455,105 @@ class IndicatorController extends Controller
     private function activeUsers()
     {
         return User::where('is_active', true)->orderBy('name')->get();
+    }
+
+    private function dashboardData($indicators, $latestResults): array
+    {
+        $states = $this->dashboardStates();
+        $stateCounts = collect($states)->mapWithKeys(fn ($state, $key) => [$key => 0])->all();
+
+        foreach ($indicators as $indicator) {
+            $state = $latestResults->get($indicator->id)?->evaluation ?? 'en_espera';
+            $stateCounts[$state] = ($stateCounts[$state] ?? 0) + 1;
+        }
+
+        $averageCompliance = $latestResults->isEmpty()
+            ? 0
+            : round($latestResults->avg(fn (IndicatorResult $result) => (float) $result->compliance), 2);
+
+        return [
+            'total' => $indicators->count(),
+            'average' => $averageCompliance,
+            'stateChart' => [
+                'labels' => collect($states)->pluck('label')->values(),
+                'data' => collect($states)->keys()->map(fn ($key) => $stateCounts[$key] ?? 0)->values(),
+                'colors' => collect($states)->pluck('color')->values(),
+            ],
+            'qualityObjectives' => $this->groupedDashboardData(
+                $indicators,
+                $latestResults,
+                fn (Indicator $indicator) => $indicator->qualityObjective?->name ?? 'Sin objetivo de calidad'
+            ),
+            'subprocesses' => $this->groupedDashboardData(
+                $indicators,
+                $latestResults,
+                fn (Indicator $indicator) => $indicator->subprocess?->full_name ?? 'Sin subproceso'
+            ),
+            'states' => $states,
+        ];
+    }
+
+    private function groupedDashboardData($indicators, $latestResults, callable $labelResolver): array
+    {
+        $states = $this->dashboardStates();
+        $groups = [];
+
+        foreach ($indicators as $indicator) {
+            $label = $labelResolver($indicator);
+
+            if (! isset($groups[$label])) {
+                $groups[$label] = [
+                    'total' => 0,
+                    'compliance_sum' => 0,
+                    'compliance_count' => 0,
+                    'states' => collect($states)->mapWithKeys(fn ($state, $key) => [$key => 0])->all(),
+                ];
+            }
+
+            $groups[$label]['total']++;
+            $result = $latestResults->get($indicator->id);
+            $state = $result?->evaluation ?? 'en_espera';
+            $groups[$label]['states'][$state] = ($groups[$label]['states'][$state] ?? 0) + 1;
+
+            if ($result) {
+                $groups[$label]['compliance_sum'] += (float) $result->compliance;
+                $groups[$label]['compliance_count']++;
+            }
+        }
+
+        ksort($groups, SORT_NATURAL | SORT_FLAG_CASE);
+
+        $labels = array_keys($groups);
+
+        return [
+            'labels' => $labels,
+            'compliance' => collect($groups)->map(function (array $group): float {
+                if ($group['compliance_count'] === 0) {
+                    return 0;
+                }
+
+                return round($group['compliance_sum'] / $group['compliance_count'], 2);
+            })->values(),
+            'statusDatasets' => collect($states)->map(function (array $state, string $key) use ($groups): array {
+                return [
+                    'label' => $state['label'],
+                    'data' => collect($groups)->map(fn (array $group) => $group['states'][$key] ?? 0)->values(),
+                    'backgroundColor' => $state['color'],
+                    'borderRadius' => 7,
+                    'barPercentage' => 0.72,
+                    'categoryPercentage' => 0.68,
+                ];
+            })->values(),
+        ];
+    }
+
+    private function dashboardStates(): array
+    {
+        return [
+            IndicatorResult::SATISFACTORY => ['label' => 'Satisfactorio', 'color' => '#059669'],
+            IndicatorResult::ACCEPTABLE => ['label' => 'Aceptable', 'color' => '#f59e0b'],
+            IndicatorResult::UNSATISFACTORY => ['label' => 'Insatisfactorio', 'color' => '#ef4444'],
+            'en_espera' => ['label' => 'En espera', 'color' => '#94a3b8'],
+        ];
     }
 }
