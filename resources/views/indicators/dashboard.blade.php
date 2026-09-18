@@ -188,8 +188,19 @@
                     const highest = Math.max(0, ...counts.map((value) => Number(value || 0)));
                     return Math.max(5, Math.ceil(highest * 1.2));
                 };
+                const percentAxisMax = (values, minimum = 100) => {
+                    const highest = Math.max(0, ...values.map((value) => Number(value || 0)));
+                    return Math.max(minimum, Math.ceil((highest * 1.15) / 10) * 10);
+                };
+                const fitChartHeight = (elementId, count, minHeight, pixelsPerItem) => {
+                    const canvas = document.getElementById(elementId);
+                    const wrapper = canvas?.closest('.chart-wrap');
+                    if (!wrapper) return;
+
+                    wrapper.style.minHeight = `${Math.max(minHeight, 110 + (count * pixelsPerItem))}px`;
+                };
                 const shortTick = function(value) {
-                    const label = this.getLabelForValue(value);
+                    const label = String(this.getLabelForValue(value));
                     return label.length > 38 ? `${label.slice(0, 35)}...` : label;
                 };
                 const labelPlugin = {
@@ -236,6 +247,11 @@
                         ctx.restore();
                     },
                 };
+
+                fitChartHeight('qualityComplianceChart', dashboard.qualityObjectives.labels.length, 250, 44);
+                fitChartHeight('qualityStatusChart', dashboard.qualityObjectives.labels.length, 250, 36);
+                fitChartHeight('subprocessComplianceChart', dashboard.subprocesses.labels.length, 420, 34);
+                fitChartHeight('subprocessStatusChart', dashboard.subprocesses.labels.length, 420, 34);
 
                 const sharedOptions = {
                     responsive: true,
@@ -324,7 +340,7 @@
                             },
                             y1: {
                                 beginAtZero: true,
-                                max: 120,
+                                max: percentAxisMax(dashboard.qualityObjectives.compliance, 120),
                                 position: 'right',
                                 ticks: { color: textColor, callback: value => `${value}%` },
                                 grid: { drawOnChartArea: false },
@@ -364,6 +380,7 @@
                         scales: {
                             x: {
                                 beginAtZero: true,
+                                max: percentAxisMax(data),
                                 ticks: { color: textColor, callback: value => `${value}%` },
                                 grid: { color: gridColor },
                             },
@@ -377,7 +394,11 @@
                             legend: { display: false },
                             tooltip: {
                                 ...sharedOptions.plugins.tooltip,
-                                callbacks: { label: context => ` ${Number(context.raw || 0).toFixed(2)}%` },
+                                callbacks: {
+                                    label: context => context.raw === null
+                                        ? ' Sin resultado'
+                                        : ` ${Number(context.raw || 0).toFixed(2)}%`,
+                                },
                             },
                         },
                     },
