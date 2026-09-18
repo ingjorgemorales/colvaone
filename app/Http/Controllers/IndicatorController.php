@@ -528,9 +528,9 @@ class IndicatorController extends Controller
         return [
             'labels' => $labels,
             'counts' => collect($groups)->pluck('total')->values(),
-            'compliance' => collect($groups)->map(function (array $group): float {
+            'compliance' => collect($groups)->map(function (array $group): ?float {
                 if ($group['compliance_count'] === 0) {
-                    return 0;
+                    return null;
                 }
 
                 return round($group['compliance_sum'] / $group['compliance_count'], 2);

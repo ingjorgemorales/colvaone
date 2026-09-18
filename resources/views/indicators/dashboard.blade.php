@@ -202,7 +202,10 @@
                             if (meta.hidden) return;
 
                             meta.data.forEach((element, index) => {
-                                const value = Number(dataset.data[index] || 0);
+                                const rawValue = dataset.data[index];
+                                if (rawValue === null || rawValue === undefined) return;
+
+                                const value = Number(rawValue || 0);
                                 const count = Number(dataset.countData?.[index] ?? value);
                                 if (value <= 0 && count <= 0) return;
 
@@ -276,6 +279,7 @@
                                 backgroundColor: '#5b9bd5',
                                 borderRadius: 6,
                                 yAxisID: 'y',
+                                order: 2,
                                 barPercentage: 0.6,
                                 categoryPercentage: 0.7,
                             },
@@ -286,10 +290,16 @@
                                 borderColor: '#ed7d31',
                                 backgroundColor: '#ed7d31',
                                 yAxisID: 'y1',
+                                order: 1,
                                 tension: 0.25,
                                 pointRadius: 4,
                                 pointHoverRadius: 5,
                                 borderWidth: 3,
+                                pointBackgroundColor: '#ed7d31',
+                                pointBorderColor: '#ffffff',
+                                pointBorderWidth: 2,
+                                spanGaps: false,
+                                clip: false,
                             },
                         ],
                     },
@@ -322,7 +332,7 @@
                                 ...sharedOptions.plugins.tooltip,
                                 callbacks: {
                                     label: context => context.dataset.type === 'line'
-                                        ? ` Cumplimiento: ${Number(context.raw || 0).toFixed(2)}%`
+                                        ? ` Cumplimiento: ${context.raw === null ? 'Sin resultado' : `${Number(context.raw || 0).toFixed(2)}%`}`
                                         : ` Cantidad: ${context.raw}`,
                                 },
                             },
