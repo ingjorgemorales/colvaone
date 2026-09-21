@@ -57,12 +57,12 @@
             display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px;
         }
         .sgc-overview-grid {
-            display:grid; grid-template-columns:minmax(260px, 0.92fr) minmax(0, 1.08fr); gap:16px; align-items:stretch;
+            display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px; align-items:stretch;
         }
         .metric-stack {
-            display:grid; grid-template-rows:repeat(2, minmax(0, 1fr)); gap:16px;
+            display:grid; grid-template-rows:repeat(2, minmax(0, 1fr)); gap:16px; height:100%;
         }
-        .metric-stack .metric-card { min-height:136px; }
+        .metric-stack .metric-card { min-height:0; height:100%; }
         .metric-card {
             padding:20px; display:flex; align-items:center; justify-content:space-between; gap:16px;
         }
@@ -301,21 +301,21 @@
 
                 <div class="card chart-card">
                     <div class="chart-title">
-                        <h3>Cumplimiento de subprocesos</h3>
-                        <span>Promedio por subproceso</span>
-                    </div>
-                    <div class="chart-wrap tall">
-                        <canvas id="subprocessComplianceChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="card chart-card">
-                    <div class="chart-title">
                         <h3>Estado de subprocesos</h3>
                         <span>Distribucion porcentual</span>
                     </div>
                     <div class="chart-wrap tall">
                         <canvas id="subprocessStatusChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="chart-title">
+                        <h3>Cumplimiento de subprocesos</h3>
+                        <span>Promedio por subproceso</span>
+                    </div>
+                    <div class="chart-wrap tall">
+                        <canvas id="subprocessComplianceChart"></canvas>
                     </div>
                 </div>
             </div>
