@@ -98,7 +98,11 @@ class AiChatContextService
 
     private function indicators(User $user, array $terms): string
     {
-        if (!$user->hasAnyPermission(['indicators.view', 'indicators.view_all'])) {
+        if (!$user->hasAnyPermission([
+            'indicators.view',
+            'indicators.view_all',
+            ...Indicator::categoryPermissions(),
+        ])) {
             return '';
         }
 

@@ -126,7 +126,7 @@
             </button>
 
             <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap">
-                <a href="{{ route('indicators.list') }}" class="btn-secondary" style="padding:9px 16px;font-size:13px">
+                <a href="{{ route('indicators.list', ['categoria' => $indicator->category]) }}" class="btn-secondary" style="padding:9px 16px;font-size:13px">
                     <i data-lucide="arrow-left" style="width:15px;height:15px"></i> Volver
                 </a>
 

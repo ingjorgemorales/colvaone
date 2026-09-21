@@ -140,6 +140,10 @@ class RoleController extends Controller
                 'items' => [
                     'indicators.view' => 'Ver mis indicadores',
                     'indicators.view_all' => 'Ver todos los indicadores',
+                    'indicators.category_i' => 'Ver Indicador SGC I',
+                    'indicators.category_ii' => 'Ver Indicador BSC II',
+                    'indicators.category_iii' => 'Ver Indicador CX III',
+                    'indicators.category_iv' => 'Ver Indicador Bono IV',
                     'indicators.create' => 'Crear indicadores',
                     'indicators.edit' => 'Editar ficha tecnica',
                     'indicators.toggle' => 'Activar/Desactivar indicadores',

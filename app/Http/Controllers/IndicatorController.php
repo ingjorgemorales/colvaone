@@ -35,7 +35,8 @@ class IndicatorController extends Controller
 
         $from = $validated['from'] ?? null;
         $to = $validated['to'] ?? null;
-        $category = $this->validCategory($request->input('categoria')) ?? 'I';
+        $categories = Indicator::allowedCategoriesFor($request->user());
+        $category = $this->categoryFromRequest($request, $categories);
         $hasConfiguredDashboard = $category === 'I';
 
         $indicators = Indicator::with(['qualityObjective', 'subprocess'])
@@ -65,13 +66,15 @@ class IndicatorController extends Controller
             ],
             'category' => $category,
             'categoryLabel' => Indicator::CATEGORIES[$category],
-            'categories' => Indicator::CATEGORIES,
+            'categories' => $categories,
             'hasConfiguredDashboard' => $hasConfiguredDashboard,
         ]);
     }
 
     public function list(Request $request): View
     {
+        $categories = Indicator::allowedCategoriesFor($request->user());
+        $category = $this->categoryFromRequest($request, $categories);
         $query = Indicator::with(['responsible', 'latestResult', 'process', 'subprocess', 'bscPerspective', 'qualityObjective'])->visibleFor($request->user());
 
         if ($request->filled('search')) {
@@ -82,7 +85,6 @@ class IndicatorController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $category = $this->validCategory($request->input('categoria')) ?? 'I';
         $query->inCategory($category);
 
         $indicators = $query->orderBy('name')->paginate(15)->withQueryString();
@@ -96,8 +98,19 @@ class IndicatorController extends Controller
 
     public function create(Request $request): View
     {
+        $categories = Indicator::allowedCategoriesFor($request->user());
+        $defaultCategory = $this->validCategory($request->input('categoria'));
+
+        if ($defaultCategory && ! array_key_exists($defaultCategory, $categories)) {
+            abort(403, 'No tienes permiso para crear indicadores en esta categoria.');
+        }
+
+        if ($categories === []) {
+            abort(403, 'No tienes permiso para crear indicadores en ninguna categoria.');
+        }
+
         return view('indicators.create', $this->formData([
-            'defaultCategory' => $this->validCategory($request->input('categoria')),
+            'defaultCategory' => $defaultCategory ?? array_key_first($categories),
         ]));
     }
 
@@ -186,7 +199,7 @@ class IndicatorController extends Controller
 
         $this->events->record(request(), 'indicator_toggled', true, reason: "Indicador '{$indicator->name}' {$status}");
 
-        return redirect()->route('indicators.list')
+        return redirect()->route('indicators.list', ['categoria' => $indicator->category])
             ->with('success', "Indicador {$status} correctamente.");
     }
 
@@ -248,7 +261,7 @@ class IndicatorController extends Controller
 
         $validator = validator($request->all(), [
             'name' => ['required', 'string', 'max:255'],
-            'category' => ['nullable', Rule::in(array_keys(Indicator::CATEGORIES))],
+            'category' => ['required', Rule::in(array_keys(Indicator::CATEGORIES))],
             'bsc_perspective_id' => [
                 'required',
                 Rule::exists('bsc_perspectives', 'id')->where(function ($query) use ($indicator): void {
@@ -285,6 +298,7 @@ class IndicatorController extends Controller
             'goal.max' => 'La meta no puede superar ' . $max . '%.',
             'threshold_acceptable.max' => 'El umbral aceptable no puede superar ' . $max . '%.',
             'threshold_satisfactory.max' => 'El umbral satisfactorio no puede superar ' . $max . '%.',
+            'category.required' => 'La categoria del indicador es obligatoria.',
             'bsc_perspective_id.required' => 'La perspectiva BSC es obligatoria.',
             'quality_objective_id.required' => 'El objetivo de calidad es obligatorio.',
         ]);
@@ -292,11 +306,20 @@ class IndicatorController extends Controller
         $validator->after(function ($validator) use ($request): void {
             $acceptable = (int) $request->input('threshold_acceptable');
             $satisfactory = (int) $request->input('threshold_satisfactory');
+            $category = $this->validCategory($request->input('category'));
+            $categoryPermission = Indicator::categoryPermission($category);
 
             if ($satisfactory > 0 && $satisfactory <= $acceptable) {
                 $validator->errors()->add(
                     'threshold_satisfactory',
                     'El umbral satisfactorio debe ser mayor que el aceptable.'
+                );
+            }
+
+            if ($categoryPermission && ! $request->user()?->hasPermission($categoryPermission)) {
+                $validator->errors()->add(
+                    'category',
+                    'No tienes permiso para usar esta categoria de indicador.'
                 );
             }
         });
@@ -430,6 +453,7 @@ class IndicatorController extends Controller
             'subprocesses' => Subprocess::selectable()->get(),
             'bscPerspectives' => $this->bscPerspectives($extra['indicator'] ?? null),
             'qualityObjectives' => $this->qualityObjectives($extra['indicator'] ?? null),
+            'categories' => Indicator::allowedCategoriesFor(Auth::user()),
         ];
     }
 
@@ -473,6 +497,21 @@ class IndicatorController extends Controller
         return array_key_exists((string) $category, Indicator::CATEGORIES)
             ? (string) $category
             : null;
+    }
+
+    private function categoryFromRequest(Request $request, array $categories): string
+    {
+        if ($categories === []) {
+            abort(403, 'No tienes permiso para acceder a categorias de indicadores.');
+        }
+
+        $requested = $this->validCategory($request->input('categoria'));
+
+        if ($requested && ! array_key_exists($requested, $categories)) {
+            abort(403, 'No tienes permiso para acceder a esta categoria de indicadores.');
+        }
+
+        return $requested ?? array_key_first($categories);
     }
 
     private function dashboardData($indicators, $latestResults): array

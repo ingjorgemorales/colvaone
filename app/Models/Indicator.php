@@ -51,6 +51,13 @@ class Indicator extends BaseModel
         'IV' => 'Indicador Bono IV',
     ];
 
+    public const CATEGORY_PERMISSIONS = [
+        'I' => 'indicators.category_i',
+        'II' => 'indicators.category_ii',
+        'III' => 'indicators.category_iii',
+        'IV' => 'indicators.category_iv',
+    ];
+
     public const TYPES = [
         'eficacia' => 'Eficacia',
         'eficiencia' => 'Eficiencia',
@@ -138,6 +145,23 @@ class Indicator extends BaseModel
         return self::CATEGORIES[$this->category] ?? 'Sin clasificar';
     }
 
+    public static function categoryPermission(?string $category): ?string
+    {
+        return self::CATEGORY_PERMISSIONS[$category] ?? null;
+    }
+
+    public static function categoryPermissions(): array
+    {
+        return array_values(self::CATEGORY_PERMISSIONS);
+    }
+
+    public static function allowedCategoriesFor(User $user): array
+    {
+        return collect(self::CATEGORIES)
+            ->filter(fn (string $label, string $category) => $user->hasPermission(self::categoryPermission($category)))
+            ->all();
+    }
+
     public function scopeInCategory($query, ?string $category)
     {
         if (! $category || ! array_key_exists($category, self::CATEGORIES)) {
@@ -213,6 +237,14 @@ class Indicator extends BaseModel
      */
     public function scopeVisibleFor($query, User $user)
     {
+        $allowedCategories = array_keys(self::allowedCategoriesFor($user));
+
+        if ($allowedCategories === []) {
+            return $query->whereRaw('1 = 0');
+        }
+
+        $query->whereIn('indicators.category', $allowedCategories);
+
         if ($user->hasPermission('indicators.view_all')) {
             return $query;
         }
@@ -228,6 +260,12 @@ class Indicator extends BaseModel
      */
     public function isVisibleFor(User $user): bool
     {
+        $categoryPermission = self::categoryPermission($this->category);
+
+        if (! $categoryPermission || ! $user->hasPermission($categoryPermission)) {
+            return false;
+        }
+
         return $user->hasPermission('indicators.view_all')
             || (int) $this->created_by === (int) $user->id
             || (int) $this->responsible_user_id === (int) $user->id;

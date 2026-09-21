@@ -91,18 +91,18 @@ Route::middleware('auth')->group(function (): void {
     Route::get('configuracion/chat-ia', [AiChatSettingController::class, 'edit'])->name('ai-chat.settings.edit')->middleware('permission:ai_chat.configure');
     Route::put('configuracion/chat-ia', [AiChatSettingController::class, 'update'])->name('ai-chat.settings.update')->middleware('permission:ai_chat.configure');
 
-    Route::get('indicators', [IndicatorController::class, 'index'])->name('indicators.index')->middleware('permission:indicators.view,indicators.view_all');
-    Route::get('indicators/listado', [IndicatorController::class, 'list'])->name('indicators.list')->middleware('permission:indicators.view,indicators.view_all');
+    Route::get('indicators', [IndicatorController::class, 'index'])->name('indicators.index')->middleware('permission:indicators.view,indicators.view_all,indicators.category_i,indicators.category_ii,indicators.category_iii,indicators.category_iv');
+    Route::get('indicators/listado', [IndicatorController::class, 'list'])->name('indicators.list')->middleware('permission:indicators.view,indicators.view_all,indicators.category_i,indicators.category_ii,indicators.category_iii,indicators.category_iv');
     Route::get('indicators/create', [IndicatorController::class, 'create'])->name('indicators.create')->middleware('permission:indicators.create');
     Route::post('indicators', [IndicatorController::class, 'store'])->name('indicators.store')->middleware('permission:indicators.create');
-    Route::get('indicators/{indicator}', [IndicatorController::class, 'show'])->name('indicators.show')->middleware('permission:indicators.view,indicators.view_all');
-    Route::get('indicators/{indicator}/exportar', [IndicatorController::class, 'export'])->name('indicators.export')->middleware('permission:indicators.view,indicators.view_all');
+    Route::get('indicators/{indicator}', [IndicatorController::class, 'show'])->name('indicators.show')->middleware('permission:indicators.view,indicators.view_all,indicators.category_i,indicators.category_ii,indicators.category_iii,indicators.category_iv');
+    Route::get('indicators/{indicator}/exportar', [IndicatorController::class, 'export'])->name('indicators.export')->middleware('permission:indicators.view,indicators.view_all,indicators.category_i,indicators.category_ii,indicators.category_iii,indicators.category_iv');
     Route::get('indicators/{indicator}/edit', [IndicatorController::class, 'edit'])->name('indicators.edit')->middleware('permission:indicators.edit');
     Route::put('indicators/{indicator}', [IndicatorController::class, 'update'])->name('indicators.update')->middleware('permission:indicators.edit');
     Route::post('indicators/{indicator}/toggle', [IndicatorController::class, 'toggle'])->name('indicators.toggle')->middleware('permission:indicators.toggle');
     Route::post('indicators/{indicator}/results', [IndicatorController::class, 'storeResult'])->name('indicators.results.store')->middleware('permission:indicators.results');
-    Route::put('indicators/{indicator}/results/{result}', [IndicatorController::class, 'updateResult'])->name('indicators.results.update')->middleware('permission:indicators.view,indicators.view_all');
-    Route::post('indicators/{indicator}/results/{result}/toggle', [IndicatorController::class, 'toggleResult'])->name('indicators.results.toggle')->middleware('permission:indicators.view,indicators.view_all');
+    Route::put('indicators/{indicator}/results/{result}', [IndicatorController::class, 'updateResult'])->name('indicators.results.update')->middleware('permission:indicators.view,indicators.view_all,indicators.category_i,indicators.category_ii,indicators.category_iii,indicators.category_iv');
+    Route::post('indicators/{indicator}/results/{result}/toggle', [IndicatorController::class, 'toggleResult'])->name('indicators.results.toggle')->middleware('permission:indicators.view,indicators.view_all,indicators.category_i,indicators.category_ii,indicators.category_iii,indicators.category_iv');
 
     Route::get('applications', [ApplicationController::class, 'index'])->name('applications.index')->middleware('permission:applications.view');
     Route::get('applications/create', [ApplicationController::class, 'create'])->name('applications.create')->middleware('permission:applications.create');

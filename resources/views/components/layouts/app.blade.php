@@ -280,9 +280,12 @@
                         $isLinked = filled($item['route']);
                         $children = $item['children'] ?? [];
                         $routeIndicator = request()->route('indicator');
+                        $defaultIndicatorCategory = auth()->check()
+                            ? array_key_first(\App\Models\Indicator::allowedCategoriesFor(auth()->user()))
+                            : 'I';
                         $currentIndicatorCategory = request('categoria')
                             ?: ($routeIndicator?->category)
-                            ?: ((request()->routeIs('indicators.index') || request()->routeIs('indicators.list')) ? 'I' : null);
+                            ?: ((request()->routeIs('indicators.index') || request()->routeIs('indicators.list')) ? $defaultIndicatorCategory : null);
                         $childIsActive = function (array $child) use ($currentIndicatorCategory): bool {
                             $childRoute = $child['route'] ?? null;
 

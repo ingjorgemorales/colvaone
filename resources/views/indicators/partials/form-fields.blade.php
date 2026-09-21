@@ -1,6 +1,7 @@
 @php
     $indicator = $indicator ?? null;
     $max = \App\Models\Indicator::SCALE_MAX;
+    $categories = $categories ?? \App\Models\Indicator::CATEGORIES;
 @endphp
 
 <div class="sheet-block">
@@ -9,10 +10,10 @@
     <div class="sheet-grid">
         {{-- Fila 1: clasificacion y procesos --}}
         <div class="field">
-            <label class="field-label">Categoria</label>
+            <label class="field-label">Categoria <span class="req">*</span></label>
             <select name="category" class="input-field @error('category') error-field @enderror">
-                <option value="">Sin clasificar</option>
-                @foreach(\App\Models\Indicator::CATEGORIES as $value => $label)
+                <option value="">Seleccionar...</option>
+                @foreach($categories as $value => $label)
                     <option value="{{ $value }}" {{ old('category', $indicator->category ?? ($defaultCategory ?? '')) === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
