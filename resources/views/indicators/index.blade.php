@@ -30,6 +30,9 @@
 
     <div class="card" style="padding:20px;margin-bottom:8px">
         <form method="GET" action="{{ route('indicators.list') }}" class="indicator-filters">
+            @if($category)
+                <input type="hidden" name="categoria" value="{{ $category }}">
+            @endif
             <div>
                 <label style="display:block;font-size:12px;font-weight:500;color:#64748b;margin-bottom:4px">Buscar</label>
                 <input type="text" name="search" value="{{ request('search') }}" placeholder="Nombre del indicador..." class="input-field">
@@ -46,7 +49,7 @@
                 <i data-lucide="search" style="width:16px;height:16px"></i> Filtrar
             </button>
             @if(request()->hasAny(['search','status']))
-                <a href="{{ route('indicators.list') }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
+                <a href="{{ route('indicators.list', array_filter(['categoria' => $category])) }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
                     <i data-lucide="x" style="width:16px;height:16px"></i>
                 </a>
             @endif
@@ -75,7 +78,7 @@
                 </a>
             @endif
             @if(auth()->user()->hasPermission('indicators.create'))
-                <a href="{{ route('indicators.create') }}" class="btn-primary">
+                <a href="{{ route('indicators.create', array_filter(['categoria' => $category])) }}" class="btn-primary">
                     <i data-lucide="plus" style="width:16px;height:16px"></i> Nuevo indicador
                 </a>
             @endif
