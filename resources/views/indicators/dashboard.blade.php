@@ -56,6 +56,13 @@
         .metric-grid {
             display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px;
         }
+        .sgc-overview-grid {
+            display:grid; grid-template-columns:minmax(260px, 0.92fr) minmax(0, 1.08fr); gap:16px; align-items:stretch;
+        }
+        .metric-stack {
+            display:grid; grid-template-rows:repeat(2, minmax(0, 1fr)); gap:16px;
+        }
+        .metric-stack .metric-card { min-height:136px; }
         .metric-card {
             padding:20px; display:flex; align-items:center; justify-content:space-between; gap:16px;
         }
@@ -75,6 +82,7 @@
             display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px;
         }
         .chart-card { padding:18px; min-height:360px; }
+        .sgc-state-card { min-height:100%; }
         .chart-card.wide { grid-column:1 / -1; }
         .chart-title {
             display:flex; align-items:center; justify-content:space-between; gap:12px;
@@ -84,6 +92,7 @@
         .chart-title span { font-size:12px; color:#94a3b8; }
         .chart-wrap { position:relative; min-height:280px; }
         .chart-wrap.compact { min-height:250px; }
+        .sgc-state-card .chart-wrap.compact { min-height:316px; }
         .chart-wrap.tall { min-height:420px; }
         .empty-dashboard {
             padding:44px 20px; text-align:center; color:#94a3b8;
@@ -119,7 +128,8 @@
             .indicator-dashboard .card:hover { transform:none; }
         }
         @media (max-width: 900px) {
-            .metric-grid, .chart-grid { grid-template-columns:1fr; }
+            .metric-grid, .chart-grid, .sgc-overview-grid { grid-template-columns:1fr; }
+            .metric-stack { grid-template-rows:auto; }
             .chart-card.wide { grid-column:auto; }
             .dashboard-filters { grid-template-columns:1fr; width:100%; }
             .dashboard-toolbar { align-items:stretch; }
@@ -209,35 +219,55 @@
                 </div>
             </div>
         @else
-        <div class="metric-grid">
-            <div class="card metric-card">
-                <div>
-                    <p class="metric-label">Total indicadores</p>
-                    <p class="metric-value">{{ $dashboard['total'] }}</p>
-                    <p class="metric-subtitle">Indicadores visibles para tu usuario.</p>
-                </div>
-                <div class="metric-icon"><i data-lucide="chart-no-axes-combined"></i></div>
-            </div>
-
-            <div class="card metric-card">
-                <div>
-                    <p class="metric-label">Cumplimiento promedio</p>
-                    <p class="metric-value">{{ number_format($dashboard['average'], 2, ',', '.') }}%</p>
-                    <p class="metric-subtitle">Promedio del resultado vigente en el rango.</p>
-                </div>
-                <div class="metric-icon"><i data-lucide="gauge"></i></div>
-            </div>
-        </div>
-
         @if($dashboard['total'] === 0)
+            <div class="metric-grid">
+                <div class="card metric-card">
+                    <div>
+                        <p class="metric-label">Total indicadores</p>
+                        <p class="metric-value">{{ $dashboard['total'] }}</p>
+                        <p class="metric-subtitle">Indicadores visibles para tu usuario.</p>
+                    </div>
+                    <div class="metric-icon"><i data-lucide="chart-no-axes-combined"></i></div>
+                </div>
+
+                <div class="card metric-card">
+                    <div>
+                        <p class="metric-label">Cumplimiento promedio</p>
+                        <p class="metric-value">{{ number_format($dashboard['average'], 2, ',', '.') }}%</p>
+                        <p class="metric-subtitle">Promedio del resultado vigente en el rango.</p>
+                    </div>
+                    <div class="metric-icon"><i data-lucide="gauge"></i></div>
+                </div>
+            </div>
+
             <div class="card empty-dashboard">
                 <i data-lucide="chart-no-axes-combined"></i>
                 <p style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 4px">No hay indicadores para graficar en {{ mb_strtolower($categoryLabel) }}.</p>
                 <p style="font-size:13px;margin:0">Cuando registres indicadores, el tablero se alimentara automaticamente.</p>
             </div>
         @else
-            <div class="chart-grid">
-                <div class="card chart-card">
+            <div class="sgc-overview-grid">
+                <div class="metric-stack">
+                    <div class="card metric-card">
+                        <div>
+                            <p class="metric-label">Total indicadores</p>
+                            <p class="metric-value">{{ $dashboard['total'] }}</p>
+                            <p class="metric-subtitle">Indicadores visibles para tu usuario.</p>
+                        </div>
+                        <div class="metric-icon"><i data-lucide="chart-no-axes-combined"></i></div>
+                    </div>
+
+                    <div class="card metric-card">
+                        <div>
+                            <p class="metric-label">Cumplimiento promedio</p>
+                            <p class="metric-value">{{ number_format($dashboard['average'], 2, ',', '.') }}%</p>
+                            <p class="metric-subtitle">Promedio del resultado vigente en el rango.</p>
+                        </div>
+                        <div class="metric-icon"><i data-lucide="gauge"></i></div>
+                    </div>
+                </div>
+
+                <div class="card chart-card sgc-state-card">
                     <div class="chart-title">
                         <h3>Estado de indicadores</h3>
                         <span>{{ $dashboard['total'] }} indicadores</span>
@@ -246,7 +276,9 @@
                         <canvas id="indicatorStateChart"></canvas>
                     </div>
                 </div>
+            </div>
 
+            <div class="chart-grid">
                 <div class="card chart-card">
                     <div class="chart-title">
                         <h3>Cumplimiento de objetivos de calidad</h3>
@@ -257,7 +289,7 @@
                     </div>
                 </div>
 
-                <div class="card chart-card wide">
+                <div class="card chart-card">
                     <div class="chart-title">
                         <h3>Estado de objetivos de calidad</h3>
                         <span>Distribucion porcentual</span>
@@ -267,7 +299,7 @@
                     </div>
                 </div>
 
-                <div class="card chart-card wide">
+                <div class="card chart-card">
                     <div class="chart-title">
                         <h3>Cumplimiento de subprocesos</h3>
                         <span>Promedio por subproceso</span>
@@ -277,7 +309,7 @@
                     </div>
                 </div>
 
-                <div class="card chart-card wide">
+                <div class="card chart-card">
                     <div class="chart-title">
                         <h3>Estado de subprocesos</h3>
                         <span>Distribucion porcentual</span>
