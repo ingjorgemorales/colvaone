@@ -301,21 +301,21 @@
 
                 <div class="card chart-card">
                     <div class="chart-title">
-                        <h3>Estado de subprocesos</h3>
-                        <span>Distribucion porcentual</span>
-                    </div>
-                    <div class="chart-wrap tall">
-                        <canvas id="subprocessStatusChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="card chart-card">
-                    <div class="chart-title">
                         <h3>Cumplimiento de subprocesos</h3>
                         <span>Promedio por subproceso</span>
                     </div>
                     <div class="chart-wrap tall">
                         <canvas id="subprocessComplianceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="card chart-card">
+                    <div class="chart-title">
+                        <h3>Estado de subprocesos</h3>
+                        <span>Distribucion porcentual</span>
+                    </div>
+                    <div class="chart-wrap tall">
+                        <canvas id="subprocessStatusChart"></canvas>
                     </div>
                 </div>
             </div>
