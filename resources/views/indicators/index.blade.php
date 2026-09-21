@@ -1,4 +1,4 @@
-<x-layouts.app title="Indicadores | {{ config('app.name') }}" heading="Indicadores" subheading="Ficha tecnica, metas y resultados por periodo">
+<x-layouts.app title="{{ $categoryLabel }} | {{ config('app.name') }}" heading="{{ $categoryLabel }}" subheading="Ficha tecnica, metas y resultados por periodo">
     <style>
         .indicator-filters { display:grid; grid-template-columns:minmax(0,1fr) 170px auto auto; gap:10px; align-items:end; }
         @media (max-width: 760px) { .indicator-filters { grid-template-columns:1fr; } }
@@ -59,17 +59,10 @@
     <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;margin:26px 0 14px">
         <p style="font-size:13px;color:#94a3b8;margin:0;display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             {{ $indicators->total() }} {{ $indicators->total() === 1 ? 'indicador' : 'indicadores' }}
-            @if($category)
-                en
-                <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;color:#123f6e;background:rgba(18,63,110,0.07)">
-                    {{ \App\Models\Indicator::CATEGORIES[$category] }}
-                    <a href="{{ route('indicators.list', request()->except(['categoria','page'])) }}" title="Quitar filtro" style="display:flex;color:#94a3b8">
-                        <i data-lucide="x" style="width:12px;height:12px"></i>
-                    </a>
-                </span>
-            @else
-                registrados
-            @endif
+            registrados en
+            <span style="display:inline-flex;align-items:center;gap:6px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:600;color:#123f6e;background:rgba(18,63,110,0.07)">
+                {{ $categoryLabel }}
+            </span>
         </p>
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
             @if(auth()->user()->hasPermission('indicators.settings'))

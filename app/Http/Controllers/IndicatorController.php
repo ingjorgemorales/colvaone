@@ -82,14 +82,15 @@ class IndicatorController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $category = $this->validCategory($request->input('categoria'));
+        $category = $this->validCategory($request->input('categoria')) ?? 'I';
         $query->inCategory($category);
 
         $indicators = $query->orderBy('name')->paginate(15)->withQueryString();
 
         return view('indicators.index', [
             'indicators' => $indicators,
-            'category' => array_key_exists((string) $category, Indicator::CATEGORIES) ? $category : null,
+            'category' => $category,
+            'categoryLabel' => Indicator::CATEGORIES[$category],
         ]);
     }
 
