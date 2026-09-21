@@ -295,7 +295,7 @@
                     <div @if($children) x-data="{ openSub: {{ $isActive ? 'true' : 'false' }} }" @endif>
                         <a href="{{ $isLinked ? route($item['route']) : '#' }}"
                             class="nav-link {{ $isActive ? 'active' : '' }}"
-                            @click="if(window.innerWidth < 1024) sidebarOpen = false"
+                            @click="{{ $children && ! $isLinked ? '$event.preventDefault(); openSub = !openSub' : 'if(window.innerWidth < 1024) sidebarOpen = false' }}"
                             style="position:relative">
                             <i data-lucide="{{ $item['icon'] }}"></i>
                             <span class="nav-label">{{ $item['name'] }}</span>

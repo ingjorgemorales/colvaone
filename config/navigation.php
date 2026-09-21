@@ -6,11 +6,11 @@ return [
         ['name' => 'Tareas', 'icon' => 'list-checks', 'route' => 'tasks.index', 'permission' => ['group_tasks.view', 'group_tasks.view_group', 'group_tasks.view_all'], 'order' => 20, 'enabled' => true],
         ['name' => 'Grupos', 'icon' => 'users-round', 'route' => 'groups.index', 'permission' => 'groups.view', 'order' => 25, 'enabled' => true],
         ['name' => 'Presupuesto', 'icon' => 'wallet-cards', 'route' => null, 'permission' => 'budgets.view', 'order' => 30, 'enabled' => true],
-        ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => 'indicators.index', 'permission' => ['indicators.view', 'indicators.view_all'], 'order' => 40, 'enabled' => true, 'children' => [
-            ['name' => 'Indicador SGC I', 'route' => 'indicators.list', 'params' => ['categoria' => 'I']],
-            ['name' => 'Indicador BSC II', 'route' => 'indicators.list', 'params' => ['categoria' => 'II']],
-            ['name' => 'Indicador CX III', 'route' => 'indicators.list', 'params' => ['categoria' => 'III']],
-            ['name' => 'Indicador Bono IV', 'route' => 'indicators.list', 'params' => ['categoria' => 'IV']],
+        ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => null, 'permission' => ['indicators.view', 'indicators.view_all'], 'order' => 40, 'enabled' => true, 'children' => [
+            ['name' => 'Indicador SGC I', 'route' => 'indicators.index', 'params' => ['categoria' => 'I']],
+            ['name' => 'Indicador BSC II', 'route' => 'indicators.index', 'params' => ['categoria' => 'II']],
+            ['name' => 'Indicador CX III', 'route' => 'indicators.index', 'params' => ['categoria' => 'III']],
+            ['name' => 'Indicador Bono IV', 'route' => 'indicators.index', 'params' => ['categoria' => 'IV']],
         ]],
         ['name' => 'Ahorros', 'icon' => 'piggy-bank', 'route' => null, 'permission' => 'savings.view', 'order' => 50, 'enabled' => true],
         ['name' => 'Aplicativos', 'icon' => 'blocks', 'route' => 'applications.index', 'permission' => 'applications.view', 'order' => 60, 'enabled' => true],

@@ -13,7 +13,7 @@
             <select name="category" class="input-field @error('category') error-field @enderror">
                 <option value="">Sin clasificar</option>
                 @foreach(\App\Models\Indicator::CATEGORIES as $value => $label)
-                    <option value="{{ $value }}" {{ old('category', $indicator->category ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                    <option value="{{ $value }}" {{ old('category', $indicator->category ?? ($defaultCategory ?? '')) === $value ? 'selected' : '' }}>{{ $label }}</option>
                 @endforeach
             </select>
             <p class="field-hint">Define en cual sub-menu de Indicadores aparece.</p>

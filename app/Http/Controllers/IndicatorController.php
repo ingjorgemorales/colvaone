@@ -35,9 +35,12 @@ class IndicatorController extends Controller
 
         $from = $validated['from'] ?? null;
         $to = $validated['to'] ?? null;
+        $category = $this->validCategory($request->input('categoria')) ?? 'I';
+        $hasConfiguredDashboard = $category === 'I';
 
         $indicators = Indicator::with(['qualityObjective', 'subprocess'])
             ->visibleFor($request->user())
+            ->inCategory($category)
             ->orderBy('name')
             ->get();
 
@@ -58,7 +61,12 @@ class IndicatorController extends Controller
             'filters' => [
                 'from' => $from,
                 'to' => $to,
+                'categoria' => $category,
             ],
+            'category' => $category,
+            'categoryLabel' => Indicator::CATEGORIES[$category],
+            'categories' => Indicator::CATEGORIES,
+            'hasConfiguredDashboard' => $hasConfiguredDashboard,
         ]);
     }
 
@@ -74,7 +82,7 @@ class IndicatorController extends Controller
             $query->where('status', $request->input('status'));
         }
 
-        $category = $request->input('categoria');
+        $category = $this->validCategory($request->input('categoria'));
         $query->inCategory($category);
 
         $indicators = $query->orderBy('name')->paginate(15)->withQueryString();
@@ -85,9 +93,11 @@ class IndicatorController extends Controller
         ]);
     }
 
-    public function create(): View
+    public function create(Request $request): View
     {
-        return view('indicators.create', $this->formData());
+        return view('indicators.create', $this->formData([
+            'defaultCategory' => $this->validCategory($request->input('categoria')),
+        ]));
     }
 
     public function store(Request $request): RedirectResponse
@@ -455,6 +465,13 @@ class IndicatorController extends Controller
     private function activeUsers()
     {
         return User::where('is_active', true)->orderBy('name')->get();
+    }
+
+    private function validCategory(?string $category): ?string
+    {
+        return array_key_exists((string) $category, Indicator::CATEGORIES)
+            ? (string) $category
+            : null;
     }
 
     private function dashboardData($indicators, $latestResults): array

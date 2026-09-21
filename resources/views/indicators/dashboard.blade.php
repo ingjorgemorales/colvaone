@@ -1,4 +1,4 @@
-<x-layouts.app title="Dashboard de indicadores | {{ config('app.name') }}" heading="Indicadores" subheading="Dashboard de cumplimiento y estado">
+<x-layouts.app title="{{ $categoryLabel }} | {{ config('app.name') }}" heading="{{ $categoryLabel }}" subheading="Dashboard de cumplimiento y estado">
     <style>
         .indicator-dashboard { display:flex; flex-direction:column; gap:18px; }
         .indicator-dashboard .card {
@@ -42,6 +42,17 @@
         .dashboard-filter-field label {
             display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:5px;
         }
+        .category-switcher {
+            display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+        }
+        .category-pill {
+            display:inline-flex; align-items:center; justify-content:center; gap:6px;
+            padding:8px 12px; border-radius:10px; border:1px solid rgba(18,63,110,0.10);
+            background:rgba(255,255,255,0.72); color:#475569; text-decoration:none;
+            font-size:12px; font-weight:700; transition:all 0.2s ease;
+        }
+        .category-pill:hover { color:#123f6e; border-color:rgba(18,63,110,0.22); background:rgba(18,63,110,0.05); }
+        .category-pill.active { color:white; border-color:transparent; background:linear-gradient(135deg,#123f6e,#1d5f99); box-shadow:0 10px 24px rgba(18,63,110,0.16); }
         .metric-grid {
             display:grid; grid-template-columns:repeat(2, minmax(0, 1fr)); gap:16px;
         }
@@ -78,6 +89,19 @@
             padding:44px 20px; text-align:center; color:#94a3b8;
         }
         .empty-dashboard i { width:34px; height:34px; margin-bottom:10px; color:#cbd5e1; }
+        .pending-dashboard {
+            padding:38px 24px;
+            display:grid;
+            gap:14px;
+            color:#64748b;
+        }
+        .pending-dashboard-icon {
+            width:54px; height:54px; border-radius:16px; display:grid; place-items:center;
+            color:#123f6e; background:rgba(18,63,110,0.06);
+            box-shadow:inset 0 0 0 1px rgba(18,63,110,0.08);
+        }
+        .pending-dashboard h2 { margin:0; font-size:20px; color:#1e293b; }
+        .pending-dashboard p { margin:0; font-size:14px; line-height:1.55; max-width:760px; }
         @keyframes dashboardCardIn {
             from { opacity:0; transform:translateY(14px) scale(0.985); }
             to { opacity:1; transform:translateY(0) scale(1); }
@@ -110,41 +134,81 @@
         @endif
 
         <div class="dashboard-toolbar">
-            <form method="GET" action="{{ route('indicators.index') }}" class="dashboard-filters">
-                <div class="dashboard-filter-field">
-                    <label for="from">Fecha inicio</label>
-                    <input id="from" type="date" name="from" value="{{ $filters['from'] }}" class="input-field">
+            @if($hasConfiguredDashboard)
+                <form method="GET" action="{{ route('indicators.index') }}" class="dashboard-filters">
+                    <input type="hidden" name="categoria" value="{{ $category }}">
+                    <div class="dashboard-filter-field">
+                        <label for="from">Fecha inicio</label>
+                        <input id="from" type="date" name="from" value="{{ $filters['from'] }}" class="input-field">
+                    </div>
+                    <div class="dashboard-filter-field">
+                        <label for="to">Fecha fin</label>
+                        <input id="to" type="date" name="to" value="{{ $filters['to'] }}" class="input-field">
+                    </div>
+                    <button type="submit" class="btn-primary" style="padding:10px 16px">
+                        <i data-lucide="filter" style="width:16px;height:16px"></i> Filtrar
+                    </button>
+                    @if($filters['from'] || $filters['to'])
+                        <a href="{{ route('indicators.index', ['categoria' => $category]) }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
+                            <i data-lucide="x" style="width:16px;height:16px"></i>
+                        </a>
+                    @endif
+                </form>
+            @else
+                <div>
+                    <p style="margin:0;font-size:12px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:#94a3b8">Dashboard pendiente</p>
+                    <p style="margin:4px 0 0;font-size:14px;color:#475569">La ficha tecnica y los resultados siguen disponibles para esta categoria.</p>
                 </div>
-                <div class="dashboard-filter-field">
-                    <label for="to">Fecha fin</label>
-                    <input id="to" type="date" name="to" value="{{ $filters['to'] }}" class="input-field">
-                </div>
-                <button type="submit" class="btn-primary" style="padding:10px 16px">
-                    <i data-lucide="filter" style="width:16px;height:16px"></i> Filtrar
-                </button>
-                @if($filters['from'] || $filters['to'])
-                    <a href="{{ route('indicators.index') }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
-                        <i data-lucide="x" style="width:16px;height:16px"></i>
-                    </a>
-                @endif
-            </form>
+            @endif
 
             <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
-                <a href="{{ route('indicators.list') }}" class="btn-secondary">
+                <a href="{{ route('indicators.list', array_filter(['categoria' => $category])) }}" class="btn-secondary">
                     <i data-lucide="list" style="width:16px;height:16px"></i> Ver listado
                 </a>
                 @if(auth()->user()->hasPermission('indicators.create'))
-                    <a href="{{ route('indicators.create') }}" class="btn-primary">
+                    <a href="{{ route('indicators.create', array_filter(['categoria' => $category])) }}" class="btn-primary">
                         <i data-lucide="plus" style="width:16px;height:16px"></i> Nuevo indicador
                     </a>
                 @endif
             </div>
         </div>
 
+        <div class="category-switcher">
+            @foreach($categories as $value => $label)
+                <a href="{{ route('indicators.index', ['categoria' => $value]) }}" class="category-pill {{ $category === $value ? 'active' : '' }}">
+                    {{ $label }}
+                </a>
+            @endforeach
+        </div>
+
         @if(session('success'))
             <div style="padding:12px 16px;border-radius:10px;font-size:13px;color:#065f46;background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.15)">{{ session('success') }}</div>
         @endif
 
+        @if(! $hasConfiguredDashboard)
+            <div class="card pending-dashboard">
+                <div class="pending-dashboard-icon">
+                    <i data-lucide="construction" style="width:28px;height:28px"></i>
+                </div>
+                <div>
+                    <h2>Dashboard de {{ $categoryLabel }} pendiente de configurar</h2>
+                    <p>
+                        Por ahora no se muestran graficas para esta categoria. Puedes seguir consultando el listado,
+                        crear indicadores y administrar la ficha tecnica y los resultados con el flujo existente.
+                    </p>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                    <a href="{{ route('indicators.list', ['categoria' => $category]) }}" class="btn-secondary">
+                        <i data-lucide="list" style="width:16px;height:16px"></i> Ver listado
+                    </a>
+                    @if(auth()->user()->hasPermission('indicators.create'))
+                        <a href="{{ route('indicators.create', ['categoria' => $category]) }}" class="btn-primary">
+                            <i data-lucide="plus" style="width:16px;height:16px"></i> Nuevo indicador
+                        </a>
+                    @endif
+                </div>
+            </div>
+        @else
         <div class="metric-grid">
             <div class="card metric-card">
                 <div>
@@ -168,7 +232,7 @@
         @if($dashboard['total'] === 0)
             <div class="card empty-dashboard">
                 <i data-lucide="chart-no-axes-combined"></i>
-                <p style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 4px">No hay indicadores para graficar.</p>
+                <p style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 4px">No hay indicadores para graficar en {{ mb_strtolower($categoryLabel) }}.</p>
                 <p style="font-size:13px;margin:0">Cuando registres indicadores, el tablero se alimentara automaticamente.</p>
             </div>
         @else
@@ -224,9 +288,10 @@
                 </div>
             </div>
         @endif
+        @endif
     </div>
 
-    @if($dashboard['total'] > 0)
+    @if($hasConfiguredDashboard && $dashboard['total'] > 0)
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {
