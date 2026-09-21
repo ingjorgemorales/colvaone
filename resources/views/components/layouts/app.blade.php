@@ -279,9 +279,33 @@
                     @php
                         $isLinked = filled($item['route']);
                         $children = $item['children'] ?? [];
+                        $routeIndicator = request()->route('indicator');
+                        $currentIndicatorCategory = request('categoria')
+                            ?: ($routeIndicator?->category)
+                            ?: ((request()->routeIs('indicators.index') || request()->routeIs('indicators.list')) ? 'I' : null);
+                        $childIsActive = function (array $child) use ($currentIndicatorCategory): bool {
+                            $childRoute = $child['route'] ?? null;
+
+                            if (! filled($childRoute)) {
+                                return false;
+                            }
+
+                            $childParams = $child['params'] ?? [];
+                            $matchesConfiguredRoute = request()->routeIs($childRoute)
+                                && collect($childParams)->every(fn ($v, $k) => (string) request($k) === (string) $v);
+
+                            if ($matchesConfiguredRoute) {
+                                return true;
+                            }
+
+                            return str_starts_with((string) $childRoute, 'indicators.')
+                                && request()->routeIs('indicators.*')
+                                && isset($childParams['categoria'])
+                                && (string) $currentIndicatorCategory === (string) $childParams['categoria'];
+                        };
                         $isActive = $isLinked && request()->routeIs($item['route']);
                         foreach ($children as $child) {
-                            if (filled($child['route'] ?? null) && request()->routeIs($child['route'])) {
+                            if ($childIsActive($child)) {
                                 $isActive = true;
                             }
                         }
@@ -317,10 +341,7 @@
                                             || (is_array($childPermissions)
                                                 ? auth()->user()->hasAnyPermission($childPermissions)
                                                 : auth()->user()->hasPermission($childPermissions));
-                                        // Activo solo si coincide la ruta y ademas cada parametro del hijo.
-                                        $childActive = $childLinked
-                                            && request()->routeIs($child['route'])
-                                            && collect($childParams)->every(fn ($v, $k) => (string) request($k) === (string) $v);
+                                        $childActive = $childIsActive($child);
                                     @endphp
                                     @if($childHasPermission)
                                     <a href="{{ $childLinked ? route($child['route'], $childParams) : '#' }}"

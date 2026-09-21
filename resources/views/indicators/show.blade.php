@@ -168,10 +168,6 @@
                             <p class="data-value">{{ $indicator->category_label }}</p>
                         </div>
                         <div class="data-item">
-                            <p class="data-label">Perspectiva BSC</p>
-                            <p class="data-value">{{ $indicator->bsc_perspective_label }}</p>
-                        </div>
-                        <div class="data-item">
                             <p class="data-label">Proceso</p>
                             <p class="data-value">{{ $indicator->process_label }}</p>
                         </div>
@@ -215,9 +211,13 @@
                             <p class="data-label">Aspectos metodologicos</p>
                             @include('indicators.partials.clamped-text', ['text' => $indicator->methodological_aspects, 'modalTitle' => 'Aspectos metodologicos'])
                         </div>
-                        <div class="data-item data-item-full">
+                        <div class="data-item">
                             <p class="data-label">Objetivo de calidad</p>
                             <p class="data-value">{{ $indicator->quality_objective_label }}</p>
+                        </div>
+                        <div class="data-item">
+                            <p class="data-label">Perspectiva BSC</p>
+                            <p class="data-value">{{ $indicator->bsc_perspective_label }}</p>
                         </div>
                     </div>
                 </div>
