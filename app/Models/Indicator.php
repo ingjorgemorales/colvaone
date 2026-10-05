@@ -21,7 +21,11 @@ class Indicator extends BaseModel
         'dias' => 'Dias',
         'horas' => 'Horas',
         'pesos' => 'Pesos (COP)',
+        'millones' => 'Millones de pesos (COP)',
     ];
+
+    /** Unidades que son plata: se suman y se muestran sin decimales, como en el tablero de la junta. */
+    public const MONEY_UNITS = ['pesos', 'millones'];
 
     public const FREQUENCIES = [
         'diaria' => 'Diaria',
@@ -58,6 +62,20 @@ class Indicator extends BaseModel
         'IV' => 'indicators.category_iv',
     ];
 
+    public const ACCUMULATION_SUM = 'sum';
+    public const ACCUMULATION_AVERAGE = 'average';
+    public const ACCUMULATION_LAST = 'last';
+
+    /**
+     * Como se resume el rango en el dashboard BSC. Sin valor es automatico:
+     * lo que es plata se suma y los porcentajes o cantidades se promedian.
+     */
+    public const ACCUMULATION_MODES = [
+        self::ACCUMULATION_SUM => 'Suma de los periodos',
+        self::ACCUMULATION_AVERAGE => 'Promedio de los periodos',
+        self::ACCUMULATION_LAST => 'Ultimo periodo registrado',
+    ];
+
     public const TYPES = [
         'eficacia' => 'Eficacia',
         'eficiencia' => 'Eficiencia',
@@ -70,6 +88,8 @@ class Indicator extends BaseModel
         'name',
         'category',
         'bsc_perspective_id',
+        'accumulation_mode',
+        'annual_goal',
         'process_id',
         'subprocess_id',
         'objective',
@@ -91,6 +111,7 @@ class Indicator extends BaseModel
 
     protected $casts = [
         'goal' => 'integer',
+        'annual_goal' => 'decimal:2',
         'threshold_acceptable' => 'integer',
         'threshold_satisfactory' => 'integer',
     ];
@@ -128,6 +149,66 @@ class Indicator extends BaseModel
     public function getBscPerspectiveLabelAttribute(): string
     {
         return $this->bscPerspective?->name ?? 'Sin asignar';
+    }
+
+    /** El modo que realmente aplica, resolviendo el automatico por la unidad. */
+    public function accumulationMode(): string
+    {
+        if (array_key_exists((string) $this->accumulation_mode, self::ACCUMULATION_MODES)) {
+            return $this->accumulation_mode;
+        }
+
+        return $this->isMoney() ? self::ACCUMULATION_SUM : self::ACCUMULATION_AVERAGE;
+    }
+
+    public function isMoney(): bool
+    {
+        return in_array($this->measurement_unit, self::MONEY_UNITS, true);
+    }
+
+    /**
+     * Como se escriben las cifras del indicador. La plata va sin decimales, igual que
+     * el Excel de la junta ($ #,##0), y dice "millones" cuando se registro en millones:
+     * sin eso, 57.061 millones se lee como 57 mil pesos.
+     */
+    public function displayUnit(): array
+    {
+        return match ($this->measurement_unit) {
+            'millones' => ['money' => true, 'prefix' => '$ ', 'suffix' => ' millones', 'decimals' => 0, 'caption' => 'Cifras en millones de pesos'],
+            'pesos' => ['money' => true, 'prefix' => '$ ', 'suffix' => '', 'decimals' => 0, 'caption' => 'Cifras en pesos'],
+            default => ['money' => false, 'prefix' => '', 'suffix' => '', 'decimals' => 2, 'caption' => null],
+        };
+    }
+
+    /** Una cifra en la unidad del indicador. Compacta omite "millones", para tablas donde ya se dice arriba. */
+    public function formatAmount(float $value, bool $compact = false): string
+    {
+        $unit = $this->displayUnit();
+
+        $formatted = number_format(round($value, $unit['decimals']), $unit['decimals'], ',', '.');
+
+        if ($unit['decimals'] > 0) {
+            $formatted = rtrim(rtrim($formatted, '0'), ',');
+        }
+
+        // Redondear -0,4 da "-0"; eso es cero.
+        $formatted = $formatted === '-0' ? '0' : $formatted;
+
+        return $unit['prefix'] . $formatted . ($compact ? '' : $unit['suffix']);
+    }
+
+    public function getAnnualGoalLabelAttribute(): string
+    {
+        return $this->annual_goal === null ? 'Sin registrar' : $this->formatAmount((float) $this->annual_goal);
+    }
+
+    public function getAccumulationModeLabelAttribute(): string
+    {
+        $label = self::ACCUMULATION_MODES[$this->accumulationMode()];
+
+        return array_key_exists((string) $this->accumulation_mode, self::ACCUMULATION_MODES)
+            ? $label
+            : $label . ' (automatico)';
     }
 
     public function getQualityObjectiveLabelAttribute(): string

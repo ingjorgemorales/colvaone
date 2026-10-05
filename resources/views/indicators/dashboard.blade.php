@@ -42,6 +42,43 @@
         .dashboard-filter-field label {
             display:block; font-size:12px; font-weight:600; color:#64748b; margin-bottom:5px;
         }
+        /* Tablero BSC: una franja por perspectiva y una fila por indicador. */
+        .bsc-section { display:grid; gap:16px; }
+        .bsc-section + .bsc-section { margin-top:10px; }
+        .bsc-section-title {
+            display:flex; align-items:center; justify-content:space-between; gap:12px;
+            padding:12px 18px; border-radius:12px; color:white;
+            background:linear-gradient(135deg,#123f6e,#1d5f99);
+            box-shadow:0 10px 24px rgba(18,63,110,0.14);
+        }
+        .bsc-section-title h2 { margin:0; font-size:13px; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; }
+        .bsc-section-title span { font-size:12px; color:rgba(255,255,255,0.78); }
+        .bsc-row { display:grid; grid-template-columns:minmax(230px, 0.8fr) minmax(0, 1.8fr); gap:16px; align-items:stretch; }
+        .bsc-row > * { min-width:0; }
+        .bsc-summary { align-items:flex-start; }
+        .bsc-summary .metric-value { white-space:nowrap; }
+        .bsc-progress { margin-top:14px; height:6px; background:rgba(18,63,110,0.08); border-radius:8px; overflow:hidden; }
+        .bsc-progress span { display:block; height:100%; background:linear-gradient(135deg,#123f6e,#1d5f99); border-radius:8px; }
+        .bsc-figures { display:grid; gap:10px; margin:16px 0 0; }
+        .bsc-figures dt { margin:0 0 2px; font-size:11px; font-weight:700; letter-spacing:0.05em; text-transform:uppercase; color:#94a3b8; }
+        .bsc-figures dd { margin:0; font-size:17px; font-weight:700; color:#1e293b; overflow-wrap:anywhere; }
+        .bsc-notice { margin:12px 0 0; padding:10px 12px; border:1px solid rgba(245,158,11,0.25); background:rgba(245,158,11,0.07); border-radius:10px; color:#92400e; font-size:12px; line-height:1.5; }
+        .bsc-chart-card .chart-wrap { height:320px; }
+        .bsc-chart-card .chart-title { align-items:flex-start; flex-wrap:wrap; }
+        .bsc-chart-card .chart-title a { color:inherit; text-decoration:none; }
+        .bsc-chart-card .chart-title a:hover { color:#123f6e; text-decoration:underline; }
+        .bsc-cards { display:grid; gap:16px; align-content:start; }
+        .bsc-chart-goal { margin:4px 0 0; font-size:13px; font-weight:700; color:#123f6e; }
+        /* Grafica y tabla de datos se desplazan juntas en pantallas angostas para no desalinearse. */
+        .bsc-chart-scroll { overflow-x:auto; }
+        .bsc-chart-inner { min-width:max(100%, calc(140px + var(--bsc-columns, 8) * 64px)); }
+        .bsc-data-table { width:100%; border-collapse:collapse; table-layout:fixed; margin-top:6px; font-size:11.5px; color:#475569; font-variant-numeric:tabular-nums; }
+        .bsc-data-table th, .bsc-data-table td { padding:6px 3px; text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; border:1px solid rgba(18,63,110,0.08); }
+        .bsc-data-table tr > :first-child { width:140px; text-align:left; padding-left:8px; font-weight:600; color:#334155; }
+        .bsc-data-table thead th { font-weight:700; color:#1e293b; background:rgba(18,63,110,0.03); }
+        .bsc-key { display:inline-block; width:14px; height:9px; margin-right:6px; vertical-align:middle; border-radius:2px; }
+        .bsc-key-line { height:3px; background:#7cc142; border-radius:2px; }
+        .bsc-sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
         .category-switcher {
             display:flex; align-items:center; gap:8px; flex-wrap:wrap;
         }
@@ -128,7 +165,7 @@
             .indicator-dashboard .card:hover { transform:none; }
         }
         @media (max-width: 900px) {
-            .metric-grid, .chart-grid, .sgc-overview-grid { grid-template-columns:1fr; }
+            .metric-grid, .chart-grid, .sgc-overview-grid, .bsc-row { grid-template-columns:1fr; }
             .metric-stack { grid-template-rows:auto; }
             .chart-card.wide { grid-column:auto; }
             .dashboard-filters { grid-template-columns:1fr; width:100%; }
@@ -158,8 +195,8 @@
                     <button type="submit" class="btn-primary" style="padding:10px 16px">
                         <i data-lucide="filter" style="width:16px;height:16px"></i> Filtrar
                     </button>
-                    @if($filters['from'] || $filters['to'])
-                        <a href="{{ route('indicators.index', ['categoria' => $category]) }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626">
+                    @if($filters['custom'] ?? ($filters['from'] || $filters['to']))
+                        <a href="{{ route('indicators.index', ['categoria' => $category]) }}" class="btn-secondary" style="padding:10px 16px;color:#dc2626" aria-label="Restablecer fechas" title="Restablecer fechas">
                             <i data-lucide="x" style="width:16px;height:16px"></i>
                         </a>
                     @endif
@@ -195,7 +232,9 @@
             <div style="padding:12px 16px;border-radius:10px;font-size:13px;color:#065f46;background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.15)">{{ session('success') }}</div>
         @endif
 
-        @if(! $hasConfiguredDashboard)
+        @if($category === 'II')
+            @include('indicators.partials.bsc-dashboard')
+        @elseif(! $hasConfiguredDashboard)
             <div class="card pending-dashboard">
                 <div class="pending-dashboard-icon">
                     <i data-lucide="construction" style="width:28px;height:28px"></i>
@@ -323,7 +362,9 @@
         @endif
     </div>
 
-    @if($hasConfiguredDashboard && $dashboard['total'] > 0)
+    @if($category === 'II' && $bsc['charts'])
+        @include('indicators.partials.bsc-charts')
+    @elseif($category === 'I' && $dashboard['total'] > 0)
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', () => {

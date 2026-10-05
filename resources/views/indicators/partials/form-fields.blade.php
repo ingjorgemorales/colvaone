@@ -236,6 +236,28 @@
             </select>
             @error('bsc_perspective_id') <p class="field-error">{{ $message }}</p> @enderror
         </div>
+
+        <div class="field">
+            <label class="field-label">Acumulado en el dashboard</label>
+            <select name="accumulation_mode" class="input-field @error('accumulation_mode') error-field @enderror">
+                <option value="">Automatico segun la unidad</option>
+                @foreach(\App\Models\Indicator::ACCUMULATION_MODES as $value => $label)
+                    <option value="{{ $value }}" {{ old('accumulation_mode', $indicator->accumulation_mode ?? '') === $value ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+            <p class="field-hint">Automatico: si es plata (pesos o millones) se suma, si no se promedia. Elige "Ultimo periodo" para indicadores como el ratio de caja.</p>
+            @error('accumulation_mode') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
+
+        <div class="field">
+            <label class="field-label">Meta del año (valor)</label>
+            <input name="annual_goal" type="text" inputmode="decimal" autocomplete="off"
+                value="{{ old('annual_goal', isset($indicator) && $indicator->annual_goal !== null ? str_replace('.', ',', (string) (float) $indicator->annual_goal) : '') }}"
+                class="input-field @error('annual_goal') error-field @enderror"
+                placeholder="Ej: 83.259">
+            <p class="field-hint">Total esperado en el año, en la misma unidad del indicador. El tablero BSC lo usa para el avance del año.</p>
+            @error('annual_goal') <p class="field-error">{{ $message }}</p> @enderror
+        </div>
     </div>
 </div>
 

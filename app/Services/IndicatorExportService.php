@@ -116,6 +116,8 @@ class IndicatorExportService
         $fila = $this->dato($hoja, $fila, 'Nombre', $indicator->name);
         $fila = $this->dato($hoja, $fila, 'Categoria', $indicator->category_label);
         $fila = $this->dato($hoja, $fila, 'Perspectiva BSC', $indicator->bsc_perspective_label);
+        $fila = $this->dato($hoja, $fila, 'Acumulado en el dashboard', $indicator->accumulation_mode_label);
+        $fila = $this->dato($hoja, $fila, 'Meta del año', $indicator->annual_goal_label);
         $fila = $this->dato($hoja, $fila, 'Proceso', $indicator->process_label);
         $fila = $this->dato($hoja, $fila, 'Subproceso', $indicator->subprocess_label);
         $fila = $this->dato($hoja, $fila, 'Objetivo de calidad', $indicator->quality_objective_label);

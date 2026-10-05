@@ -219,6 +219,14 @@
                             <p class="data-label">Perspectiva BSC</p>
                             <p class="data-value">{{ $indicator->bsc_perspective_label }}</p>
                         </div>
+                        <div class="data-item">
+                            <p class="data-label">Acumulado en el dashboard</p>
+                            <p class="data-value">{{ $indicator->accumulation_mode_label }}</p>
+                        </div>
+                        <div class="data-item">
+                            <p class="data-label">Meta del año</p>
+                            <p class="data-value">{{ $indicator->annual_goal_label }}</p>
+                        </div>
                     </div>
                 </div>
 
@@ -251,6 +259,7 @@
         </div>
 
         {{-- ============ RESULTADOS ============ --}}
+        @include('indicators.partials.localized-number-script')
         <div x-show="tab === 'resultados'" x-cloak>
             <div class="card" style="padding:24px"
                 x-data="{
@@ -268,17 +277,35 @@
                     openCreate() { this.reset(); this.open = true; },
                     openEdit(row) { this.form = { ...row.data }; this.editingId = row.id; this.open = true; },
                     close() { this.reset(); this.open = false; },
+                    /** Punto para miles, coma para decimales: lo mismo que entiende el servidor. */
+                    num(value) {
+                        const parsed = window.parseLocalizedNumber(value);
+                        return parsed === null ? NaN : parseFloat(parsed);
+                    },
+                    invalid(value) {
+                        return String(value ?? '').trim() !== '' && window.parseLocalizedNumber(value) === null;
+                    },
+                    /** Como quedara guardado, sin separador de miles para que no haya duda. Vacio si ya se escribio asi. */
+                    readable(value) {
+                        const parsed = window.parseLocalizedNumber(value);
+                        if (parsed === null) return '';
+                        const shown = parsed.replace('.', ',');
+                        return shown === String(value).trim() ? '' : shown;
+                    },
+                    get hasInvalid() {
+                        return ['numerator', 'denominator', 'periodGoal'].some(field => this.invalid(this.form[field]));
+                    },
                     /** RESULTADO = (NUMERADOR / DENOMINADOR) x 100, en porcentaje */
                     get result() {
-                        const num = parseFloat(this.form.numerator);
-                        const den = parseFloat(this.form.denominator);
+                        const num = this.num(this.form.numerator);
+                        const den = this.num(this.form.denominator);
                         if (isNaN(num) || isNaN(den) || den === 0) return null;
                         return Math.round((num / den) * 10000) / 100;
                     },
                     /** (RESULTADO/META)x100, o (META/RESULTADO)x100 si la formula es descendente */
                     get compliance() {
                         const res = this.result;
-                        const goal = parseFloat(this.form.periodGoal);
+                        const goal = this.num(this.form.periodGoal);
                         if (res === null || isNaN(goal) || goal === 0) return null;
                         if (this.form.complianceFormula === 'descendente') {
                             return res === 0 ? null : Math.round((goal / res) * 10000) / 100;
@@ -359,9 +386,9 @@
                                                         data: {
                                                             periodStart: '{{ $result->period_start->format('Y-m-d') }}',
                                                             periodEnd: '{{ $result->period_end->format('Y-m-d') }}',
-                                                            numerator: '{{ (float) $result->numerator }}',
-                                                            denominator: '{{ (float) $result->denominator }}',
-                                                            periodGoal: '{{ (float) $result->period_goal }}',
+                                                            numerator: '{{ str_replace('.', ',', (string) (float) $result->numerator) }}',
+                                                            denominator: '{{ str_replace('.', ',', (string) (float) $result->denominator) }}',
+                                                            periodGoal: '{{ str_replace('.', ',', (string) (float) $result->period_goal) }}',
                                                             complianceFormula: '{{ $result->compliance_formula ?? 'ascendente' }}',
                                                             analysis: @js($result->analysis ?? ''),
                                                             actionNumber: @js($result->action_number ?? '')
@@ -409,7 +436,7 @@
                             <span x-text="editingId ? 'Editar resultado' : 'Nuevo resultado'"></span>
                         </p>
 
-                        <form method="POST" :action="action">
+                        <form method="POST" :action="action" @submit="if (hasInvalid) $event.preventDefault()">
                             @csrf
                             <input type="hidden" name="_method" :value="method">
 
@@ -424,15 +451,24 @@
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Numerador <span class="req">*</span></label>
-                                    <input name="numerator" type="number" step="any" required x-model="form.numerator" class="input-field" placeholder="270">
+                                    <input name="numerator" type="text" inputmode="decimal" autocomplete="off" required x-model="form.numerator" class="input-field" placeholder="Ej: 7.547"
+                                        :class="invalid(form.numerator) ? 'error-field' : ''">
+                                    <p class="field-error" x-show="invalid(form.numerator)" x-cloak>No es un número válido. Ej: 7547, 7.547 o 5.959,82.</p>
+                                    <p class="field-hint" x-show="readable(form.numerator)" x-cloak>Se guardará como <strong style="color:#123f6e" x-text="readable(form.numerator)"></strong></p>
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Denominador <span class="req">*</span></label>
-                                    <input name="denominator" type="number" step="any" required x-model="form.denominator" class="input-field" placeholder="300">
+                                    <input name="denominator" type="text" inputmode="decimal" autocomplete="off" required x-model="form.denominator" class="input-field" placeholder="Ej: 6.081,04"
+                                        :class="invalid(form.denominator) ? 'error-field' : ''">
+                                    <p class="field-error" x-show="invalid(form.denominator)" x-cloak>No es un número válido. Ej: 7547, 7.547 o 5.959,82.</p>
+                                    <p class="field-hint" x-show="readable(form.denominator)" x-cloak>Se guardará como <strong style="color:#123f6e" x-text="readable(form.denominator)"></strong></p>
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Meta del periodo <span class="req">*</span></label>
-                                    <input name="period_goal" type="number" step="any" required x-model="form.periodGoal" class="input-field" placeholder="95">
+                                    <input name="period_goal" type="text" inputmode="decimal" autocomplete="off" required x-model="form.periodGoal" class="input-field" placeholder="95"
+                                        :class="invalid(form.periodGoal) ? 'error-field' : ''">
+                                    <p class="field-error" x-show="invalid(form.periodGoal)" x-cloak>No es un número válido. Ej: 7547, 7.547 o 5.959,82.</p>
+                                    <p class="field-hint" x-show="readable(form.periodGoal)" x-cloak>Se guardará como <strong style="color:#123f6e" x-text="readable(form.periodGoal)"></strong></p>
                                     <p class="field-hint">En porcentaje, igual que el resultado. Ej: 95 para una meta del 95%.</p>
                                 </div>
                                 <div class="field span-2">

@@ -10,7 +10,9 @@ use App\Models\QualityObjective;
 use App\Models\Subprocess;
 use App\Models\User;
 use App\Services\AuthEventService;
+use App\Services\BscDashboardService;
 use App\Services\IndicatorExportService;
+use App\Support\LocalizedNumber;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -37,6 +39,11 @@ class IndicatorController extends Controller
         $to = $validated['to'] ?? null;
         $categories = Indicator::allowedCategoriesFor($request->user());
         $category = $this->categoryFromRequest($request, $categories);
+
+        if ($category === 'II') {
+            return $this->bscDashboard($request, $categories, $from, $to);
+        }
+
         $hasConfiguredDashboard = $category === 'I';
 
         $indicators = Indicator::with(['qualityObjective', 'subprocess'])
@@ -68,6 +75,46 @@ class IndicatorController extends Controller
             'categoryLabel' => Indicator::CATEGORIES[$category],
             'categories' => $categories,
             'hasConfiguredDashboard' => $hasConfiguredDashboard,
+        ]);
+    }
+
+    /**
+     * Tablero BSC, como el que se lleva a la junta: todos los indicadores de la
+     * categoria con su cumplimiento acumulado y su evolucion por periodo.
+     */
+    private function bscDashboard(Request $request, array $categories, ?string $from, ?string $to): View
+    {
+        $custom = $request->hasAny(['from', 'to']);
+
+        // Por defecto se lee el acumulado del ano en curso, igual que el tablero de la junta.
+        if (! $custom) {
+            $from = now()->startOfYear()->toDateString();
+            $to = now()->toDateString();
+        }
+
+        $indicators = Indicator::with([
+            'bscPerspective',
+            'results' => fn ($query) => $query
+                ->where('status', 'active')
+                ->when($from, fn ($query) => $query->whereDate('period_end', '>=', $from))
+                ->when($to, fn ($query) => $query->whereDate('period_start', '<=', $to))
+                ->reorder('period_start')
+                ->orderBy('period_end')
+                ->orderBy('id'),
+        ])
+            ->visibleFor($request->user())
+            ->inCategory('II')
+            ->where('status', 'active')
+            ->orderBy('name')
+            ->get();
+
+        return view('indicators.dashboard', [
+            'bsc' => app(BscDashboardService::class)->build($indicators),
+            'filters' => ['from' => $from, 'to' => $to, 'categoria' => 'II', 'custom' => $custom],
+            'category' => 'II',
+            'categoryLabel' => Indicator::CATEGORIES['II'],
+            'categories' => $categories,
+            'hasConfiguredDashboard' => true,
         ]);
     }
 
@@ -259,9 +306,18 @@ class IndicatorController extends Controller
     {
         $max = Indicator::SCALE_MAX;
 
+        // La meta del ano se escribe como en el Excel: "83.259" son 83 mil, no 83 coma.
+        $annualGoal = LocalizedNumber::parse($request->input('annual_goal'));
+
+        if ($annualGoal !== null) {
+            $request->merge(['annual_goal' => $annualGoal]);
+        }
+
         $validator = validator($request->all(), [
             'name' => ['required', 'string', 'max:255'],
             'category' => ['required', Rule::in(array_keys(Indicator::CATEGORIES))],
+            'accumulation_mode' => ['nullable', Rule::in(array_keys(Indicator::ACCUMULATION_MODES))],
+            'annual_goal' => ['nullable', 'numeric', 'gt:0'],
             'bsc_perspective_id' => [
                 'required',
                 Rule::exists('bsc_perspectives', 'id')->where(function ($query) use ($indicator): void {
@@ -301,6 +357,8 @@ class IndicatorController extends Controller
             'category.required' => 'La categoria del indicador es obligatoria.',
             'bsc_perspective_id.required' => 'La perspectiva BSC es obligatoria.',
             'quality_objective_id.required' => 'El objetivo de calidad es obligatorio.',
+            'annual_goal.numeric' => 'La meta del año no es un número válido. Ej: 83259, 83.259 o 2.200,5.',
+            'annual_goal.gt' => 'La meta del año debe ser mayor que cero.',
         ]);
 
         $validator->after(function ($validator) use ($request): void {
@@ -329,6 +387,16 @@ class IndicatorController extends Controller
 
     private function validateResult(Request $request): array
     {
+        // Las cifras llegan como se escriben en Colombia ("7.547", "5.959,82"). Si el
+        // punto se leyera como decimal, 7.547 se guardaria como 7,55 sin ningun aviso.
+        foreach (['numerator', 'denominator', 'period_goal'] as $field) {
+            $parsed = LocalizedNumber::parse($request->input($field));
+
+            if ($parsed !== null) {
+                $request->merge([$field => $parsed]);
+            }
+        }
+
         return $request->validate([
             'period_start' => ['required', 'date'],
             'period_end' => ['required', 'date', 'after_or_equal:period_start'],
@@ -340,6 +408,9 @@ class IndicatorController extends Controller
             'action_number' => ['nullable', 'string', 'max:60'],
         ], [
             'period_end.after_or_equal' => 'La fecha fin no puede ser anterior a la fecha inicio.',
+            'numerator.numeric' => 'El numerador no es un número válido. Escríbelo como 7547, 7.547 o 5.959,82.',
+            'denominator.numeric' => 'El denominador no es un número válido. Escríbelo como 6081, 6.081 o 6.081,04.',
+            'period_goal.numeric' => 'La meta del periodo no es un número válido. Ej: 95 o 95,5.',
             'denominator.not_in' => 'El denominador no puede ser cero.',
             'period_goal.not_in' => 'La meta del periodo no puede ser cero.',
             'compliance_formula.required' => 'La fórmula de cumplimiento es obligatoria.',
