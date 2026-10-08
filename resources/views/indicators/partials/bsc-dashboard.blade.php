@@ -13,6 +13,19 @@
             </div>
 
             @foreach($section['tiles'] as $tile)
+                @php
+                    $annualGoalText = $tile['annual_goal_text'];
+                    $annualCardGoalText = $tile['annual']['goal_text'];
+                    $shouldShowMillions = ($tile['unit']['money'] ?? false);
+
+                    if ($shouldShowMillions && $annualGoalText && ! str_contains(mb_strtolower($annualGoalText), 'millones')) {
+                        $annualGoalText .= ' millones';
+                    }
+
+                    if ($shouldShowMillions && $annualCardGoalText && ! str_contains(mb_strtolower($annualCardGoalText), 'millones')) {
+                        $annualCardGoalText .= ' millones';
+                    }
+                @endphp
                 <div class="bsc-row">
                     <div class="bsc-cards">
                         {{-- Cumplimiento del rango consultado, como tarjeta igual que las del dashboard SGC. --}}
@@ -70,8 +83,8 @@
 
                                     <dl class="bsc-figures">
                                         <div>
-                                            <dt>Meta del año</dt>
-                                            <dd>{{ $tile['annual']['goal_text'] }}</dd>
+                                            <dt>Meta del año ({{ $tile['unit']['label'] ?? $tile['unit']['caption'] }})</dt>
+                                            <dd>{{ $annualCardGoalText }}</dd>
                                         </div>
                                     </dl>
 
@@ -89,8 +102,8 @@
                         <div class="chart-title">
                             <div>
                                 <h3><a href="{{ route('indicators.show', ['indicator' => $tile['id'], 'tab' => 'resultados']) }}">{{ $tile['name'] }}</a></h3>
-                                @if($tile['annual_goal_text'])
-                                    <p class="bsc-chart-goal">Meta del año: {{ $tile['annual_goal_text'] }}</p>
+                                @if($annualGoalText)
+                                    <p class="bsc-chart-goal">Meta del año: {{ $annualGoalText }} <span style="color:#64748b;font-weight:600">({{ $tile['unit']['label'] ?? $tile['unit']['caption'] }})</span></p>
                                 @endif
                             </div>
                             <span>{{ $tile['unit']['caption'] ?? ($tile['labels']['actual'] . ' vs ' . mb_strtolower($tile['labels']['target']) . ' por período') }}</span>

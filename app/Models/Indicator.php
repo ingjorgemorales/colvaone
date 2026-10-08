@@ -197,6 +197,22 @@ class Indicator extends BaseModel
         return $unit['prefix'] . $formatted . ($compact ? '' : $unit['suffix']);
     }
 
+    public function dashboardUnit(): array
+    {
+        $unit = $this->displayUnit();
+
+        if ($unit['caption']) {
+            return $unit + [
+                'label' => self::MEASUREMENT_UNITS[$this->measurement_unit] ?? $this->measurement_unit,
+            ];
+        }
+
+        return $unit + [
+            'label' => self::MEASUREMENT_UNITS[$this->measurement_unit] ?? $this->measurement_unit,
+            'caption' => self::MEASUREMENT_UNITS[$this->measurement_unit] ?? $this->measurement_unit,
+        ];
+    }
+
     public function getAnnualGoalLabelAttribute(): string
     {
         return $this->annual_goal === null ? 'Sin registrar' : $this->formatAmount((float) $this->annual_goal);

@@ -59,7 +59,7 @@ class BscDashboardService
             'id' => $indicator->id,
             'name' => $indicator->name,
             'mode' => $mode,
-            'unit' => $indicator->displayUnit(),
+            'unit' => $indicator->dashboardUnit(),
             'labels' => $indicator->isMoney()
                 ? ['actual' => 'Real', 'target' => 'Presupuestado']
                 : ['actual' => 'Resultado', 'target' => 'Meta'],
