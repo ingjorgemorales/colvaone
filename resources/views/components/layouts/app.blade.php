@@ -306,7 +306,7 @@
                                 && isset($childParams['categoria'])
                                 && (string) $currentIndicatorCategory === (string) $childParams['categoria'];
                         };
-                        $isActive = $isLinked && request()->routeIs($item['route']);
+                        $isActive = $isLinked && request()->routeIs($item['active_route'] ?? $item['route']);
                         foreach ($children as $child) {
                             if ($childIsActive($child)) {
                                 $isActive = true;

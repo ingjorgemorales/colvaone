@@ -217,6 +217,18 @@ class RoleController extends Controller
                     'groups.assign_manager' => 'Asignar gerentes',
                 ],
             ],
+            'incidents' => [
+                'name' => 'Gestión de incidentes',
+                'items' => [
+                    'incidents.view' => 'Ver solo los incidentes que he generado',
+                    'incidents.view_all' => 'Ver todos los incidentes',
+                    'incidents.create' => 'Crear incidentes',
+                    'incidents.edit' => 'Editar incidentes',
+                    'incidents.toggle' => 'Inactivar / reactivar incidentes',
+                    'incidents.archive' => 'Archivar / restaurar incidentes',
+                    'incidents.settings' => 'Administrar listas desplegables',
+                ],
+            ],
             'group_tasks' => [
                 'name' => 'Tareas',
                 'items' => [

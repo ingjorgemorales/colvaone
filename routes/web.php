@@ -20,6 +20,8 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\IncidentController;
+use App\Http\Controllers\IncidentOptionController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
@@ -119,6 +121,27 @@ Route::middleware('auth')->group(function (): void {
     Route::get('committees/{committee}/edit', [CommitteeController::class, 'edit'])->name('committees.edit')->middleware('permission:committees.edit');
     Route::put('committees/{committee}', [CommitteeController::class, 'update'])->name('committees.update')->middleware('permission:committees.edit');
     Route::post('committees/{committee}/toggle', [CommitteeController::class, 'toggle'])->name('committees.toggle')->middleware('permission:committees.toggle');
+
+    Route::prefix('incidents')->name('incidents.')->group(function (): void {
+        Route::get('ajustes', [IncidentOptionController::class, 'index'])->name('settings')->middleware('permission:incidents.settings');
+        Route::post('ajustes', [IncidentOptionController::class, 'store'])->name('options.store')->middleware('permission:incidents.settings');
+        Route::put('ajustes/{option}', [IncidentOptionController::class, 'update'])->name('options.update')->middleware('permission:incidents.settings');
+        Route::post('ajustes/{option}/toggle', [IncidentOptionController::class, 'toggle'])->name('options.toggle')->middleware('permission:incidents.settings');
+
+        Route::middleware('permission:incidents.view,incidents.view_all')->group(function (): void {
+            Route::get('/', [IncidentController::class, 'index'])->name('index');
+            Route::get('create', [IncidentController::class, 'create'])->name('create')->middleware('permission:incidents.create');
+            Route::post('/', [IncidentController::class, 'store'])->name('store')->middleware('permission:incidents.create');
+            Route::get('{incident}', [IncidentController::class, 'show'])->name('show')->whereNumber('incident');
+            Route::get('{incident}/edit', [IncidentController::class, 'edit'])->name('edit')->middleware('permission:incidents.edit');
+            Route::put('{incident}', [IncidentController::class, 'update'])->name('update')->middleware('permission:incidents.edit');
+            Route::post('{incident}/toggle', [IncidentController::class, 'toggle'])->name('toggle')->middleware('permission:incidents.toggle');
+            Route::post('{incident}/archive', [IncidentController::class, 'archive'])->name('archive')->middleware('permission:incidents.archive');
+            Route::get('{incident}/evidencias/{attachment}', [IncidentController::class, 'attachment'])->name('attachments.download');
+            Route::get('{incident}/evidencias/{attachment}/ver', [IncidentController::class, 'preview'])->name('attachments.preview');
+            Route::get('{incident}/pdf', [IncidentController::class, 'pdf'])->name('pdf');
+        });
+    });
 
     Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view,group_tasks.view_group,group_tasks.view_all');
     Route::get('tasks-group-members/{group}', [TaskController::class, 'getGroupMembers'])->name('tasks.group-members')->middleware('auth');
