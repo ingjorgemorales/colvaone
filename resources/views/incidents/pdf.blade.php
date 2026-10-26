@@ -9,6 +9,8 @@
         h1 { font-size:21px; margin:0 0 4px; color:#123f6e; }
         h2 { font-size:12px; color:#123f6e; border-bottom:1px solid #dce4ed; padding-bottom:7px; margin:22px 0 10px; page-break-after:avoid; }
         .brand { font-size:12px; font-weight:bold; color:#123f6e; margin-bottom:16px; }
+        .brand img { width:170px; height:auto; vertical-align:middle; }
+        .brand span { margin-left:12px; vertical-align:middle; }
         .meta { color:#64748b; font-size:9px; }
         .status { background:#edf2f7; padding:8px 12px; margin:12px 0; }
         table { width:100%; border-collapse:collapse; table-layout:fixed; }
@@ -25,7 +27,7 @@
     </style>
 </head>
 <body>
-    <div class="brand">COLVATEL · ONE</div>
+    <div class="brand"><img src="{{ $logo }}" alt="Logo Colvatel"><span>ONE</span></div>
     <h1>Gestión de incidentes</h1>
     <div class="meta">{{ $incident->ticket }} | Generado el {{ now()->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</div>
     <div class="status"><strong>{{ \App\Models\Incident::STATUSES[$incident->status] }}</strong> · {{ $incident->is_active ? 'Activo' : 'Inactivo' }}{{ $incident->archived_at ? ' · Archivado' : '' }}</div>
@@ -59,7 +61,7 @@
     @endif
     @foreach($evidence->whereNotNull('source') as $item)
         <div class="photo-page">
-            <div class="brand">COLVATEL · ONE | {{ $incident->ticket }}</div>
+            <div class="brand"><img src="{{ $logo }}" alt="Logo Colvatel"><span>{{ $incident->ticket }}</span></div>
             <h2>Evidencia fotográfica {{ $loop->iteration }}</h2>
             <div class="caption">{{ $item['name'] }}</div>
             <div class="photo-frame"><img src="{{ $item['source'] }}" alt="{{ $item['name'] }}"></div>

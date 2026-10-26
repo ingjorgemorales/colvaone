@@ -19,7 +19,7 @@ class IncidentTest extends TestCase
     {
         $role = Role::create(['name' => 'Prueba '.Role::count(), 'slug' => 'prueba-'.Role::count(), 'permissions' => $permissions, 'is_active' => true]);
 
-        return User::factory()->create(['role' => $role->slug]);
+        return User::factory()->create(['role' => $role->slug, 'position' => 'Analista', 'area' => 'Opción area']);
     }
 
     private function data(): array
@@ -88,7 +88,7 @@ class IncidentTest extends TestCase
     {
         Storage::fake('local');
         $user = $this->userWith(['incidents.view', 'incidents.create']);
-        $this->actingAs($user)->post(route('incidents.store'), [])->assertSessionHasErrors(['reporter_name', 'area_id', 'description']);
+        $this->actingAs($user)->post(route('incidents.store'), [])->assertSessionHasErrors(['failure_id', 'location', 'description']);
         $this->post(route('incidents.store'), $this->data() + [
             'created_by' => 999, 'status' => 'resuelto', 'is_active' => false,
             'attachments' => [UploadedFile::fake()->create('evidencia.pdf', 20, 'application/pdf')],
@@ -127,16 +127,16 @@ class IncidentTest extends TestCase
         $this->post(route('incidents.toggle', $incident))->assertRedirect();
         $this->assertFalse($incident->fresh()->is_active);
         $this->post(route('incidents.archive', $incident))->assertRedirect();
-        $this->get(route('incidents.index'))->assertDontSee($incident->ticket);
-        $this->get(route('incidents.index', ['archive' => 'archived']))->assertSee($incident->ticket);
+        $this->get(route('incidents.index'))->assertSee($incident->ticket);
+        $this->get(route('incidents.index', ['status' => 'archivado']))->assertSee($incident->ticket);
         $this->get(route('incidents.edit', $incident))->assertForbidden();
         $this->put(route('incidents.update', $incident), $this->data())->assertForbidden();
         $this->post(route('incidents.toggle', $incident))->assertForbidden();
         $this->post(route('incidents.archive', $incident))->assertRedirect();
         $this->assertNull($incident->fresh()->archived_at);
-        $this->get(route('incidents.index', ['search' => $incident->ticket, 'status' => 'resuelto', 'activity' => 'inactive', 'from' => '2026-10-01', 'to' => '2026-10-20']))->assertOk()->assertViewHas('incidents', fn ($rows) => $rows->modelKeys() === [$incident->id]);
-        $this->get(route('incidents.index', ['to' => '2026-10-09']))->assertOk()->assertDontSee($incident->ticket);
-        $this->get(route('incidents.index', ['activity' => 'active']))->assertDontSee($incident->ticket);
+        $this->get(route('incidents.index', ['search' => '10/10/2026', 'status' => 'resuelto']))->assertOk()->assertViewHas('incidents', fn ($rows) => $rows->modelKeys() === [$incident->id]);
+        $this->get(route('incidents.index', ['search' => '09/10/2026']))->assertOk()->assertViewHas('incidents', fn ($rows) => $rows->isEmpty());
+        $this->get(route('incidents.index', ['status' => 'activo']))->assertDontSee($incident->ticket);
         $this->get(route('incidents.index', ['priority_id' => 9999]))->assertDontSee($incident->ticket);
     }
 
@@ -175,11 +175,11 @@ class IncidentTest extends TestCase
 
     public function test_pages_render_and_both_role_checkboxes_are_available(): void
     {
-        $user = User::factory()->create(['role' => 'superadmin']);
+        $user = User::factory()->create(['role' => 'superadmin', 'position' => 'Analista', 'area' => 'TI']);
         $incident = $this->incident($user);
         $role = Role::create(['name' => 'Operador incidentes', 'slug' => 'operador-incidentes', 'permissions' => []]);
         $this->actingAs($user)->get(route('incidents.index'))->assertOk()->assertSee('Gestión de incidentes');
-        $this->get(route('incidents.create'))->assertOk()->assertSee('name="area_id"', false);
+        $this->get(route('incidents.create'))->assertOk()->assertSee('id="reporter_area"', false)->assertSee('readonly aria-readonly="true"', false)->assertSee('Adjuntar archivos');
         $this->get(route('incidents.edit', $incident))->assertOk();
         $this->get(route('incidents.show', $incident))->assertOk();
         $this->get(route('incidents.settings', ['type' => 'failure']))->assertOk()->assertSee('Tipos de falla');
@@ -243,5 +243,114 @@ class IncidentTest extends TestCase
         Storage::disk('local')->delete($incident->attachments()->where('mime_type', 'image/png')->firstOrFail()->path);
         $response = $this->get(route('incidents.pdf', $incident))->assertOk();
         $this->assertStringStartsWith('%PDF-', $response->getContent());
+    }
+
+    public function test_reporter_details_are_taken_from_the_profile_and_cannot_be_forged_or_overwritten(): void
+    {
+        $owner = $this->userWith(['incidents.view', 'incidents.create', 'incidents.edit']);
+        $owner->update(['name' => 'Jorge', 'last_name' => 'Morales', 'position' => 'Analista de soporte', 'area' => 'TI']);
+        $data = $this->data();
+        $this->actingAs($owner)->post(route('incidents.store'), array_merge($data, [
+            'reporter_name' => 'Persona falsa', 'reporter_position' => 'Cargo falso', 'reporter_area' => 'Área falsa',
+        ]))->assertSessionHasNoErrors();
+        $incident = Incident::firstOrFail();
+        $this->assertSame('Jorge Morales', $incident->reporter_name);
+        $this->assertSame('Analista de soporte', $incident->reporter_position);
+        $this->assertSame('TI', $incident->area->name);
+        $this->assertNotSame($data['area_id'], $incident->area_id);
+        $editor = $this->userWith(['incidents.view_all', 'incidents.edit']);
+        $this->actingAs($editor)->put(route('incidents.update', $incident), array_merge($data, [
+            'status' => 'en_atencion', 'reporter_name' => 'Nombre alterado', 'reporter_position' => 'Cargo alterado',
+        ]))->assertSessionHasNoErrors();
+        $incident->refresh();
+        $this->assertSame('Jorge Morales', $incident->reporter_name);
+        $this->assertSame('Analista de soporte', $incident->reporter_position);
+        $this->assertSame('TI', $incident->area->name);
+        $this->assertSame('en_atencion', $incident->status);
+        $this->get(route('incidents.edit', $incident))->assertSee('value="Jorge Morales"', false)->assertSee('value="TI"', false);
+    }
+
+    public function test_an_incomplete_profile_cannot_be_replaced_with_posted_reporter_details(): void
+    {
+        $user = $this->userWith(['incidents.view', 'incidents.create']);
+        $user->update(['position' => null, 'area' => null]);
+        $this->actingAs($user)->get(route('incidents.create'))->assertOk()->assertSee('Actualizar perfil');
+        $this->post(route('incidents.store'), $this->data() + ['reporter_area' => 'Área enviada'])
+            ->assertSessionHasErrors(['reporter_position', 'reporter_area']);
+        $this->assertSame(0, Incident::count());
+    }
+
+    public function test_general_search_matches_fields_relations_dates_and_partial_tickets_without_leaking_other_users(): void
+    {
+        $owner = $this->userWith(['incidents.view']);
+        $area = IncidentOption::create(['type' => 'area', 'name' => 'Administración TI']);
+        $zone = IncidentOption::create(['type' => 'zone', 'name' => 'Piso quinto']);
+        $incident = $this->incident($owner, [
+            'reporter_name' => 'Jorge Morales', 'reporter_position' => 'Coordinador técnico',
+            'area_id' => $area->id, 'zone_id' => $zone->id, 'location' => 'Oficina norte',
+            'affected_assets' => 'UPS-8472', 'description' => 'Cable sin aislamiento',
+            'failure_id' => IncidentOption::where('type', 'failure')->where('name', 'Falla eléctrica')->firstOrFail()->id,
+            'priority_id' => IncidentOption::where('type', 'priority')->where('name', 'Alta')->firstOrFail()->id,
+            'created_at' => '2026-10-10 08:47:00',
+        ]);
+        $incident->attachments()->create(['path' => 'unused.pdf', 'original_name' => 'informe-inspección.pdf', 'mime_type' => 'application/pdf', 'size' => 100]);
+        $foreign = $this->incident(User::factory()->create(), [
+            'reporter_name' => 'Jorge Morales', 'area_id' => $area->id, 'zone_id' => $zone->id,
+            'failure_id' => $incident->failure_id, 'priority_id' => $incident->priority_id,
+            'affected_assets' => 'UPS-8472', 'created_at' => '2026-10-10 08:47:00',
+        ]);
+        $this->actingAs($owner);
+        foreach (['INC-000', '000001', 'morales', 'Coordinador', 'admin', 'Piso quinto', 'eléctrica', 'Alta', 'norte', 'aislamiento', 'UPS-8472', 'inspección.pdf', '10/10/2026', '10-10-2026', '10/2026', '2026-10-10', '08:47', 'Reportado'] as $search) {
+            $this->get(route('incidents.index', ['search' => $search]))->assertOk()
+                ->assertViewHas('incidents', fn ($rows) => $rows->modelKeys() === [$incident->id]);
+        }
+        $this->get(route('incidents.index', ['search' => 'sin coincidencias']))->assertViewHas('incidents', fn ($rows) => $rows->isEmpty());
+        $this->actingAs($this->userWith(['incidents.view_all']))->get(route('incidents.index', ['search' => 'morales']))
+            ->assertViewHas('incidents', fn ($rows) => $rows->modelKeys() === [$foreign->id, $incident->id]);
+    }
+
+    public function test_one_state_filter_handles_attention_activity_and_archive_and_removed_filters_do_not_hide_results(): void
+    {
+        $owner = $this->userWith(['incidents.view']);
+        $reported = $this->incident($owner);
+        $attending = $this->incident($owner, ['status' => 'en_atencion', 'is_active' => false]);
+        $resolved = $this->incident($owner, ['status' => 'resuelto', 'is_active' => false]);
+        $archived = $this->incident($owner, ['status' => 'resuelto', 'archived_at' => now()]);
+        $this->actingAs($owner);
+        foreach ([
+            '' => [$archived->id, $resolved->id, $attending->id, $reported->id],
+            'reportado' => [$reported->id], 'en_atencion' => [$attending->id],
+            'resuelto' => [$archived->id, $resolved->id], 'activo' => [$archived->id, $reported->id],
+            'inactivo' => [$resolved->id, $attending->id], 'archivado' => [$archived->id],
+        ] as $status => $ids) {
+            $this->get(route('incidents.index', ['status' => $status]))->assertOk()->assertViewHas('incidents', fn ($rows) => $rows->modelKeys() === $ids);
+        }
+        $response = $this->get(route('incidents.index', ['area_id' => 999, 'failure_id' => 999, 'from' => '1900-01-01', 'to' => '1900-01-02', 'activity' => 'inactive', 'archive' => 'archived']))->assertOk();
+        $response->assertViewHas('incidents', fn ($rows) => $rows->total() === 4);
+        foreach (['area_id', 'failure_id', 'from', 'to', 'activity', 'archive'] as $field) { $response->assertDontSee('name="'.$field.'"', false); }
+        $this->get(route('incidents.index', ['search' => 'archivado']))->assertViewHas('incidents', fn ($rows) => $rows->modelKeys() === [$archived->id]);
+    }
+
+    public function test_priority_badges_and_activity_use_the_requested_colors(): void
+    {
+        $owner = $this->userWith(['incidents.view']);
+        foreach (['Alta' => 'tone-danger', 'Media' => 'tone-warning', 'Baja' => 'tone-success'] as $name => $tone) {
+            $priority = IncidentOption::where('type', 'priority')->where('name', $name)->firstOrFail();
+            $incident = $this->incident($owner, ['priority_id' => $priority->id]);
+            $this->assertSame($tone, $incident->priority_tone);
+        }
+        $this->incident($owner, ['is_active' => false]);
+        $response = $this->actingAs($owner)->get(route('incidents.index'))->assertOk();
+        $response->assertSee('incident-pill tone-success">Activo', false)->assertSee('incident-pill tone-warning">Inactivo', false);
+    }
+
+    public function test_pdf_embeds_the_login_logo_when_there_are_no_photos(): void
+    {
+        $owner = $this->userWith(['incidents.view']);
+        $incident = $this->incident($owner);
+        $response = $this->actingAs($owner)->get(route('incidents.pdf', $incident))->assertOk();
+        [$width] = getimagesize(public_path('images/logo-login.png'));
+        $this->assertStringContainsString('/Subtype /Image', $response->getContent());
+        $this->assertStringContainsString('/Width '.$width, $response->getContent());
     }
 }

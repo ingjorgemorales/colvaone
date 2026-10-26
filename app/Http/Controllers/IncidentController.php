@@ -10,6 +10,7 @@ use App\Services\IncidentPdfService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -19,36 +20,18 @@ class IncidentController extends Controller
     {
         $filters = $request->validate([
             'search' => ['nullable', 'string', 'max:150'],
-            'status' => ['nullable', Rule::in(array_keys(Incident::STATUSES))],
-            'from' => ['nullable', 'date'], 'to' => ['nullable', 'date', ...($request->filled('from') ? ['after_or_equal:from'] : [])],
-            'activity' => ['nullable', Rule::in(['active', 'inactive'])],
-            'archive' => ['nullable', Rule::in(['current', 'archived', 'all'])],
-            'area_id' => ['nullable', 'integer'], 'failure_id' => ['nullable', 'integer'],
+            'status' => ['nullable', Rule::in(array_keys(Incident::FILTER_STATES))],
             'priority_id' => ['nullable', 'integer'],
         ]);
         $query = Incident::visibleFor($request->user())->with(['area', 'failure', 'priority']);
-        if ($search = $filters['search'] ?? null) {
-            $query->where(function ($q) use ($search) {
-                $q->where('description', 'like', '%'.$search.'%')
-                    ->orWhere('reporter_name', 'like', '%'.$search.'%')
-                    ->orWhere('location', 'like', '%'.$search.'%');
-                if (preg_match('/^(?:INC-)?(\d+)$/i', $search, $match)) {
-                    $q->orWhere('id', (int) $match[1]);
-                }
-            });
-        }
-        foreach (['status', 'area_id', 'failure_id', 'priority_id'] as $field) {
-            if (!empty($filters[$field])) { $query->where($field, $filters[$field]); }
-        }
-        if (!empty($filters['from'])) { $query->whereDate('created_at', '>=', $filters['from']); }
-        if (!empty($filters['to'])) { $query->whereDate('created_at', '<=', $filters['to']); }
-        if (!empty($filters['activity'])) { $query->where('is_active', $filters['activity'] === 'active'); }
-        $archive = $filters['archive'] ?? 'current';
-        if ($archive !== 'all') {
-            $archive === 'archived' ? $query->whereNotNull('archived_at') : $query->whereNull('archived_at');
-        }
-        $incidents = $query->latest('id')->paginate(15)->withQueryString();
-        $options = IncidentOption::orderBy('sort_order')->orderBy('id')->get()->groupBy('type');
+        $query->search($filters['search'] ?? '');
+        $status = $filters['status'] ?? null;
+        if (isset(Incident::STATUSES[$status ?? ''])) { $query->where('status', $status); }
+        elseif ($status === 'archivado') { $query->whereNotNull('archived_at'); }
+        elseif (in_array($status, ['activo', 'inactivo'], true)) { $query->where('is_active', $status === 'activo'); }
+        if (!empty($filters['priority_id'])) { $query->where('priority_id', $filters['priority_id']); }
+        $incidents = $query->latest('id')->paginate(15)->appends($request->only(['search', 'status', 'priority_id']));
+        $options = IncidentOption::where('type', 'priority')->orderBy('sort_order')->orderBy('id')->get()->groupBy('type');
 
         return view('incidents.index', compact('incidents', 'options'));
     }
@@ -163,14 +146,26 @@ class IncidentController extends Controller
         })->orderBy('sort_order')->orderBy('id')->get()->groupBy('type');
         $incident->load('attachments');
 
-        return view('incidents.form', compact('incident', 'options'));
+        $reporter = $this->reporterData($incident);
+        $profileIncomplete = !$incident->exists && in_array('', $reporter, true);
+
+        return view('incidents.form', compact('incident', 'options', 'reporter', 'profileIncomplete'));
+    }
+
+    private function reporterData(Incident $incident): array
+    {
+        $user = auth()->user();
+
+        return [
+            'reporter_name' => $incident->exists ? $incident->reporter_name : trim($user->name.' '.$user->last_name),
+            'reporter_position' => trim($incident->exists ? $incident->reporter_position : ($user->position ?? '')),
+            'reporter_area' => trim($incident->exists ? ($incident->area?->name ?? '') : ($user->area ?? '')),
+        ];
     }
 
     private function save(Request $request, Incident $incident): Incident
     {
         $rules = [
-            'reporter_name' => ['required', 'string', 'max:150'],
-            'reporter_position' => ['required', 'string', 'max:150'],
             'location' => ['required', 'string', 'max:500'],
             'description' => ['required', 'string', 'max:5000'],
             'affected_assets' => ['nullable', 'string', 'max:500'],
@@ -179,7 +174,7 @@ class IncidentController extends Controller
             'remove_attachments' => ['nullable', 'array'],
             'remove_attachments.*' => ['integer', Rule::exists('incident_attachments', 'id')->where('incident_id', $incident->id ?? 0)],
         ];
-        foreach (['area', 'zone', 'failure', 'impact', 'priority'] as $field) {
+        foreach (['zone', 'failure', 'impact', 'priority'] as $field) {
             $current = $incident->{$field.'_id'};
             $rules[$field.'_id'] = [$field === 'zone' ? 'nullable' : 'required', 'integer',
                 Rule::exists('incident_options', 'id')->where(fn ($q) => $q->where('type', $field)
@@ -193,13 +188,31 @@ class IncidentController extends Controller
             throw ValidationException::withMessages(['attachments' => 'El incidente admite hasta 10 evidencias.']);
         }
         unset($data['attachments'], $data['remove_attachments']);
+        $reporter = [];
         if (!$incident->exists) {
+            $reporter = Validator::make($this->reporterData($incident), [
+                'reporter_name' => ['required', 'string', 'max:150'],
+                'reporter_position' => ['required', 'string', 'max:150'],
+                'reporter_area' => ['required', 'string', 'max:150'],
+            ], [
+                'reporter_name.required' => 'Completa tu nombre en Mi perfil antes de registrar el incidente.',
+                'reporter_position.required' => 'Completa tu cargo en Mi perfil antes de registrar el incidente.',
+                'reporter_area.required' => 'Completa tu área en Mi perfil antes de registrar el incidente.',
+            ])->validate();
+            $data['reporter_name'] = $reporter['reporter_name'];
+            $data['reporter_position'] = $reporter['reporter_position'];
             $data['created_by'] = $request->user()->id;
             $data['status'] = 'reportado';
         }
         $paths = [];
         try {
-            DB::transaction(function () use ($incident, $data, $request, $removed, &$paths) {
+            DB::transaction(function () use ($incident, $data, $request, $removed, $reporter, &$paths) {
+                if (!$incident->exists) {
+                    $data['area_id'] = IncidentOption::firstOrCreate(
+                        ['type' => 'area', 'name' => $reporter['reporter_area']],
+                        ['sort_order' => (IncidentOption::where('type', 'area')->max('sort_order') ?? -1) + 1],
+                    )->id;
+                }
                 $incident->fill($data)->save();
                 foreach ($request->file('attachments', []) as $file) {
                     $path = $file->store('incidents/'.$incident->id, 'local');

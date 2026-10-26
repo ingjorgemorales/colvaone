@@ -26,12 +26,28 @@ class IncidentPdfService
             'source' => $attachment->is_image ? $this->imageData($attachment) : null,
         ]);
         $pdf = new Dompdf($options);
+        $logo = $this->logoData();
         $pdf->setPaper('A4');
-        $pdf->loadHtml(view('incidents.pdf', compact('incident', 'evidence'))->render());
+        $pdf->loadHtml(view('incidents.pdf', compact('incident', 'evidence', 'logo'))->render());
         $pdf->render();
         $pdf->getCanvas()->page_text(40, 810, $incident->ticket.'  |  ColvaOne  |  {PAGE_NUM} / {PAGE_COUNT}', null, 8, [0.39, 0.45, 0.55]);
 
         return $pdf->output();
+    }
+
+    private function logoData(): string
+    {
+        // Flatten transparency onto white so the logo renders reliably on every PDF page.
+        $source = imagecreatefrompng(public_path('images/logo-login.png'));
+        $logo = imagecreatetruecolor(imagesx($source), imagesy($source));
+        imagefill($logo, 0, 0, imagecolorallocate($logo, 255, 255, 255));
+        imagecopy($logo, $source, 0, 0, 0, 0, imagesx($source), imagesy($source));
+        ob_start();
+        imagepng($logo);
+        $bytes = ob_get_clean();
+        unset($source, $logo);
+
+        return 'data:image/png;base64,'.base64_encode($bytes);
     }
 
     private function imageData(IncidentAttachment $attachment): ?string
