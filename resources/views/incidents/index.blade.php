@@ -27,27 +27,37 @@
                 @endif
             </div>
         </form>
-        <div class="incident-count">{{ $incidents->total() }} incidentes registrados</div>
-        <div class="incident-table-wrap">
-            <table class="incident-table">
-                <thead><tr><th>Ticket / fecha</th><th>Incidente</th><th>Reportado por</th><th>Ubicación</th><th>Prioridad</th><th>Estado de atención</th><th>Actividad</th><th>Acciones</th></tr></thead>
-                <tbody>
-                    @forelse($incidents as $incident)
-                        <tr>
-                            <td><a class="incident-ticket" href="{{ route('incidents.show', $incident) }}">{{ $incident->ticket }}</a><div class="incident-muted">{{ $incident->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</div></td>
-                            <td class="incident-summary"><strong>{{ $incident->failure?->name }}</strong><div class="incident-muted">{{ \Illuminate\Support\Str::limit($incident->description, 110) }}</div></td>
-                            <td>{{ $incident->reporter_name }}<div class="incident-muted">{{ $incident->area?->name }}</div></td>
-                            <td class="incident-summary">{{ \Illuminate\Support\Str::limit($incident->location, 70) }}</td>
-                            <td><span class="incident-pill {{ $incident->priority_tone }}">{{ $incident->priority?->name }}</span></td>
-                            <td><span class="incident-pill {{ $incident->status }}">{{ \App\Models\Incident::STATUSES[$incident->status] }}</span></td>
-                            <td><span class="incident-pill {{ $incident->is_active ? 'tone-success' : 'tone-warning' }}">{{ $incident->is_active ? 'Activo' : 'Inactivo' }}</span>@if($incident->archived_at)<div class="incident-muted">Archivado</div>@endif</td>
-                            <td>@include('incidents.actions')</td>
-                        </tr>
-                    @empty
-                        <tr><td colspan="8" style="text-align:center;padding:40px;color:#64748b">No hay incidentes para los filtros seleccionados.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+        <div class="incident-count">{{ $incidents->total() }} {{ $incidents->total() === 1 ? 'incidente registrado' : 'incidentes registrados' }}</div>
+        <div class="incident-cards">
+            @forelse($incidents as $incident)
+                <article class="incident-list-card" aria-labelledby="incident-title-{{ $incident->id }}">
+                    <div class="incident-card-identity">
+                        <a class="incident-ticket" href="{{ route('incidents.show', $incident) }}">{{ $incident->ticket }}</a>
+                        <time class="incident-card-date" datetime="{{ $incident->created_at->toIso8601String() }}"><i data-lucide="calendar-days" aria-hidden="true"></i>{{ $incident->created_at->timezone(config('app.timezone'))->format('d/m/Y H:i') }}</time>
+                    </div>
+                    <div class="incident-card-summary">
+                        <h2 id="incident-title-{{ $incident->id }}" class="incident-card-title"><a href="{{ route('incidents.show', $incident) }}">{{ $incident->failure?->name ?? 'Incidente' }}</a></h2>
+                        <p class="incident-card-description">{{ \Illuminate\Support\Str::limit($incident->description, 180) }}</p>
+                    </div>
+                    <dl class="incident-card-fields incident-details">
+                        <div><dt>Reportado por</dt><dd>{{ $incident->reporter_name }}</dd></div>
+                        <div><dt>Área / dependencia</dt><dd>{{ $incident->area?->name ?? 'Sin especificar' }}</dd></div>
+                    </dl>
+                    <dl class="incident-card-fields incident-details">
+                        <div><dt>Ubicación</dt><dd>{{ \Illuminate\Support\Str::limit($incident->location, 100) }}</dd></div>
+                        <div><dt>Prioridad</dt><dd><span class="incident-pill {{ $incident->priority_tone }}">{{ $incident->priority?->name }}</span></dd></div>
+                    </dl>
+                    <dl class="incident-card-state incident-details">
+                        <div><dt>Estado de atención</dt><dd><span class="incident-pill {{ $incident->status }}">{{ \App\Models\Incident::STATUSES[$incident->status] }}</span></dd></div>
+                    </dl>
+                    <dl class="incident-card-activity-field incident-details">
+                        <div><dt>Actividad</dt><dd class="incident-card-activity"><span class="incident-pill {{ $incident->is_active ? 'tone-success' : 'tone-warning' }}">{{ $incident->is_active ? 'Activo' : 'Inactivo' }}</span>@if($incident->archived_at)<span class="incident-pill">Archivado</span>@endif</dd></div>
+                    </dl>
+                    <div class="incident-card-actions" role="group" aria-label="Acciones de {{ $incident->ticket }}">@include('incidents.actions')</div>
+                </article>
+            @empty
+                <div class="incident-empty" role="status"><i data-lucide="inbox" aria-hidden="true"></i><p>No hay incidentes para los filtros seleccionados.</p></div>
+            @endforelse
         </div>
         <div style="margin-top:18px">{{ $incidents->links() }}</div>
     </div>

@@ -353,4 +353,67 @@ class IncidentTest extends TestCase
         $this->assertStringContainsString('/Subtype /Image', $response->getContent());
         $this->assertStringContainsString('/Width '.$width, $response->getContent());
     }
+
+    public function test_pdf_information_is_grouped_in_labeled_cards_without_losing_description_or_evidence(): void
+    {
+        $owner = $this->userWith(['incidents.view']);
+        $incident = $this->incident($owner, ['description' => str_repeat('Detalle del incidente. ', 200).'FIN DEL REPORTE']);
+        $incident->refresh()->load(['creator', 'area', 'zone', 'failure', 'impact', 'priority', 'attachments']);
+        $html = view('incidents.pdf', [
+            'incident' => $incident, 'logo' => '',
+            'evidence' => collect([['name' => 'Inspección.pdf', 'size' => 1024, 'is_image' => false, 'source' => null]]),
+        ])->render();
+        foreach (['reporter', 'location', 'description', 'tracking', 'evidence'] as $section) {
+            $this->assertStringContainsString('data-section="'.$section.'"', $html);
+        }
+        $this->assertStringContainsString(e($incident->description), $html);
+        $this->assertStringContainsString('Inspección.pdf', $html);
+        $this->assertStringContainsString('Estado de atención', $html);
+        $this->assertStringContainsString('Actividad', $html);
+    }
+
+    public function test_incident_cards_keep_summary_filters_pagination_and_permission_based_actions(): void
+    {
+        $owner = $this->userWith(['incidents.view']);
+        $first = $this->incident($owner);
+        foreach (range(1, 15) as $index) {
+            $this->incident($owner, ['description' => 'Revisión de cableado '.$index]);
+        }
+        $foreign = $this->incident(User::factory()->create());
+        $response = $this->actingAs($owner)->get(route('incidents.index', ['search' => 'Revisión']))->assertOk();
+        $response->assertSee('class="incident-cards"', false)->assertDontSee('<table', false)
+            ->assertSee('Reportado por')->assertSee('Área / dependencia')->assertSee('Ubicación')
+            ->assertSee('Estado de atención')->assertSee('Actividad')->assertDontSee($foreign->ticket);
+        $this->assertSame(15, substr_count($response->getContent(), '<article class="incident-list-card"'));
+        $response->assertSee('aria-label="Ver INC-', false)->assertDontSee('aria-label="Editar INC-', false)
+            ->assertDontSee('aria-label="Inactivar INC-', false);
+        $all = $this->get(route('incidents.index'))->assertOk();
+        $all->assertSee('page=2', false);
+        $this->get(route('incidents.index', ['page' => 2]))->assertSee($first->ticket)->assertDontSee($foreign->ticket);
+        $this->get(route('incidents.index', ['search' => 'sin coincidencias']))->assertOk()
+            ->assertSee('No hay incidentes para los filtros seleccionados.')->assertDontSee('<article class="incident-list-card"', false);
+    }
+
+    public function test_cards_and_detail_keep_edit_archive_controls_and_distinct_detail_sections(): void
+    {
+        $user = $this->userWith(['incidents.view', 'incidents.edit', 'incidents.toggle', 'incidents.archive']);
+        $incident = $this->incident($user, ['status' => 'resuelto']);
+        $this->actingAs($user)->get(route('incidents.index'))->assertOk()
+            ->assertSee('aria-label="Acciones de '.$incident->ticket.'"', false)
+            ->assertDontSee('<footer class="incident-card-footer"', false)
+            ->assertSee('aria-label="Editar '.$incident->ticket.'"', false)
+            ->assertSee('aria-label="Inactivar '.$incident->ticket.'"', false)
+            ->assertSee('aria-label="Archivar '.$incident->ticket.'"', false);
+        $response = $this->get(route('incidents.show', $incident))->assertOk()->assertSee('Generar PDF');
+        foreach (['reporter', 'location', 'description', 'evidence', 'tracking'] as $section) {
+            $response->assertSee('aria-labelledby="incident-'.$section.'-heading"', false);
+        }
+        $this->assertSame(5, substr_count($response->getContent(), '<section class="incident-detail-panel'));
+        $response->assertSee('Sin evidencias adjuntas.')->assertSee($incident->description);
+        $incident->update(['archived_at' => now()]);
+        $archived = $this->get(route('incidents.index'))->assertOk();
+        $archived->assertSee('aria-label="Restaurar '.$incident->ticket.'"', false)
+            ->assertDontSee('aria-label="Editar '.$incident->ticket.'"', false)
+            ->assertDontSee('aria-label="Inactivar '.$incident->ticket.'"', false);
+    }
 }
