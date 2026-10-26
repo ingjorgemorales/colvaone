@@ -91,7 +91,7 @@ class IncidentTest extends TestCase
         $this->actingAs($user)->post(route('incidents.store'), [])->assertSessionHasErrors(['failure_id', 'location', 'description']);
         $this->post(route('incidents.store'), $this->data() + [
             'created_by' => 999, 'status' => 'resuelto', 'is_active' => false,
-            'attachments' => [UploadedFile::fake()->create('evidencia.pdf', 20, 'application/pdf')],
+            'attachments' => [UploadedFile::fake()->image('evidencia.png', 20, 20)],
         ])->assertSessionHasNoErrors()->assertRedirect();
         $incident = Incident::firstOrFail();
         $this->assertSame($user->id, $incident->created_by);
@@ -99,7 +99,7 @@ class IncidentTest extends TestCase
         $this->assertTrue($incident->is_active);
         $attachment = $incident->attachments()->firstOrFail();
         Storage::disk('local')->assertExists($attachment->path);
-        $this->get(route('incidents.attachments.download', [$incident, $attachment]))->assertDownload('evidencia.pdf');
+        $this->get(route('incidents.attachments.download', [$incident, $attachment]))->assertDownload('evidencia.png');
         $this->actingAs($this->userWith(['incidents.view']))->get(route('incidents.attachments.download', [$incident, $attachment]))->assertForbidden();
         $other = $this->incident($user);
         $this->actingAs($this->userWith(['incidents.view_all']))->get(route('incidents.attachments.download', [$other, $attachment]))->assertNotFound();
@@ -157,19 +157,19 @@ class IncidentTest extends TestCase
         Storage::fake('local');
         $user = $this->userWith(['incidents.view', 'incidents.create', 'incidents.edit']);
         $this->actingAs($user)->post(route('incidents.store'), $this->data() + ['attachments' => [UploadedFile::fake()->create('script.html', 5, 'text/html')]])->assertSessionHasErrors('attachments.0');
-        $this->post(route('incidents.store'), $this->data() + ['attachments' => [UploadedFile::fake()->create('grande.pdf', 10241, 'application/pdf')]])->assertSessionHasErrors('attachments.0');
-        $this->post(route('incidents.store'), $this->data() + ['attachments' => [UploadedFile::fake()->create('informe.pdf', 10, 'application/pdf')]])->assertSessionHasNoErrors();
+        $this->post(route('incidents.store'), $this->data() + ['attachments' => [UploadedFile::fake()->image('grande.png')->size(10241)]])->assertSessionHasErrors(['attachments.0' => 'Cada imagen de evidencia debe pesar como máximo 10 MB.']);
+        $this->post(route('incidents.store'), $this->data() + ['attachments' => [UploadedFile::fake()->image('evidencia.png')]])->assertSessionHasNoErrors();
         $incident = Incident::firstOrFail();
         $attachment = $incident->attachments()->firstOrFail();
         $this->put(route('incidents.update', $incident), $this->data() + ['status' => 'reportado', 'remove_attachments' => [$attachment->id]])->assertSessionHasNoErrors();
         $this->assertSame(0, $incident->attachments()->count());
         Storage::disk('local')->assertMissing($attachment->path);
-        $files = array_map(fn ($i) => UploadedFile::fake()->create('informe'.$i.'.pdf', 1, 'application/pdf'), range(1, 11));
+        $files = array_map(fn ($i) => UploadedFile::fake()->image('evidencia'.$i.'.jpg', 20, 20), range(1, 11));
         $this->put(route('incidents.update', $incident), $this->data() + ['status' => 'reportado', 'attachments' => $files])->assertSessionHasErrors('attachments');
         array_pop($files);
         $this->put(route('incidents.update', $incident), $this->data() + ['status' => 'reportado', 'attachments' => $files])->assertSessionHasNoErrors();
         $this->assertSame(10, $incident->attachments()->count());
-        $this->put(route('incidents.update', $incident), $this->data() + ['status' => 'reportado', 'attachments' => [UploadedFile::fake()->create('extra.pdf', 1, 'application/pdf')]])->assertSessionHasErrors('attachments');
+        $this->put(route('incidents.update', $incident), $this->data() + ['status' => 'reportado', 'attachments' => [UploadedFile::fake()->image('extra.jpg', 20, 20)]])->assertSessionHasErrors('attachments');
         $this->assertSame(10, $incident->attachments()->count());
     }
 
@@ -179,11 +179,58 @@ class IncidentTest extends TestCase
         $incident = $this->incident($user);
         $role = Role::create(['name' => 'Operador incidentes', 'slug' => 'operador-incidentes', 'permissions' => []]);
         $this->actingAs($user)->get(route('incidents.index'))->assertOk()->assertSee('Gestión de incidentes');
-        $this->get(route('incidents.create'))->assertOk()->assertSee('id="reporter_area"', false)->assertSee('readonly aria-readonly="true"', false)->assertSee('Adjuntar archivos');
+        $this->get(route('incidents.create'))->assertOk()->assertSee('id="reporter_area"', false)->assertSee('readonly aria-readonly="true"', false)->assertSee('Adjuntar imágenes')
+            ->assertSee('accept=".jpg,.jpeg,.png"', false)->assertSee('Solo imágenes JPG o PNG.')->assertDontSee('WEBP o PDF');
         $this->get(route('incidents.edit', $incident))->assertOk();
         $this->get(route('incidents.show', $incident))->assertOk();
         $this->get(route('incidents.settings', ['type' => 'failure']))->assertOk()->assertSee('Tipos de falla');
         $this->get(route('roles.edit', $role))->assertOk()->assertSee('value="incidents.view"', false)->assertSee('value="incidents.view_all"', false);
+    }
+
+    public function test_only_jpg_and_png_evidence_is_accepted_and_invalid_updates_preserve_existing_files(): void
+    {
+        Storage::fake('local');
+        $user = $this->userWith(['incidents.view', 'incidents.create', 'incidents.edit']);
+        $message = 'Solo puedes subir imágenes JPG o PNG como evidencia.';
+        $png = UploadedFile::fake()->image('foto.png', 20, 20)->get();
+        $jpeg = UploadedFile::fake()->image('foto.jpg', 20, 20)->get();
+        $temporary = [];
+        $upload = function (string $name, string $content) use (&$temporary): UploadedFile {
+            $temporary[] = $file = UploadedFile::fake()->createWithContent($name, $content);
+
+            return new UploadedFile($file->getPathname(), $name, null, null, true);
+        };
+        $this->actingAs($user);
+        foreach ([
+            UploadedFile::fake()->create('informe.pdf', 1, 'application/pdf'),
+            UploadedFile::fake()->image('foto.webp', 20, 20),
+            UploadedFile::fake()->image('foto.gif', 20, 20),
+            $upload('foto.svg', '<svg xmlns="http://www.w3.org/2000/svg"/>'),
+            $upload('falso.jpg', 'Esto no es una imagen'),
+            $upload('falso.png', '%PDF-1.4'),
+            $upload('imagen.pdf', $png),
+        ] as $file) {
+            $this->post(route('incidents.store'), $this->data() + ['attachments' => [$file]])
+                ->assertSessionHasErrors(['attachments.0' => $message]);
+            $this->assertSame(0, Incident::count());
+            $this->assertSame([], Storage::disk('local')->allFiles('incidents'));
+        }
+        $this->post(route('incidents.store'), $this->data() + ['attachments' => [
+            $upload('foto.JPG', $jpeg),
+            $upload('foto.jpeg', $jpeg),
+            $upload('foto.PNG', $png),
+        ]])->assertSessionHasNoErrors();
+        $incident = Incident::firstOrFail();
+        $this->assertSame(3, $incident->attachments()->count());
+        $existing = $incident->attachments()->firstOrFail();
+        $response = $this->putJson(route('incidents.update', $incident), $this->data() + [
+            'status' => 'resuelto', 'remove_attachments' => [$existing->id],
+            'attachments' => [UploadedFile::fake()->image('nuevo.webp', 20, 20)],
+        ])->assertUnprocessable()->assertJsonValidationErrors('attachments.0');
+        $this->assertSame($message, $response->json('errors')['attachments.0'][0]);
+        $this->assertSame(3, $incident->attachments()->count());
+        $this->assertSame('reportado', $incident->fresh()->status);
+        Storage::disk('local')->assertExists($existing->path);
     }
 
     public function test_photo_previews_are_inline_private_and_scoped_to_the_incident(): void
@@ -213,7 +260,7 @@ class IncidentTest extends TestCase
         $this->actingAs($owner)->post(route('incidents.store'), $this->data() + ['attachments' => [
             UploadedFile::fake()->image('evidencia.jpg', 1200, 800),
             UploadedFile::fake()->image('evidencia.png', 400, 400),
-            UploadedFile::fake()->image('evidencia.webp', 800, 1200),
+            UploadedFile::fake()->image('evidencia.jpeg', 800, 1200),
         ]])->assertSessionHasNoErrors();
         $incident = Incident::firstOrFail();
         $original = $incident->attachments()->firstOrFail();
@@ -235,9 +282,11 @@ class IncidentTest extends TestCase
         $owner = $this->userWith(['incidents.view', 'incidents.create']);
         $this->actingAs($owner)->post(route('incidents.store'), $this->data() + ['attachments' => [
             UploadedFile::fake()->image('foto.png', 200, 200),
-            UploadedFile::fake()->create('documento.pdf', 10, 'application/pdf'),
         ]])->assertSessionHasNoErrors();
         $incident = Incident::firstOrFail();
+        // Previously stored documents remain readable after restricting new uploads.
+        Storage::disk('local')->put('incidents/'.$incident->id.'/documento.pdf', '%PDF-1.4');
+        $incident->attachments()->create(['path' => 'incidents/'.$incident->id.'/documento.pdf', 'original_name' => 'documento.pdf', 'mime_type' => 'application/pdf', 'size' => 8]);
         $document = $incident->attachments()->where('mime_type', 'application/pdf')->firstOrFail();
         $this->get(route('incidents.attachments.preview', [$incident, $document]))->assertOk()->assertHeader('Content-Type', 'application/pdf');
         Storage::disk('local')->delete($incident->attachments()->where('mime_type', 'image/png')->firstOrFail()->path);

@@ -26,6 +26,8 @@
     .incident-upload-files li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid rgba(18,63,110,0.06); }
     .incident-upload-files li > span { min-width:0; }
     .incident-upload-files .incident-icon:focus-visible { outline:2px solid #123f6e; outline-offset:2px; }
+    .incident-upload-error { margin-top:10px; padding:10px 12px; border:1px solid #fecaca; border-radius:6px; color:#b42318; background:#fff0f0; font-size:12px; overflow-wrap:anywhere; }
+    .incident-upload-error[hidden] { display:none; }
     .incident-page .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
     .incident-page textarea { resize:vertical; }
     .incident-table-wrap { width:100%; overflow-x:auto; }

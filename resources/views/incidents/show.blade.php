@@ -35,7 +35,7 @@
                 </dl>
             </section>
             <section class="incident-detail-panel incident-full" aria-labelledby="incident-evidence-heading">
-                <h2 id="incident-evidence-heading" class="incident-panel-heading"><i data-lucide="paperclip" aria-hidden="true"></i>Fotos o documentos de evidencia</h2>
+                <h2 id="incident-evidence-heading" class="incident-panel-heading"><i data-lucide="paperclip" aria-hidden="true"></i>Evidencias adjuntas</h2>
                 <div class="incident-panel-body">@include('incidents.evidence')</div>
             </section>
             <section class="incident-detail-panel incident-full" aria-labelledby="incident-tracking-heading">

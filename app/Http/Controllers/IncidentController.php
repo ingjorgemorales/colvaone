@@ -170,7 +170,7 @@ class IncidentController extends Controller
             'description' => ['required', 'string', 'max:5000'],
             'affected_assets' => ['nullable', 'string', 'max:500'],
             'attachments' => ['nullable', 'array', 'max:10'],
-            'attachments.*' => ['file', 'mimes:jpg,jpeg,png,webp,pdf', 'max:10240'],
+            'attachments.*' => ['bail', 'file', 'image', 'mimes:jpg,jpeg,png', 'extensions:jpg,jpeg,png', 'max:10240'],
             'remove_attachments' => ['nullable', 'array'],
             'remove_attachments.*' => ['integer', Rule::exists('incident_attachments', 'id')->where('incident_id', $incident->id ?? 0)],
         ];
@@ -182,7 +182,13 @@ class IncidentController extends Controller
             ];
         }
         if ($incident->exists) { $rules['status'] = ['required', Rule::in(array_keys(Incident::STATUSES))]; }
-        $data = $request->validate($rules);
+        $data = $request->validate($rules, [
+            'attachments.*.file' => 'Solo puedes subir imágenes JPG o PNG como evidencia.',
+            'attachments.*.image' => 'Solo puedes subir imágenes JPG o PNG como evidencia.',
+            'attachments.*.mimes' => 'Solo puedes subir imágenes JPG o PNG como evidencia.',
+            'attachments.*.extensions' => 'Solo puedes subir imágenes JPG o PNG como evidencia.',
+            'attachments.*.max' => 'Cada imagen de evidencia debe pesar como máximo 10 MB.',
+        ]);
         $removed = $incident->attachments()->whereIn('id', $data['remove_attachments'] ?? [])->get();
         if ($incident->attachments()->count() - $removed->count() + count($request->file('attachments', [])) > 10) {
             throw ValidationException::withMessages(['attachments' => 'El incidente admite hasta 10 evidencias.']);

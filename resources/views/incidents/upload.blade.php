@@ -1,18 +1,20 @@
-<label id="incidentUploadLabel" for="attachments">Fotos o documentos de evidencia</label>
-<input id="attachments" name="attachments[]" type="file" multiple accept=".jpg,.jpeg,.png,.webp,.pdf" hidden>
+<label id="incidentUploadLabel" for="attachments">Imágenes de evidencia</label>
+<input id="attachments" name="attachments[]" type="file" multiple accept=".jpg,.jpeg,.png" aria-describedby="incidentUploadHelp incidentUploadError" hidden>
 <div class="incident-upload-toolbar">
-    <button type="button" class="btn-secondary" id="incidentUploadButton"><i data-lucide="paperclip" style="width:16px;height:16px"></i> Adjuntar archivos</button>
-    <span id="incidentUploadCount" class="incident-muted" aria-live="polite">Ningún archivo seleccionado</span>
-    <button type="button" class="incident-icon" id="incidentUploadClear" title="Quitar archivos seleccionados" aria-label="Quitar archivos seleccionados" hidden><i data-lucide="x"></i></button>
+    <button type="button" class="btn-secondary" id="incidentUploadButton" aria-describedby="incidentUploadHelp incidentUploadError"><i data-lucide="image-plus" style="width:16px;height:16px"></i> Adjuntar imágenes</button>
+    <span id="incidentUploadCount" class="incident-muted" aria-live="polite">Ninguna imagen seleccionada</span>
+    <button type="button" class="incident-icon" id="incidentUploadClear" title="Quitar imágenes seleccionadas" aria-label="Quitar imágenes seleccionadas" hidden><i data-lucide="x"></i></button>
 </div>
 <ul id="incidentUploadFiles" class="incident-upload-files"></ul>
-<div class="incident-muted">JPG, PNG, WEBP o PDF. Hasta 10 archivos, máximo 10 MB por archivo.</div>
+<div id="incidentUploadError" class="incident-upload-error" role="alert" hidden></div>
+<div id="incidentUploadHelp" class="incident-muted">Solo imágenes JPG o PNG. Hasta 10 imágenes, máximo 10 MB por imagen.</div>
 <script>
     (() => {
         const input = document.getElementById('attachments');
         const count = document.getElementById('incidentUploadCount');
         const files = document.getElementById('incidentUploadFiles');
         const clear = document.getElementById('incidentUploadClear');
+        const error = document.getElementById('incidentUploadError');
         let selected = [];
         document.getElementById('incidentUploadButton').addEventListener('click', () => input.click());
         function updateFiles() {
@@ -20,7 +22,7 @@
             const transfer = new DataTransfer();
             selected.forEach(file => transfer.items.add(file));
             input.files = transfer.files;
-            count.textContent = selected.length ? `${selected.length} ${selected.length === 1 ? 'archivo seleccionado' : 'archivos seleccionados'}` : 'Ningún archivo seleccionado';
+            count.textContent = selected.length ? `${selected.length} ${selected.length === 1 ? 'imagen seleccionada' : 'imágenes seleccionadas'}` : 'Ninguna imagen seleccionada';
             clear.hidden = selected.length === 0;
             files.replaceChildren(...selected.map((file, index) => {
                 const item = document.createElement('li');
@@ -45,14 +47,28 @@
             }));
             window.lucide?.createIcons();
         }
+        function clearError() {
+            error.textContent = '';
+            error.hidden = true;
+        }
         input.addEventListener('change', () => {
+            const rejected = [];
             for (const file of input.files) {
+                if (!/\.(jpe?g|png)$/i.test(file.name) || (file.type && !['image/jpeg', 'image/png'].includes(file.type))) {
+                    rejected.push(file.name);
+                    continue;
+                }
                 const duplicate = selected.some(existing => existing.name === file.name && existing.size === file.size && existing.type === file.type && existing.lastModified === file.lastModified);
                 if (!duplicate) selected.push(file);
             }
+            clearError();
+            if (rejected.length) {
+                error.textContent = `Solo puedes subir imágenes JPG o PNG. No se agregaron: ${rejected.join(', ')}.`;
+                error.hidden = false;
+            }
             updateFiles();
         });
-        clear.addEventListener('click', () => { selected = []; updateFiles(); });
-        input.form?.addEventListener('reset', () => { selected = []; updateFiles(); });
+        clear.addEventListener('click', () => { selected = []; clearError(); updateFiles(); });
+        input.form?.addEventListener('reset', () => { selected = []; clearError(); updateFiles(); });
     })();
 </script>
