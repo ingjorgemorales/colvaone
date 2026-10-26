@@ -23,7 +23,9 @@
     .incident-upload-toolbar .incident-muted { margin-top:0; }
     .incident-upload-toolbar [hidden] { display:none; }
     .incident-upload-files { padding:0; list-style:none; margin:10px 0 0; font-size:13px; color:#475569; overflow-wrap:anywhere; }
-    .incident-upload-files li { padding:4px 0; }
+    .incident-upload-files li { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:6px 0; border-bottom:1px solid rgba(18,63,110,0.06); }
+    .incident-upload-files li > span { min-width:0; }
+    .incident-upload-files .incident-icon:focus-visible { outline:2px solid #123f6e; outline-offset:2px; }
     .incident-page .btn-primary:disabled { opacity:0.5; cursor:not-allowed; }
     .incident-page textarea { resize:vertical; }
     .incident-table-wrap { width:100%; overflow-x:auto; }
