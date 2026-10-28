@@ -49,14 +49,15 @@ class IndicatorResultNumbersTest extends TestCase
         $this->actingAs($user)->post(route('indicators.results.store', $indicator), $this->datos('1', '1'));
         $result = $indicator->results()->firstOrFail();
 
-        $this->put(route('indicators.results.update', [$indicator, $result]), $this->datos('7.732', '5.959,82', '95,5'))
+        $this->put(route('indicators.results.update', [$indicator, $result]), $this->datos('7.732', '5.959,82'))
             ->assertSessionHasNoErrors();
 
         $result->refresh();
         $this->assertSame('7732.00', $result->numerator);
         $this->assertSame('5959.82', $result->denominator);
-        $this->assertSame(95.5, (float) $result->period_goal);
+        $this->assertNull($result->period_goal);
         $this->assertSame(129.74, (float) $result->result);
+        $this->assertSame(129.74, (float) $result->compliance);
     }
 
     public function test_una_cifra_ilegible_se_rechaza_con_un_mensaje_claro(): void
@@ -64,7 +65,7 @@ class IndicatorResultNumbersTest extends TestCase
         [$user, $indicator] = $this->preparar();
 
         $this->actingAs($user)->post(route('indicators.results.store', $indicator), $this->datos('7.5.4', '6.081'))
-            ->assertSessionHasErrors(['numerator' => 'El numerador no es un número válido. Escríbelo como 7547, 7.547 o 5.959,82.']);
+            ->assertSessionHasErrors(['numerator' => 'El resultado no es un número válido. Escríbelo como 7547, 7.547 o 5.959,82.']);
 
         $this->assertSame(0, IndicatorResult::count());
     }
@@ -74,7 +75,7 @@ class IndicatorResultNumbersTest extends TestCase
         [$user, $indicator] = $this->preparar();
 
         $this->actingAs($user)->post(route('indicators.results.store', $indicator), $this->datos('7.547', '0,00'))
-            ->assertSessionHasErrors(['denominator' => 'El denominador no puede ser cero.']);
+            ->assertSessionHasErrors(['denominator' => 'La meta no puede ser cero.']);
     }
 
     public function test_el_formulario_acepta_texto_y_edita_con_coma_decimal(): void
@@ -106,14 +107,13 @@ class IndicatorResultNumbersTest extends TestCase
         return [$user, $indicator];
     }
 
-    private function datos(string $numerador, string $denominador, string $meta = '100'): array
+    private function datos(string $numerador, string $denominador): array
     {
         return [
             'period_start' => '2026-08-01',
             'period_end' => '2026-08-31',
             'numerator' => $numerador,
             'denominator' => $denominador,
-            'period_goal' => $meta,
             'compliance_formula' => 'ascendente',
         ];
     }

@@ -17,8 +17,8 @@ class IndicatorResult extends BaseModel
     public const FORMULA_DESCENDING = 'descendente';
 
     public const COMPLIANCE_FORMULAS = [
-        self::FORMULA_ASCENDING => 'Ascendente: mientras mas alto, mejor',
-        self::FORMULA_DESCENDING => 'Descendente: mientras mas bajo, mejor (llegar a cero)',
+        self::FORMULA_ASCENDING => 'Ascendente: mayor es mejor',
+        self::FORMULA_DESCENDING => 'Descendente: menor es mejor',
     ];
 
     protected $fillable = [
@@ -53,6 +53,7 @@ class IndicatorResult extends BaseModel
         'result' => 'decimal:4',
         'period_goal' => 'decimal:4',
         'compliance' => 'decimal:2',
+        'legacy_calculation' => 'array',
     ];
 
     public function indicator(): BelongsTo
@@ -71,9 +72,8 @@ class IndicatorResult extends BaseModel
     }
 
     /**
-     * RESULTADO = (NUMERADOR / DENOMINADOR) x 100, expresado en porcentaje
-     * para que quede en la misma escala que la meta del periodo.
-     * Sin division por cero.
+     * Razon historica conservada por compatibilidad; ya no se muestra como
+     * una columna adicional. El resultado real es `numerator`.
      */
     public static function calculateResult(float $numerator, float $denominator): float
     {
@@ -86,8 +86,8 @@ class IndicatorResult extends BaseModel
 
     /**
      * CUMPLIMIENTO segun la formula seleccionada:
-     *   ascendente  -> (RESULTADO / META) * 100   la meta busca subir el valor
-     *   descendente -> (META / RESULTADO) * 100   la meta busca llegar a cero
+     *   ascendente  -> (RESULTADO REAL / META) * 100
+     *   descendente -> (META / RESULTADO REAL) * 100
      */
     public static function calculateCompliance(float $result, ?float $goal, ?string $direction = null): float
     {

@@ -128,7 +128,7 @@ class BscDashboardTest extends TestCase
         $this->assertSame(111.19, $tile['compliance']);
 
         $chart = collect($response->viewData('bsc')['charts'])->firstWhere('id', $ingresos->id);
-        $this->assertSame(['money' => true, 'prefix' => '$ ', 'suffix' => ' millones', 'decimals' => 0, 'caption' => 'Cifras en millones de pesos'], $chart['unit']);
+        $this->assertSame(['money' => true, 'prefix' => '$ ', 'suffix' => ' millones', 'decimals' => 0, 'caption' => 'Cifras en millones de pesos', 'label' => 'Millones de pesos (COP)'], $chart['unit']);
 
         $response->assertSee('$ 57.061 millones')->assertDontSee('57.061,36');
     }
@@ -364,7 +364,7 @@ class BscDashboardTest extends TestCase
         $this->assertStringContainsString('períodos superpuestos', $tile['notice']);
     }
 
-    public function test_metas_o_formulas_distintas_no_se_promedian_en_silencio(): void
+    public function test_las_metas_porcentuales_anteriores_ya_no_intervienen_en_el_acumulado(): void
     {
         $user = $this->admin();
         $ingresos = $this->indicator($user);
@@ -373,8 +373,19 @@ class BscDashboardTest extends TestCase
 
         $tile = $this->tile($this->actingAs($user)->get('/indicators?categoria=II'), $ingresos);
 
+        $this->assertSame(100.0, $tile['compliance']);
+        $this->assertNull($tile['notice']);
+    }
+
+    public function test_formulas_distintas_no_se_acumulan_en_silencio(): void
+    {
+        $user = $this->admin();
+        $indicator = $this->indicator($user);
+        $this->addResult($indicator, '2026-07-01', '2026-07-31', 100, 100);
+        $this->addResult($indicator, '2026-08-01', '2026-08-31', 100, 100, ['compliance_formula' => 'descendente']);
+        $tile = $this->tile($this->actingAs($user)->get('/indicators?categoria=II'), $indicator);
         $this->assertNull($tile['compliance']);
-        $this->assertStringContainsString('metas o fórmulas diferentes', $tile['notice']);
+        $this->assertStringContainsString('fórmulas diferentes', $tile['notice']);
     }
 
     // ------------------------------------------------------------- filtros
@@ -519,10 +530,9 @@ class BscDashboardTest extends TestCase
 
     private function addResult(Indicator $indicator, string $start, string $end, float $actual, float $target, array $attributes = []): IndicatorResult
     {
-        $goal = $attributes['period_goal'] ?? 100;
         $direction = $attributes['compliance_formula'] ?? 'ascendente';
         $result = IndicatorResult::calculateResult($actual, $target);
-        $compliance = IndicatorResult::calculateCompliance($result, $goal, $direction);
+        $compliance = IndicatorResult::calculateCompliance($actual, $target, $direction);
 
         return $indicator->results()->create(array_replace([
             'period_start' => $start,
@@ -530,7 +540,6 @@ class BscDashboardTest extends TestCase
             'numerator' => $actual,
             'denominator' => $target,
             'result' => $result,
-            'period_goal' => $goal,
             'compliance_formula' => $direction,
             'compliance' => $compliance,
             'evaluation' => $indicator->evaluate($compliance),

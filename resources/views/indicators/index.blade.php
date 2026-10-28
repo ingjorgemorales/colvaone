@@ -115,7 +115,7 @@
                             <td style="max-width:320px">
                                 <a href="{{ route('indicators.show', $indicator) }}" style="font-weight:600;color:#1e293b;text-decoration:none">{{ $indicator->name }}</a>
                                 <p style="font-size:12px;color:#94a3b8;margin:2px 0 0">
-                                    Meta {{ $indicator->goal }}% &middot; {{ $indicator->frequency_label }}
+                                    {{ $indicator->frequency_label }}
                                     @if($indicator->category)
                                         &middot; <span style="color:#123f6e;font-weight:600">{{ $indicator->category_label }}</span>
                                     @endif

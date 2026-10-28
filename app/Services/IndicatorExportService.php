@@ -127,7 +127,6 @@ class IndicatorExportService
         $fila = $this->dato($hoja, $fila, 'Unidad de medicion', $indicator->measurement_unit_label);
         $fila = $this->dato($hoja, $fila, 'Frecuencia', $indicator->frequency_label);
         $fila = $this->dato($hoja, $fila, 'Tipo', $indicator->type_label);
-        $fila = $this->dato($hoja, $fila, 'Meta', $indicator->goal . '%');
         $fila = $this->dato($hoja, $fila, 'Formula', $indicator->formula);
 
         $fila = $this->seccion($hoja, $fila, 'Detalle');
@@ -237,7 +236,7 @@ class IndicatorExportService
         $hoja->setTitle('Resultados');
         $hoja->setShowGridlines(false);
 
-        // Trece columnas no caben a lo alto: se imprime apaisado y ajustado al ancho,
+        // Se imprime apaisado y ajustado al ancho,
         // repitiendo los encabezados en cada pagina.
         $hoja->getPageSetup()->setOrientation(PageSetup::ORIENTATION_LANDSCAPE);
         $hoja->getPageSetup()->setFitToWidth(1)->setFitToHeight(0);
@@ -247,21 +246,19 @@ class IndicatorExportService
             'A' => ['ID', 8],
             'B' => ['Periodo inicio', 15],
             'C' => ['Periodo fin', 15],
-            'D' => ['Numerador', 14],
-            'E' => ['Denominador', 15],
-            'F' => ['Resultado', 14],
-            'G' => ['Meta periodo', 15],
-            'H' => ['Formula cumplimiento', 27],
-            'I' => ['Cumplimiento', 15],
-            'J' => ['Evaluacion', 17],
-            'K' => ['Analisis', 52],
-            'L' => ['Accion No', 13],
-            'M' => ['Estado', 12],
+            'D' => ['Resultado', 14],
+            'E' => ['Meta', 15],
+            'F' => ['Cumplimiento', 15],
+            'G' => ['Formula cumplimiento', 27],
+            'H' => ['Evaluacion', 17],
+            'I' => ['Analisis', 52],
+            'J' => ['Accion No', 13],
+            'K' => ['Estado', 12],
         ];
 
         $this->logo($hoja);
 
-        $hoja->mergeCells('A2:M2');
+        $hoja->mergeCells('A2:K2');
         $this->texto($hoja, 'A2', 'RESULTADOS - ' . $indicator->name);
         $hoja->getStyle('A2')->getFont()->setBold(true)->setSize(12)->getColor()->setARGB(self::AZUL);
         $hoja->getStyle('A2')->getAlignment()->setVertical(Alignment::VERTICAL_CENTER)->setHorizontal(Alignment::HORIZONTAL_LEFT)->setIndent(1);
@@ -272,9 +269,9 @@ class IndicatorExportService
             $this->texto($hoja, $letra . '3', $titulo);
         }
 
-        $hoja->getStyle('A3:M3')->getFont()->setBold(true)->setSize(10)->getColor()->setARGB('FFFFFFFF');
-        $hoja->getStyle('A3:M3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::AZUL);
-        $hoja->getStyle('A3:M3')->getAlignment()
+        $hoja->getStyle('A3:K3')->getFont()->setBold(true)->setSize(10)->getColor()->setARGB('FFFFFFFF');
+        $hoja->getStyle('A3:K3')->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB(self::AZUL);
+        $hoja->getStyle('A3:K3')->getAlignment()
             ->setVertical(Alignment::VERTICAL_CENTER)
             ->setHorizontal(Alignment::HORIZONTAL_CENTER)
             ->setWrapText(true);
@@ -284,7 +281,7 @@ class IndicatorExportService
         $hoja->freezePane('A4');
 
         if ($indicator->results->isEmpty()) {
-            $hoja->mergeCells('A4:M4');
+            $hoja->mergeCells('A4:K4');
             $this->texto($hoja, 'A4', 'Aun no hay resultados registrados para este indicador.');
             $hoja->getStyle('A4')->getFont()->getColor()->setARGB(self::GRIS);
             $hoja->getStyle('A4')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
@@ -301,12 +298,12 @@ class IndicatorExportService
 
         $ultima = $fila - 1;
 
-        $hoja->getStyle("A3:M{$ultima}")->getBorders()->getAllBorders()
+        $hoja->getStyle("A3:K{$ultima}")->getBorders()->getAllBorders()
             ->setBorderStyle(Border::BORDER_THIN)->getColor()->setARGB(self::BORDE);
-        $hoja->getStyle("A4:M{$ultima}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
-        $hoja->getStyle("H4:H{$ultima}")->getAlignment()->setWrapText(true);
-        $hoja->getStyle("K4:K{$ultima}")->getAlignment()->setWrapText(true);
-        $hoja->setAutoFilter("A3:M{$ultima}");
+        $hoja->getStyle("A4:K{$ultima}")->getAlignment()->setVertical(Alignment::VERTICAL_TOP);
+        $hoja->getStyle("G4:G{$ultima}")->getAlignment()->setWrapText(true);
+        $hoja->getStyle("I4:I{$ultima}")->getAlignment()->setWrapText(true);
+        $hoja->setAutoFilter("A3:K{$ultima}");
     }
 
     private function filaResultado(Worksheet $hoja, int $fila, IndicatorResult $resultado): void
@@ -320,32 +317,29 @@ class IndicatorExportService
 
         $this->numero($hoja, "D{$fila}", (float) $resultado->numerator, self::FORMATO_NUMERO);
         $this->numero($hoja, "E{$fila}", (float) $resultado->denominator, self::FORMATO_NUMERO);
-        $this->numero($hoja, "F{$fila}", (float) $resultado->result, self::FORMATO_PORCENTAJE);
-        $this->numero($hoja, "G{$fila}", $resultado->period_goal === null ? null : (float) $resultado->period_goal, self::FORMATO_PORCENTAJE);
+        $this->numero($hoja, "F{$fila}", (float) $resultado->compliance, self::FORMATO_PORCENTAJE);
+        $hoja->getStyle("F{$fila}")->getFont()->setBold(true);
 
-        $this->texto($hoja, "H{$fila}", sprintf(
+        $this->texto($hoja, "G{$fila}", sprintf(
             "%s
 %s",
             $resultado->compliance_formula === IndicatorResult::FORMULA_DESCENDING ? 'Descendente' : 'Ascendente',
             $resultado->compliance_formula_math
         ));
-        $hoja->getStyle("H{$fila}")->getFont()->setSize(10);
+        $hoja->getStyle("G{$fila}")->getFont()->setSize(10);
 
-        $this->numero($hoja, "I{$fila}", (float) $resultado->compliance, self::FORMATO_PORCENTAJE);
-        $hoja->getStyle("I{$fila}")->getFont()->setBold(true);
-
-        $this->texto($hoja, "J{$fila}", $resultado->evaluation_label);
+        $this->texto($hoja, "H{$fila}", $resultado->evaluation_label);
         [$fuente, $fondo] = self::COLORES_EVALUACION[$resultado->evaluation] ?? [self::GRIS, 'FFF4F6F9'];
-        $hoja->getStyle("J{$fila}")->getFont()->setBold(true)->getColor()->setARGB($fuente);
-        $hoja->getStyle("J{$fila}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($fondo);
-        $hoja->getStyle("J{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+        $hoja->getStyle("H{$fila}")->getFont()->setBold(true)->getColor()->setARGB($fuente);
+        $hoja->getStyle("H{$fila}")->getFill()->setFillType(Fill::FILL_SOLID)->getStartColor()->setARGB($fondo);
+        $hoja->getStyle("H{$fila}")->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
 
-        $this->texto($hoja, "K{$fila}", trim((string) $resultado->analysis) ?: '-');
-        $this->texto($hoja, "L{$fila}", $resultado->action_number ?: '-');
-        $this->texto($hoja, "M{$fila}", $resultado->status_label);
+        $this->texto($hoja, "I{$fila}", trim((string) $resultado->analysis) ?: '-');
+        $this->texto($hoja, "J{$fila}", $resultado->action_number ?: '-');
+        $this->texto($hoja, "K{$fila}", $resultado->status_label);
 
         if (! $resultado->isActive()) {
-            $hoja->getStyle("A{$fila}:M{$fila}")->getFont()->getColor()->setARGB('FF94A3B8');
+            $hoja->getStyle("A{$fila}:K{$fila}")->getFont()->getColor()->setARGB('FF94A3B8');
         }
     }
 

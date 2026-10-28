@@ -174,17 +174,6 @@
             @error('type') <p class="field-error">{{ $message }}</p> @enderror
         </div>
 
-        <div class="field">
-            <label class="field-label">Meta <span class="req">*</span></label>
-            <select name="goal" required class="input-field @error('goal') error-field @enderror">
-                @for($i = 1; $i <= $max; $i++)
-                    <option value="{{ $i }}" {{ (int) old('goal', $indicator->goal ?? 100) === $i ? 'selected' : '' }}>{{ $i }}%</option>
-                @endfor
-            </select>
-            <p class="field-hint">Desplegable de 1 a {{ $max }}%. El limite es {{ $max }}%.</p>
-            @error('goal') <p class="field-error">{{ $message }}</p> @enderror
-        </div>
-
         {{-- Campos amplios: ocupan la fila completa --}}
         <div class="field field-full">
             <label class="field-label">Objetivo del indicador <span class="req">*</span></label>

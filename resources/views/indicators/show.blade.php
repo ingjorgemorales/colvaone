@@ -24,7 +24,7 @@
             overflow-wrap: anywhere; white-space: pre-line;
         }
 
-        .results-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1400px; }
+        .results-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 1150px; }
         .num-cell { text-align: right; font-variant-numeric: tabular-nums; }
         .results-table th {
             padding: 11px 14px; text-align: left; font-size: 11px; font-weight: 700;
@@ -58,9 +58,9 @@
         .add-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; }
         @media (max-width: 900px) { .add-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
         @media (max-width: 560px) { .add-grid { grid-template-columns: 1fr; } }
-        .add-grid .span-2 { grid-column: span 2; }
+        .add-grid .span-3 { grid-column: span 3; }
         .add-grid .span-4 { grid-column: 1 / -1; }
-        @media (max-width: 560px) { .add-grid .span-2 { grid-column: span 1; } }
+        @media (max-width: 900px) { .add-grid .span-3 { grid-column: span 1; } }
 
         .preview-box { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; background: white; border: 1px solid rgba(18,63,110,0.08); border-radius: 10px; padding: 12px 14px; margin-top: 14px; }
         .preview-label { font-size: 11px; font-weight: 700; letter-spacing: 0.05em; text-transform: uppercase; color: #94a3b8; }
@@ -195,10 +195,6 @@
                             <p class="data-label">Tipo</p>
                             <p class="data-value">{{ $indicator->type_label }}</p>
                         </div>
-                        <div class="data-item">
-                            <p class="data-label">Meta</p>
-                            <p class="data-value" style="font-weight:700;color:#123f6e">{{ $indicator->goal }}%</p>
-                        </div>
                         <div class="data-item data-item-full">
                             <p class="data-label">Objetivo del indicador</p>
                             @include('indicators.partials.clamped-text', ['text' => $indicator->objective, 'modalTitle' => 'Objetivo del indicador'])
@@ -265,7 +261,7 @@
                 x-data="{
                     open: {{ $errors->any() ? 'true' : 'false' }},
                     editingId: null,
-                    empty: { periodStart: '', periodEnd: '', numerator: '', denominator: '', periodGoal: '{{ $indicator->goal }}', complianceFormula: 'ascendente', analysis: '', actionNumber: '' },
+                    empty: { periodStart: '', periodEnd: '', numerator: '', denominator: '', complianceFormula: 'ascendente', analysis: '', actionNumber: '' },
                     form: {},
                     base: '{{ $resultsBase }}',
                     acceptable: {{ $indicator->threshold_acceptable }},
@@ -293,22 +289,14 @@
                         return shown === String(value).trim() ? '' : shown;
                     },
                     get hasInvalid() {
-                        return ['numerator', 'denominator', 'periodGoal'].some(field => this.invalid(this.form[field]));
+                        return ['numerator', 'denominator'].some(field => this.invalid(this.form[field]));
                     },
-                    /** RESULTADO = (NUMERADOR / DENOMINADOR) x 100, en porcentaje */
-                    get result() {
-                        const num = this.num(this.form.numerator);
-                        const den = this.num(this.form.denominator);
-                        if (isNaN(num) || isNaN(den) || den === 0) return null;
-                        return Math.round((num / den) * 10000) / 100;
-                    },
-                    /** (RESULTADO/META)x100, o (META/RESULTADO)x100 si la formula es descendente */
                     get compliance() {
-                        const res = this.result;
-                        const goal = this.num(this.form.periodGoal);
-                        if (res === null || isNaN(goal) || goal === 0) return null;
+                        const res = this.num(this.form.numerator);
+                        const goal = this.num(this.form.denominator);
+                        if (isNaN(res) || isNaN(goal) || goal === 0) return null;
                         if (this.form.complianceFormula === 'descendente') {
-                            return res === 0 ? null : Math.round((goal / res) * 10000) / 100;
+                            return res === 0 ? 0 : Math.round((goal / res) * 10000) / 100;
                         }
                         return Math.round((res / goal) * 10000) / 100;
                     },
@@ -328,12 +316,10 @@
                             <tr>
                                 <th style="width:78px">ID</th>
                                 <th>Periodo</th>
-                                <th style="text-align:right">Numerador</th>
-                                <th style="text-align:right">Denominador</th>
                                 <th style="text-align:right">Resultado</th>
-                                <th style="text-align:right">Meta periodo</th>
-                                <th>Formula Cumplimiento</th>
+                                <th style="text-align:right">Meta</th>
                                 <th style="text-align:right">Cumplimiento</th>
+                                <th>Formula Cumplimiento</th>
                                 <th>Evaluacion</th>
                                 <th>Analisis</th>
                                 <th>Accion No</th>
@@ -351,14 +337,12 @@
                                     </td>
                                     <td class="nowrap num-cell">{{ $result->formatted_numerator }}</td>
                                     <td class="nowrap num-cell">{{ $result->formatted_denominator }}</td>
-                                    <td class="nowrap num-cell" style="font-weight:600;color:#1e293b">{{ $result->formatted_result }}%</td>
-                                    <td class="nowrap num-cell">{{ $result->formatted_period_goal }}%</td>
+                                    <td class="nowrap num-cell" style="font-weight:700;color:{{ $result->evaluation_color }}">
+                                        {{ $result->formatted_compliance }}%
+                                    </td>
                                     <td class="nowrap" style="font-size:12px;color:#475569">
                                         <span style="font-weight:600">{{ $result->compliance_formula === \App\Models\IndicatorResult::FORMULA_DESCENDING ? 'Descendente' : 'Ascendente' }}</span>
                                         <p style="margin:2px 0 0;font-size:11px;color:#94a3b8">{{ $result->compliance_formula_math }}</p>
-                                    </td>
-                                    <td class="nowrap num-cell" style="font-weight:700;color:{{ $result->evaluation_color }}">
-                                        {{ $result->formatted_compliance }}%
                                     </td>
                                     <td>
                                         <span class="pill" style="background:{{ $result->evaluation_background }};color:{{ $result->evaluation_color }}">
@@ -388,7 +372,6 @@
                                                             periodEnd: '{{ $result->period_end->format('Y-m-d') }}',
                                                             numerator: '{{ str_replace('.', ',', (string) (float) $result->numerator) }}',
                                                             denominator: '{{ str_replace('.', ',', (string) (float) $result->denominator) }}',
-                                                            periodGoal: '{{ str_replace('.', ',', (string) (float) $result->period_goal) }}',
                                                             complianceFormula: '{{ $result->compliance_formula ?? 'ascendente' }}',
                                                             analysis: @js($result->analysis ?? ''),
                                                             actionNumber: @js($result->action_number ?? '')
@@ -413,7 +396,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="{{ ($canEditResults || $canToggleResults) ? 13 : 12 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
+                                    <td colspan="{{ ($canEditResults || $canToggleResults) ? 11 : 10 }}" style="padding:40px 16px;text-align:center;border-bottom:none">
                                         <div style="width:44px;height:44px;border-radius:12px;display:grid;place-items:center;background:rgba(18,63,110,0.04);margin:0 auto 10px">
                                             <i data-lucide="calendar-range" style="width:20px;height:20px;color:#cbd5e1"></i>
                                         </div>
@@ -450,28 +433,20 @@
                                     <input name="period_end" type="date" required x-model="form.periodEnd" class="input-field">
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Numerador <span class="req">*</span></label>
+                                    <label class="field-label">Resultado <span class="req">*</span></label>
                                     <input name="numerator" type="text" inputmode="decimal" autocomplete="off" required x-model="form.numerator" class="input-field" placeholder="Ej: 7.547"
                                         :class="invalid(form.numerator) ? 'error-field' : ''">
                                     <p class="field-error" x-show="invalid(form.numerator)" x-cloak>No es un número válido. Ej: 7547, 7.547 o 5.959,82.</p>
                                     <p class="field-hint" x-show="readable(form.numerator)" x-cloak>Se guardará como <strong style="color:#123f6e" x-text="readable(form.numerator)"></strong></p>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Denominador <span class="req">*</span></label>
+                                    <label class="field-label">Meta <span class="req">*</span></label>
                                     <input name="denominator" type="text" inputmode="decimal" autocomplete="off" required x-model="form.denominator" class="input-field" placeholder="Ej: 6.081,04"
                                         :class="invalid(form.denominator) ? 'error-field' : ''">
                                     <p class="field-error" x-show="invalid(form.denominator)" x-cloak>No es un número válido. Ej: 7547, 7.547 o 5.959,82.</p>
                                     <p class="field-hint" x-show="readable(form.denominator)" x-cloak>Se guardará como <strong style="color:#123f6e" x-text="readable(form.denominator)"></strong></p>
                                 </div>
-                                <div class="field">
-                                    <label class="field-label">Meta del periodo <span class="req">*</span></label>
-                                    <input name="period_goal" type="text" inputmode="decimal" autocomplete="off" required x-model="form.periodGoal" class="input-field" placeholder="95"
-                                        :class="invalid(form.periodGoal) ? 'error-field' : ''">
-                                    <p class="field-error" x-show="invalid(form.periodGoal)" x-cloak>No es un número válido. Ej: 7547, 7.547 o 5.959,82.</p>
-                                    <p class="field-hint" x-show="readable(form.periodGoal)" x-cloak>Se guardará como <strong style="color:#123f6e" x-text="readable(form.periodGoal)"></strong></p>
-                                    <p class="field-hint">En porcentaje, igual que el resultado. Ej: 95 para una meta del 95%.</p>
-                                </div>
-                                <div class="field span-2">
+                                <div class="field span-3">
                                     <label class="field-label">Formula Cumplimiento <span class="req">*</span></label>
                                     <select name="compliance_formula" required x-model="form.complianceFormula" class="input-field">
                                         @foreach(\App\Models\IndicatorResult::COMPLIANCE_FORMULAS as $value => $label)
@@ -491,13 +466,9 @@
                             </div>
 
                             <div class="preview-box">
-                                <span class="preview-label">Resultado</span>
-                                <span style="font-size:15px;font-weight:700;color:#1e293b"
-                                    x-text="result === null ? '-' : result.toLocaleString('es-CO', { maximumFractionDigits: 2 }) + '%'"></span>
-                                <span style="width:1px;height:22px;background:rgba(18,63,110,0.10)"></span>
                                 <span class="preview-label">Cumplimiento</span>
                                 <template x-if="compliance === null">
-                                    <span style="font-size:13px;color:#cbd5e1">Ingresa numerador, denominador y meta</span>
+                                    <span style="font-size:13px;color:#64748b">Ingresa el resultado y la meta</span>
                                 </template>
                                 <template x-if="compliance !== null">
                                     <span style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">

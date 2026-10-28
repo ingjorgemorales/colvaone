@@ -347,11 +347,9 @@ class IndicatorController extends Controller
             'frequency' => ['required', Rule::in(array_keys(Indicator::FREQUENCIES))],
             'type' => ['required', Rule::in(array_keys(Indicator::TYPES))],
             'methodological_aspects' => ['nullable', 'string'],
-            'goal' => ['required', 'integer', 'min:1', 'max:' . $max],
             'threshold_acceptable' => ['required', 'integer', 'min:1', 'max:' . $max],
             'threshold_satisfactory' => ['required', 'integer', 'min:1', 'max:' . $max],
         ], [
-            'goal.max' => 'La meta no puede superar ' . $max . '%.',
             'threshold_acceptable.max' => 'El umbral aceptable no puede superar ' . $max . '%.',
             'threshold_satisfactory.max' => 'El umbral satisfactorio no puede superar ' . $max . '%.',
             'category.required' => 'La categoria del indicador es obligatoria.',
@@ -389,7 +387,7 @@ class IndicatorController extends Controller
     {
         // Las cifras llegan como se escriben en Colombia ("7.547", "5.959,82"). Si el
         // punto se leyera como decimal, 7.547 se guardaria como 7,55 sin ningun aviso.
-        foreach (['numerator', 'denominator', 'period_goal'] as $field) {
+        foreach (['numerator', 'denominator'] as $field) {
             $parsed = LocalizedNumber::parse($request->input($field));
 
             if ($parsed !== null) {
@@ -402,28 +400,23 @@ class IndicatorController extends Controller
             'period_end' => ['required', 'date', 'after_or_equal:period_start'],
             'numerator' => ['required', 'numeric'],
             'denominator' => ['required', 'numeric', 'not_in:0'],
-            'period_goal' => ['required', 'numeric', 'not_in:0'],
             'compliance_formula' => ['required', Rule::in(array_keys(IndicatorResult::COMPLIANCE_FORMULAS))],
             'analysis' => ['nullable', 'string'],
             'action_number' => ['nullable', 'string', 'max:60'],
         ], [
             'period_end.after_or_equal' => 'La fecha fin no puede ser anterior a la fecha inicio.',
-            'numerator.numeric' => 'El numerador no es un número válido. Escríbelo como 7547, 7.547 o 5.959,82.',
-            'denominator.numeric' => 'El denominador no es un número válido. Escríbelo como 6081, 6.081 o 6.081,04.',
-            'period_goal.numeric' => 'La meta del periodo no es un número válido. Ej: 95 o 95,5.',
-            'denominator.not_in' => 'El denominador no puede ser cero.',
-            'period_goal.not_in' => 'La meta del periodo no puede ser cero.',
+            'numerator.required' => 'El resultado es obligatorio.',
+            'denominator.required' => 'La meta es obligatoria.',
+            'numerator.numeric' => 'El resultado no es un número válido. Escríbelo como 7547, 7.547 o 5.959,82.',
+            'denominator.numeric' => 'La meta no es un número válido. Escríbela como 6081, 6.081 o 6.081,04.',
+            'denominator.not_in' => 'La meta no puede ser cero.',
             'compliance_formula.required' => 'La fórmula de cumplimiento es obligatoria.',
         ]);
     }
 
     /**
-     * Al cambiar los umbrales, las evaluaciones ya guardadas dejan de ser
-     * coherentes con la ficha tecnica, asi que se reclasifican.
-     */
-    /**
-     * Aplica las formulas del SGC: el resultado y el cumplimiento nunca se
-     * digitan, se derivan del numerador, el denominador, la meta y la formula elegida.
+     * Numerador y denominador conservan sus nombres internos; en pantalla son
+     * Resultado y Meta. El cumplimiento se calcula una sola vez con esas cifras.
      */
     private function withCalculations(array $validated, Indicator $indicator): array
     {
@@ -435,8 +428,8 @@ class IndicatorController extends Controller
         $formula = $validated['compliance_formula'] ?? IndicatorResult::FORMULA_ASCENDING;
 
         $compliance = IndicatorResult::calculateCompliance(
-            $result,
-            (float) $validated['period_goal'],
+            (float) $validated['numerator'],
+            (float) $validated['denominator'],
             $formula,
         );
 
@@ -455,8 +448,8 @@ class IndicatorController extends Controller
     {
         $indicator->results()->get()->each(function (IndicatorResult $result) use ($indicator): void {
             $compliance = IndicatorResult::calculateCompliance(
-                (float) $result->result,
-                $result->period_goal === null ? null : (float) $result->period_goal,
+                (float) $result->numerator,
+                (float) $result->denominator,
                 $result->compliance_formula ?? IndicatorResult::FORMULA_ASCENDING,
             );
 

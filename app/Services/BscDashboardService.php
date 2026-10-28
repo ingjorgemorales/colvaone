@@ -78,7 +78,7 @@ class BscDashboardService
 
     private function period(Indicator $indicator, IndicatorResult $result): array
     {
-        $compliance = (float) $result->denominator === 0.0 || (float) $result->period_goal <= 0
+        $compliance = (float) $result->denominator === 0.0
             ? null
             : (float) $result->compliance;
 
@@ -128,10 +128,10 @@ class BscDashboardService
 
         if ($goal <= 0) {
             $notice = 'La meta del año debe ser mayor que cero para medir el avance.';
-        } elseif ($summary['actual'] !== null && $summary['goal'] !== null) {
+        } elseif ($summary['actual'] !== null && $summary['formula'] !== null) {
             $reading = $this->reading(IndicatorResult::calculateCompliance(
-                IndicatorResult::calculateResult($summary['actual'], $goal),
-                $summary['goal'],
+                $summary['actual'],
+                $goal,
                 $summary['formula'],
             ));
         }
@@ -146,7 +146,7 @@ class BscDashboardService
      */
     private function summarize(Collection $results, string $mode): array
     {
-        $empty = ['actual' => null, 'target' => null, 'compliance' => null, 'goal' => null, 'formula' => null, 'reference' => null, 'notice' => null];
+        $empty = ['actual' => null, 'target' => null, 'compliance' => null, 'formula' => null, 'reference' => null, 'notice' => null];
 
         if ($results->isEmpty()) {
             return $empty;
@@ -162,7 +162,6 @@ class BscDashboardService
                 'actual' => (float) $last->numerator,
                 'target' => (float) $last->denominator,
                 'compliance' => (float) $last->denominator === 0.0 ? null : (float) $last->compliance,
-                'goal' => (float) $last->period_goal > 0 ? (float) $last->period_goal : null,
                 'formula' => $last->compliance_formula,
                 'reference' => 'Último período: ' . $this->periodLabel($last),
                 'notice' => null,
@@ -186,14 +185,13 @@ class BscDashboardService
         }
 
         $values = ['actual' => round($actual, 2), 'target' => round($target, 2), 'reference' => $reference];
-        $goals = $results->map(fn (IndicatorResult $result) => (float) $result->period_goal)->unique();
         $formulas = $results->pluck('compliance_formula')->unique();
 
-        if ($goals->count() !== 1 || $goals->first() <= 0 || $formulas->count() !== 1) {
-            return $values + ['compliance' => null, 'goal' => null, 'formula' => null, 'notice' => 'Los períodos tienen metas o fórmulas diferentes. Revisa los resultados antes de comparar su acumulado.'];
+        if ($formulas->count() !== 1) {
+            return $values + ['compliance' => null, 'formula' => null, 'notice' => 'Los períodos tienen fórmulas diferentes. Revisa los resultados antes de comparar su acumulado.'];
         }
 
-        $values += ['goal' => $goals->first(), 'formula' => $formulas->first()];
+        $values += ['formula' => $formulas->first()];
 
         if ($target == 0.0) {
             return $values + ['compliance' => null, 'notice' => 'El acumulado de la meta es cero, así que no hay contra qué medir el cumplimiento.'];
@@ -207,8 +205,8 @@ class BscDashboardService
 
         return $values + [
             'compliance' => IndicatorResult::calculateCompliance(
-                IndicatorResult::calculateResult($actual, $target),
-                $goals->first(),
+                $actual,
+                $target,
                 $formulas->first(),
             ),
             'notice' => null,
