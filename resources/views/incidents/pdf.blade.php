@@ -53,7 +53,6 @@
     <div class="report-summary">
         <div class="failure">{{ $incident->failure?->name }}</div>
         <table class="summary-fields"><tr>
-            <td><div class="label">Estado de atención</div><span class="badge {{ $incident->status }}">{{ \App\Models\Incident::STATUSES[$incident->status] }}</span></td>
             <td><div class="label">Actividad</div><span class="badge {{ $incident->is_active ? 'tone-success' : 'tone-warning' }}">{{ $incident->is_active ? 'Activo' : 'Inactivo' }}</span>@if($incident->archived_at) <span class="badge">Archivado</span>@endif</td>
             <td><div class="label">Prioridad</div><span class="badge {{ $incident->priority_tone }}">{{ $incident->priority?->name }}</span></td>
         </tr></table>
@@ -66,12 +65,18 @@
     </div>
     <div class="report-card compact-card" data-section="location">
         <h2 class="card-heading">Ubicación del incidente</h2>
-        <div class="card-body"><table><tr><td><div class="label">Piso o zona</div>{{ $incident->zone?->name ?? 'Sin especificar' }}</td><td><div class="label">Ubicación exacta</div>{{ $incident->location }}</td></tr></table></div>
+        <div class="card-body"><table><tr><td><div class="label">Sede</div>{{ $incident->zone?->name ?? 'Sin especificar' }}</td><td><div class="label">Ubicación exacta</div>{{ $incident->location }}</td></tr></table></div>
     </div>
     <div class="report-card" data-section="description">
-        <h2 class="card-heading">Detalles del incidente</h2>
+        <h2 class="card-heading">Detalles de Incidente o Riesgo</h2>
         <div class="card-body">
-            <table><tr><td><div class="label">Tipo de falla</div>{{ $incident->failure?->name }}</td><td><div class="label">Afectación a la operación</div>{{ $incident->impact?->name }}</td></tr></table>
+            <table><tr>
+                <td><div class="label">Clasificación</div>{{ $incident->failure_type === 'risk' ? 'Riesgo priorizado' : 'Incidente general' }}</td>
+                <td><div class="label">{{ $incident->failure_type === 'risk' ? 'Riesgo priorizado' : 'Tipo de falla' }}</div>{{ $incident->failure?->name }}</td>
+                <td><div class="label">Persona responsable</div>{{ $incident->responsible_name ?: 'Sin asignar' }}</td>
+                <td><div class="label">Cargo responsable</div>{{ $incident->responsible_position ?: 'Sin especificar' }}</td>
+                <td><div class="label">Afectación a la operación</div>{{ $incident->impact?->name }}</td>
+            </tr></table>
             <div class="text-field"><div class="label">Descripción del problema</div><div class="text">{!! nl2br(e($incident->description)) !!}</div></div>
             <div class="text-field"><div class="label">Equipos o activos afectados</div><div class="text">{{ $incident->affected_assets ?: 'Sin especificar' }}</div></div>
         </div>

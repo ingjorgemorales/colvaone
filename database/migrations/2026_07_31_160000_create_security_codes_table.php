@@ -18,7 +18,7 @@ return new class extends Migration
             $table->timestamp('expires_at');
             $table->timestamp('verified_at')->nullable();
             $table->timestamp('consumed_at')->nullable();
-            $table->timestamp('created_at');
+            $table->timestamp('created_at')->useCurrent();
         });
     }
 

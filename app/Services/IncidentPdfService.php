@@ -35,6 +35,25 @@ class IncidentPdfService
         return $pdf->output();
     }
 
+    public function renderReport(\Illuminate\Support\Collection $incidents, array $stats, array $filterLabels, \App\Models\User $user): string
+    {
+        $workDirectory = storage_path('app/private/pdf');
+        \Illuminate\Support\Facades\File::ensureDirectoryExists($workDirectory);
+        $options = new Options([
+            'defaultFont' => 'DejaVu Sans', 'isRemoteEnabled' => false,
+            'isPhpEnabled' => false, 'isJavascriptEnabled' => false,
+            'chroot' => storage_path('app/private'), 'tempDir' => $workDirectory, 'fontCache' => $workDirectory,
+        ]);
+        $pdf = new Dompdf($options);
+        $logo = $this->logoData();
+        $pdf->setPaper('A4', 'landscape');
+        $pdf->loadHtml(view('incidents.reports-pdf', compact('incidents', 'stats', 'filterLabels', 'user', 'logo'))->render());
+        $pdf->render();
+        $pdf->getCanvas()->page_text(40, 560, 'ColvaOne  |  Reporte de Incidentes y Riesgos  |  Página {PAGE_NUM} de {PAGE_COUNT}', null, 8, [0.39, 0.45, 0.55]);
+
+        return $pdf->output();
+    }
+
     private function logoData(): string
     {
         // Flatten transparency onto white so the logo renders reliably on every PDF page.

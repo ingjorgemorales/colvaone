@@ -21,7 +21,7 @@ return new class extends Migration
 
         $catalogs = [
             'area' => DB::table('users')->whereNotNull('area')->where('area', '!=', '')->distinct()->pluck('area')->all(),
-            'zone' => ['Piso 1', 'Piso 2', 'Parqueadero'],
+            'zone' => ['Cofradía bodega 3', 'ETB Salitre', 'Galan', 'Funza', 'Terreno'],
             'failure' => ['Falla eléctrica', 'Daño en infraestructura', 'Aire acondicionado', 'Otro'],
             'impact' => ['Sí, afecta la operación', 'Parcialmente', 'No afecta la operación'],
             'priority' => ['Baja', 'Media', 'Alta'],

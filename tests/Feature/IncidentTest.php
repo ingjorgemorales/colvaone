@@ -2,12 +2,14 @@
 
 namespace Tests\Feature;
 
+use App\Mail\IncidentRiskNotificationMail;
 use App\Models\Incident;
 use App\Models\IncidentOption;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -28,6 +30,8 @@ class IncidentTest extends TestCase
         foreach (['area', 'failure', 'impact', 'priority'] as $type) {
             $data[$type.'_id'] = IncidentOption::firstOrCreate(['type' => $type, 'name' => 'Opción '.$type], ['is_active' => true])->id;
         }
+
+        $data['responsible_user_id'] = User::factory()->create(['position' => 'Coordinador'])->id;
 
         return $data;
     }
@@ -88,7 +92,7 @@ class IncidentTest extends TestCase
     {
         Storage::fake('local');
         $user = $this->userWith(['incidents.view', 'incidents.create']);
-        $this->actingAs($user)->post(route('incidents.store'), [])->assertSessionHasErrors(['failure_id', 'location', 'description']);
+        $this->actingAs($user)->post(route('incidents.store'), [])->assertSessionHasErrors(['failure_id', 'location', 'description', 'responsible_user_id']);
         $this->post(route('incidents.store'), $this->data() + [
             'created_by' => 999, 'status' => 'resuelto', 'is_active' => false,
             'attachments' => [UploadedFile::fake()->image('evidencia.png', 20, 20)],
@@ -316,7 +320,9 @@ class IncidentTest extends TestCase
         $this->assertSame('Analista de soporte', $incident->reporter_position);
         $this->assertSame('TI', $incident->area->name);
         $this->assertSame('en_atencion', $incident->status);
-        $this->get(route('incidents.edit', $incident))->assertSee('value="Jorge Morales"', false)->assertSee('value="TI"', false);
+        $this->get(route('incidents.edit', $incident))->assertSee('value="Jorge Morales"', false)->assertSee('value="TI"', false)->assertDontSee('Estado de atención');
+        $this->actingAs($editor)->put(route('incidents.update', $incident), $data)->assertSessionHasNoErrors();
+        $this->assertSame('en_atencion', $incident->fresh()->status);
     }
 
     public function test_an_incomplete_profile_cannot_be_replaced_with_posted_reporter_details(): void
@@ -415,9 +421,9 @@ class IncidentTest extends TestCase
         foreach (['reporter', 'location', 'description', 'tracking', 'evidence'] as $section) {
             $this->assertStringContainsString('data-section="'.$section.'"', $html);
         }
-        $this->assertStringContainsString(e($incident->description), $html);
+        $this->assertStringContainsString(exption), $html);
         $this->assertStringContainsString('Inspección.pdf', $html);
-        $this->assertStringContainsString('Estado de atención', $html);
+        $this->assertStringNotContainsString('Estado de atención', $html);
         $this->assertStringContainsString('Actividad', $html);
     }
 
@@ -432,7 +438,8 @@ class IncidentTest extends TestCase
         $response = $this->actingAs($owner)->get(route('incidents.index', ['search' => 'Revisión']))->assertOk();
         $response->assertSee('class="incident-cards"', false)->assertDontSee('<table', false)
             ->assertSee('Reportado por')->assertSee('Área / dependencia')->assertSee('Ubicación')
-            ->assertSee('Estado de atención')->assertSee('Actividad')->assertDontSee($foreign->ticket);
+            ->assertSee('Responsable asignado para notificación')
+            ->assertDontSee('Estado de atención')->assertSee('Actividad')->assertDontSee($foreign->ticket);
         $this->assertSame(15, substr_count($response->getContent(), '<article class="incident-list-card"'));
         $response->assertSee('aria-label="Ver INC-', false)->assertDontSee('aria-label="Editar INC-', false)
             ->assertDontSee('aria-label="Inactivar INC-', false);
@@ -453,16 +460,274 @@ class IncidentTest extends TestCase
             ->assertSee('aria-label="Editar '.$incident->ticket.'"', false)
             ->assertSee('aria-label="Inactivar '.$incident->ticket.'"', false)
             ->assertSee('aria-label="Archivar '.$incident->ticket.'"', false);
-        $response = $this->get(route('incidents.show', $incident))->assertOk()->assertSee('Generar PDF');
-        foreach (['reporter', 'location', 'description', 'evidence', 'tracking'] as $section) {
+        $response = $this->get(route('incidents.show', $incident))->assertOk()->assertSee('Generar PDF')->assertDontSee('Estado de atención');
+        foreach (['reporter', 'location', 'description', 'evidence', 'tracking', 'comments'] as $section) {
             $response->assertSee('aria-labelledby="incident-'.$section.'-heading"', false);
         }
-        $this->assertSame(5, substr_count($response->getContent(), '<section class="incident-detail-panel'));
+        $this->assertSame(6, substr_count($response->getContent(), '<section class="incident-detail-panel'));
         $response->assertSee('Sin evidencias adjuntas.')->assertSee($incident->description);
         $incident->update(['archived_at' => now()]);
         $archived = $this->get(route('incidents.index'))->assertOk();
         $archived->assertSee('aria-label="Restaurar '.$incident->ticket.'"', false)
             ->assertDontSee('aria-label="Editar '.$incident->ticket.'"', false)
             ->assertDontSee('aria-label="Inactivar '.$incident->ticket.'"', false);
+    }
+
+    public function test_prioritized_risk_stores_responsible_and_sends_notification_mail(): void
+    {
+        Mail::fake();
+
+        $financiero = User::factory()->create([
+            'position' => 'Gerente financiero',
+            'is_active' => true,
+            'email' => 'financiero@colvatel.com.co',
+        ]);
+
+        $risk = IncidentOption::where('type', 'prioritized_risk')
+            ->where('name', 'Problemas de liquidez')
+            ->firstOrFail();
+        $this->assertSame('Gerente financiero', $risk->responsible_position);
+
+        $creator = $this->userWith(['incidents.view', 'incidents.create']);
+        $postData = $this->data();
+        $postData['failure_id'] = $risk->id;
+        $postData['failure_type'] = 'risk';
+        $postData['responsible_user_id'] = $financiero->id;
+
+        $response = $this->actingAs($creator)->post(route('incidents.store'), $postData);
+        $response->assertSessionHasNoErrors()->assertRedirect();
+
+        $incident = Incident::latest('id')->firstOrFail();
+        $this->assertSame('risk', $incident->failure_type);
+        $this->assertSame($financiero->id, $incident->responsible_user_id);
+        $this->assertSame('Gerente financiero', $incident->responsible_position);
+        $this->assertSame(trim($financiero->name.' '.$financiero->last_name), $incident->responsible_name);
+
+        Mail::assertSent(IncidentRiskNotificationMail::class, function ($mail) use ($incident, $financiero) {
+            return $mail->incident->id === $incident->id
+                && $mail->hasTo($financiero->email);
+        });
+
+        $this->get(route('incidents.show', $incident))
+            ->assertOk()
+            ->assertSee('Detalles de Incidente o Riesgo')
+            ->assertSee('Riesgo priorizado')
+            ->assertSee('Problemas de liquidez')
+            ->assertSee('Gerente financiero')
+            ->assertSee(trim($financiero->name.' '.$financiero->last_name));
+    }
+
+    public function test_prioritized_risks_and_responsibles_are_configurable_in_settings(): void
+    {
+        $admin = $this->userWith(['incidents.settings', 'incidents.view_all']);
+
+        $this->actingAs($admin)->post(route('incidents.options.store'), [
+            'type' => 'prioritized_risk',
+            'name' => 'Fuga de capital',
+            'sort_order' => 10,
+            'responsible_position' => 'Gerente financiero',
+        ])->assertSessionHasNoErrors();
+
+        $newRisk = IncidentOption::where('type', 'prioritized_risk')->where('name', 'Fuga de capital')->firstOrFail();
+        $this->assertSame('Gerente financiero', $newRisk->responsible_position);
+
+        $this->put(route('incidents.options.update', $newRisk), [
+            'name' => 'Fuga de capital crítica',
+            'sort_order' => 12,
+            'responsible_position' => 'VP Operaciones',
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('Fuga de capital crítica', $newRisk->fresh()->name);
+        $this->assertSame('VP Operaciones', $newRisk->fresh()->responsible_position);
+    }
+
+    public function test_general_incident_notifies_when_responsible_user_is_selected_and_does_not_when_not_set(): void
+    {
+        Mail::fake();
+
+        $tiLead = User::factory()->create([
+            'position' => 'Director TI',
+            'is_active' => true,
+            'email' => 'director.ti@example.com',
+        ]);
+
+        $generalFailure = IncidentOption::create([
+            'type' => 'failure',
+            'name' => 'Falla de conectividad',
+            'sort_order' => 1,
+            'responsible_position' => null,
+            'is_active' => true,
+        ]);
+
+        $creator = $this->userWith(['incidents.view', 'incidents.create']);
+
+        // Case 1: General incident without selecting a responsible user fails validation
+        $data1 = $this->data();
+        $data1['failure_id'] = $generalFailure->id;
+        $data1['failure_type'] = 'general';
+        $data1['responsible_user_id'] = null;
+
+        $this->actingAs($creator)->post(route('incidents.store'), $data1)->assertSessionHasErrors('responsible_user_id');
+        Mail::assertNothingSent();
+
+        // Case 2: General incident with responsible user selected by the user
+        $data2 = $this->data();
+        $data2['failure_id'] = $generalFailure->id;
+        $data2['failure_type'] = 'general';
+        $data2['responsible_user_id'] = $tiLead->id;
+
+        $this->actingAs($creator)->post(route('incidents.store'), $data2)->assertSessionHasNoErrors()->assertRedirect();
+        $inc2 = Incident::latest('id')->firstOrFail();
+        $this->assertSame('general', $inc2->failure_type);
+        $this->assertSame($tiLead->id, $inc2->responsible_user_id);
+        $this->assertSame('Director TI', $inc2->responsible_position);
+        $this->assertSame(trim($tiLead->name.' '.$tiLead->last_name), $inc2->responsible_name);
+
+        Mail::assertSent(IncidentRiskNotificationMail::class, function ($mail) use ($inc2, $tiLead) {
+            return $mail->incident->id === $inc2->id
+                && $mail->hasTo($tiLead->email)
+                && str_contains($mail->envelope()->subject, 'Alerta de Incidente: Falla de conectividad');
+        });
+
+        $this->get(route('incidents.show', $inc2))
+            ->assertOk()
+            ->assertSee('Incidente general')
+            ->assertSee(trim($tiLead->name.' '.$tiLead->last_name))
+            ->assertSee('Director TI');
+    }
+
+    public function test_involved_users_can_add_comments_to_incident(): void
+    {
+        $creator = $this->userWith(['incidents.view']);
+        $responsible = $this->userWith(['incidents.view']);
+        $responsible->update([
+            'is_active' => true,
+            'name' => 'Carlos',
+            'last_name' => 'Pérez',
+            'position' => 'Gerente de operaciones',
+        ]);
+
+        $incident = $this->incident($creator, [
+            'responsible_user_id' => $responsible->id,
+            'responsible_name' => 'Carlos Pérez',
+            'responsible_position' => $responsible->position,
+        ]);
+
+        // Creator adds a comment
+        $this->actingAs($creator)
+            ->post(route('incidents.comments.add', $incident), [
+                'comment' => 'Se requiere visita técnica urgente para validar daños.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('incident_comments', [
+            'incident_id' => $incident->id,
+            'user_id' => $creator->id,
+            'comment' => 'Se requiere visita técnica urgente para validar daños.',
+        ]);
+
+        // Detail page reflects the comment with "Reportante" badge
+        $this->actingAs($creator)
+            ->get(route('incidents.show', $incident))
+            ->assertOk()
+            ->assertSee('Comentarios de las personas involucradas (1)')
+            ->assertSee('Se requiere visita técnica urgente para validar daños.')
+            ->assertSee('Reportante');
+
+        // Responsible user adds a comment
+        $this->actingAs($responsible)
+            ->post(route('incidents.comments.add', $incident), [
+                'comment' => 'Recibido. Técnico asignado en camino a la sede.',
+            ])
+            ->assertRedirect()
+            ->assertSessionHas('success');
+
+        $this->assertDatabaseHas('incident_comments', [
+            'incident_id' => $incident->id,
+            'user_id' => $responsible->id,
+            'comment' => 'Recibido. Técnico asignado en camino a la sede.',
+        ]);
+
+        // Detail page reflects both comments with "Responsable" badge
+        $this->actingAs($creator)
+            ->get(route('incidents.show', $incident))
+            ->assertOk()
+            ->assertSee('Comentarios de las personas involucradas (2)')
+            ->assertSee('Recibido. Técnico asignado en camino a la sede.')
+            ->assertSee('Responsable');
+
+        // Validation test: empty comment
+        $this->actingAs($creator)
+            ->post(route('incidents.comments.add', $incident), [
+                'comment' => '',
+            ])
+            ->assertSessionHasErrors('comment');
+
+        // Archived incident cannot receive comments
+        $incident->update(['status' => 'resuelto', 'archived_at' => now()]);
+        $this->actingAs($creator)
+            ->post(route('incidents.comments.add', $incident), [
+                'comment' => 'Intento en archivado',
+            ])
+            ->assertForbidden();
+    }
+
+    public function test_reports_view_renders_kpis_and_distributions_with_visibility_scoping(): void
+    {
+        $user = $this->userWith(['incidents.view']);
+        $foreignUser = $this->userWith(['incidents.view']);
+
+        $zone = IncidentOption::firstOrCreate(['type' => 'zone', 'name' => 'ETB Salitre'], ['is_active' => true]);
+        $prioAlta = IncidentOption::firstOrCreate(['type' => 'priority', 'name' => 'Alta'], ['is_active' => true]);
+
+        $mine = $this->incident($user, [
+            'zone_id' => $zone->id,
+            'priority_id' => $prioAlta->id,
+            'failure_type' => 'risk',
+        ]);
+
+        $foreign = $this->incident($foreignUser, [
+            'description' => 'Incidente de otro usuario confidencial',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('incidents.reports'))
+            ->assertOk()
+            ->assertSee('Reportes, estadísticas y métricas operativas')
+            ->assertSee('Total de Reportes')
+            ->assertSee('Riesgos Priorizados')
+            ->assertSee('Distribución por Sede')
+            ->assertSee('ETB Salitre')
+            ->assertSee($mine->ticket)
+            ->assertDontSee($foreign->ticket)
+            ->assertDontSee('Incidente de otro usuario confidencial');
+
+        // Test filtering by classification
+        $this->get(route('incidents.reports', ['failure_type' => 'general']))
+            ->assertOk()
+            ->assertDontSee($mine->ticket);
+
+        $this->get(route('incidents.reports', ['failure_type' => 'risk']))
+            ->assertOk()
+            ->assertSee($mine->ticket);
+    }
+
+    public function test_reports_can_be_exported_to_excel_and_pdf(): void
+    {
+        $user = $this->userWith(['incidents.view']);
+        $incident = $this->incident($user, ['failure_type' => 'risk']);
+
+        // Excel export
+        $excelResponse = $this->actingAs($user)->get(route('incidents.reports.excel'));
+        $excelResponse->assertOk();
+        $this->assertTrue(
+            str_contains($excelResponse->headers->get('content-type') ?? '', 'spreadsheetml')
+            || str_contains($excelResponse->headers->get('content-type') ?? '', 'octet-stream')
+        );
+
+        // PDF export
+        $pdfResponse = $this->actingAs($user)->get(route('incidents.reports.pdf'));
+        $pdfResponse->assertOk();
+        $this->assertSame('application/pdf', $pdfResponse->headers->get('content-type'));
     }
 }

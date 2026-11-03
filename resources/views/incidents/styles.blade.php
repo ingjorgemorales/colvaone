@@ -39,7 +39,7 @@
     .incident-ticket { font-weight:600; color:#1e293b; text-decoration:none; }
     .incident-table .incident-actions { min-width:146px; }
     .incident-cards { display:grid; grid-template-columns:minmax(0,1fr); gap:12px; }
-    .incident-list-card { display:grid; grid-template-columns:110px minmax(0,1.7fr) minmax(0,1.2fr) minmax(0,1.1fr) minmax(90px,0.8fr) minmax(65px,0.65fr) 32px; align-items:start; gap:18px; padding:20px; min-width:0; background:#fff; border:1px solid #d8e2ed; border-radius:8px; transition:border-color 0.15s; }
+    .incident-list-card { display:grid; grid-template-columns:110px minmax(0,1.8fr) minmax(0,1.2fr) minmax(0,1.4fr) minmax(85px,0.8fr) 32px; align-items:start; gap:18px; padding:20px; min-width:0; background:#fff; border:1px solid #d8e2ed; border-radius:8px; transition:border-color 0.15s; }
     .incident-list-card > * { min-width:0; }
     .incident-list-card:hover, .incident-list-card:focus-within { border-color:#8ca9c4; }
     .incident-card-identity .incident-ticket { font-size:13px; color:#123f6e; }
@@ -121,8 +121,10 @@
     .incident-tabs { display:flex; flex-wrap:wrap; gap:8px; margin:20px 0; }
     .incident-tabs .selected { background:#123f6e; color:white; }
     .incident-option-row { display:grid; grid-template-columns:minmax(160px,1fr) 90px auto; gap:12px; align-items:end; }
+    .incident-option-row.with-cargo { grid-template-columns:minmax(160px,1.2fr) minmax(160px,1fr) 90px auto; }
     @media(max-width:1200px) {
         .incident-list-card { grid-template-columns:repeat(3,minmax(0,1fr)) 32px; }
+        .incident-card-summary { grid-column:2 / span 2; }
         .incident-card-actions { grid-column:4; grid-row:1 / span 2; }
     }
     @media(max-width:800px) {

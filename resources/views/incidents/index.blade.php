@@ -19,6 +19,7 @@
                 @endif
             </div>
             <div class="incident-buttons">
+                <a class="btn-secondary" href="{{ route('incidents.reports') }}"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Reportes</a>
                 @if(auth()->user()->hasPermission('incidents.settings'))
                     <a class="btn-secondary" href="{{ route('incidents.settings') }}"><i data-lucide="settings" style="width:16px;height:16px"></i> Ajustes</a>
                 @endif
@@ -44,13 +45,19 @@
                         <div><dt>Área / dependencia</dt><dd>{{ $incident->area?->name ?? 'Sin especificar' }}</dd></div>
                     </dl>
                     <dl class="incident-card-fields incident-details">
+                        <div>
+                            <dt>Responsable asignado para notificación</dt>
+                            <dd>
+                                <strong>{{ $incident->responsible_name ?: ($incident->responsibleUser ? trim($incident->responsibleUser->name . ' ' . $incident->responsibleUser->last_name) : 'Sin asignar') }}</strong>
+                                @if($incident->responsible_position)
+                                    <span class="incident-muted" style="display:block;font-size:11px">({{ $incident->responsible_position }})</span>
+                                @endif
+                            </dd>
+                        </div>
                         <div><dt>Ubicación</dt><dd>{{ \Illuminate\Support\Str::limit($incident->location, 100) }}</dd></div>
+                    </dl>
+                    <dl class="incident-card-fields incident-card-activity-field incident-details">
                         <div><dt>Prioridad</dt><dd><span class="incident-pill {{ $incident->priority_tone }}">{{ $incident->priority?->name }}</span></dd></div>
-                    </dl>
-                    <dl class="incident-card-state incident-details">
-                        <div><dt>Estado de atención</dt><dd><span class="incident-pill {{ $incident->status }}">{{ \App\Models\Incident::STATUSES[$incident->status] }}</span></dd></div>
-                    </dl>
-                    <dl class="incident-card-activity-field incident-details">
                         <div><dt>Actividad</dt><dd class="incident-card-activity"><span class="incident-pill {{ $incident->is_active ? 'tone-success' : 'tone-warning' }}">{{ $incident->is_active ? 'Activo' : 'Inactivo' }}</span>@if($incident->archived_at)<span class="incident-pill">Archivado</span>@endif</dd></div>
                     </dl>
                     <div class="incident-card-actions" role="group" aria-label="Acciones de {{ $incident->ticket }}">@include('incidents.actions')</div>

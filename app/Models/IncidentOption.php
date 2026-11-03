@@ -6,13 +6,14 @@ class IncidentOption extends BaseModel
 {
     public const TYPES = [
         'area' => 'Áreas / dependencias',
-        'zone' => 'Pisos o zonas',
+        'zone' => 'Sedes',
         'failure' => 'Tipos de falla',
+        'prioritized_risk' => 'Riesgos priorizados',
         'impact' => 'Afectación a la operación',
         'priority' => 'Prioridades',
     ];
 
-    protected $fillable = ['type', 'name', 'sort_order', 'is_active'];
+    protected $fillable = ['type', 'name', 'sort_order', 'is_active', 'responsible_position'];
 
     protected function casts(): array
     {

@@ -14,7 +14,8 @@ class Incident extends BaseModel
 
     protected $fillable = [
         'created_by', 'reporter_name', 'reporter_position', 'area_id', 'zone_id',
-        'failure_id', 'impact_id', 'priority_id', 'location', 'description',
+        'failure_type', 'failure_id', 'responsible_user_id', 'responsible_position', 'responsible_name',
+        'impact_id', 'priority_id', 'location', 'description',
         'affected_assets', 'status', 'is_active', 'archived_at',
     ];
 
@@ -30,7 +31,10 @@ class Incident extends BaseModel
         }
 
         return $user->hasPermission('incidents.view')
-            ? $query->where('created_by', $user->id)
+            ? $query->where(function ($q) use ($user) {
+                $q->where('created_by', $user->id)
+                  ->orWhere('responsible_user_id', $user->id);
+            })
             : $query->whereRaw('1 = 0');
     }
 
@@ -93,10 +97,12 @@ class Incident extends BaseModel
     }
 
     public function creator(): BelongsTo { return $this->belongsTo(User::class, 'created_by'); }
+    public function responsibleUser(): BelongsTo { return $this->belongsTo(User::class, 'responsible_user_id'); }
     public function area(): BelongsTo { return $this->belongsTo(IncidentOption::class, 'area_id'); }
     public function zone(): BelongsTo { return $this->belongsTo(IncidentOption::class, 'zone_id'); }
     public function failure(): BelongsTo { return $this->belongsTo(IncidentOption::class, 'failure_id'); }
     public function impact(): BelongsTo { return $this->belongsTo(IncidentOption::class, 'impact_id'); }
     public function priority(): BelongsTo { return $this->belongsTo(IncidentOption::class, 'priority_id'); }
     public function attachments(): HasMany { return $this->hasMany(IncidentAttachment::class); }
+    public function comments(): HasMany { return $this->hasMany(IncidentComment::class)->oldest(); }
 }

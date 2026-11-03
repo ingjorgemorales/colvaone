@@ -140,6 +140,10 @@ Route::middleware('auth')->group(function (): void {
             Route::get('{incident}/evidencias/{attachment}', [IncidentController::class, 'attachment'])->name('attachments.download');
             Route::get('{incident}/evidencias/{attachment}/ver', [IncidentController::class, 'preview'])->name('attachments.preview');
             Route::get('{incident}/pdf', [IncidentController::class, 'pdf'])->name('pdf');
+            Route::post('{incident}/comentarios', [IncidentController::class, 'addComment'])->name('comments.add');
+            Route::get('reportes', [IncidentController::class, 'reports'])->name('reports');
+            Route::get('reportes/exportar/excel', [IncidentController::class, 'exportExcel'])->name('reports.excel');
+            Route::get('reportes/exportar/pdf', [IncidentController::class, 'exportPdf'])->name('reports.pdf');
         });
     });
 

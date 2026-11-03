@@ -14,8 +14,16 @@ class IncidentOptionController extends Controller
         $validated = $request->validate(['type' => ['nullable', 'string', Rule::in(array_keys(IncidentOption::TYPES))]]);
         $currentType = $validated['type'] ?? 'area';
         $options = IncidentOption::orderBy('sort_order')->orderBy('id')->get()->groupBy('type');
+        $knownPositions = collect([
+            'Gerente financiero',
+            'VP Operaciones',
+            'Gerente de talento humano',
+            'Gerente administrativo',
+        ])->merge(
+            \App\Models\User::whereNotNull('position')->where('position', '!=', '')->distinct()->pluck('position')
+        )->unique()->filter()->values();
 
-        return view('incidents.settings', compact('options', 'currentType'));
+        return view('incidents.settings', compact('options', 'currentType', 'knownPositions'));
     }
 
     public function store(Request $request, AuthEventService $events)
@@ -24,6 +32,7 @@ class IncidentOptionController extends Controller
             'type' => ['required', Rule::in(array_keys(IncidentOption::TYPES))],
             'name' => ['required', 'string', 'max:150', Rule::unique('incident_options')->where('type', $request->input('type'))],
             'sort_order' => ['required', 'integer', 'min:0', 'max:9999'],
+            'responsible_position' => ['nullable', 'string', 'max:150'],
         ]);
         $option = IncidentOption::create($data);
         $events->record($request, 'incident_option_created', true, reason: 'Opción '.$option->name.' creada');
@@ -36,6 +45,7 @@ class IncidentOptionController extends Controller
         $data = $request->validate([
             'name' => ['required', 'string', 'max:150', Rule::unique('incident_options')->where('type', $option->type)->ignore($option->id)],
             'sort_order' => ['required', 'integer', 'min:0', 'max:9999'],
+            'responsible_position' => ['nullable', 'string', 'max:150'],
         ]);
         $option->update($data);
         $events->record($request, 'incident_option_updated', true, reason: 'Opción '.$option->name.' actualizada');
