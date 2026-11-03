@@ -122,6 +122,9 @@
     .incident-tabs .selected { background:#123f6e; color:white; }
     .incident-option-row { display:grid; grid-template-columns:minmax(160px,1fr) 90px auto; gap:12px; align-items:end; }
     .incident-option-row.with-cargo { grid-template-columns:minmax(160px,1.2fr) minmax(160px,1fr) 90px auto; }
+    .responsible-option { padding:10px 14px; cursor:pointer; border-bottom:1px solid rgba(18,63,110,0.04); transition:background 0.15s; }
+    .responsible-option:hover { background:#f1f5f9; }
+    .responsible-option:last-child { border-bottom:0; }
     @media(max-width:1200px) {
         .incident-list-card { grid-template-columns:repeat(3,minmax(0,1fr)) 32px; }
         .incident-card-summary { grid-column:2 / span 2; }

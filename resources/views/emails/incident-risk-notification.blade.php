@@ -15,6 +15,24 @@
         body, table, td, p, a, div, span, strong {
             font-family: 'Inter', Arial, Helvetica, sans-serif !important;
         }
+        a.email-btn,
+        a.email-btn:link,
+        a.email-btn:visited,
+        a.email-btn:hover,
+        a.email-btn:active {
+            color: #ffffff !important;
+            background-color: #0b3967 !important;
+            text-decoration: none !important;
+        }
+        a.email-btn span {
+            color: #ffffff !important;
+            text-decoration: none !important;
+        }
+        a.email-fallback-link,
+        a.email-fallback-link:visited {
+            color: #0b3967 !important;
+            text-decoration: underline !important;
+        }
     </style>
     <!--[if mso]>
     <style type="text/css">
@@ -153,15 +171,27 @@
                             </table>
 
                             <!-- Action button (14px) -->
-                            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom: 12px;">
+                            <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin: 0 0 16px 0;">
                                 <tr>
-                                    <td align="left">
-                                        <a href="{{ route('incidents.show', $incident) }}" style="display: inline-block; background-color: #0b3967; color: #ffffff; padding: 13px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none; font-family: {{ $fontFamily }}; box-shadow: 0 2px 4px rgba(11,57,103,0.15);">
-                                            Ver detalle del reporte en ColvaOne &rarr;
+                                    <td align="left" bgcolor="#0b3967" style="border-radius: 6px; background-color: #0b3967;">
+                                        <a href="{{ route('incidents.show', $incident) }}"
+                                           target="_blank"
+                                           class="email-btn"
+                                           style="display: inline-block; background-color: #0b3967; color: #ffffff !important; padding: 14px 28px; border-radius: 6px; font-size: 14px; font-weight: 600; text-decoration: none !important; font-family: {{ $fontFamily }}; border: 1px solid #0b3967; line-height: 1.2; -webkit-text-size-adjust: none;">
+                                            <span style="color: #ffffff !important; text-decoration: none !important; font-family: {{ $fontFamily }}; font-size: 14px; font-weight: 600; line-height: 1.2;">
+                                                Ver detalle del reporte en ColvaOne &rarr;
+                                            </span>
                                         </a>
                                     </td>
                                 </tr>
                             </table>
+
+                            <p style="margin: 0 0 24px; font-size: 12px; color: #94a3b8; line-height: 1.5; font-family: {{ $fontFamily }};">
+                                Si el bot&oacute;n no abre directamente, copia y pega este enlace en tu navegador:<br>
+                                <a href="{{ route('incidents.show', $incident) }}" class="email-fallback-link" style="color: #0b3967 !important; text-decoration: underline !important; word-break: break-all; font-family: {{ $fontFamily }}; font-size: 12px;">
+                                    {{ route('incidents.show', $incident) }}
+                                </a>
+                            </p>
 
                         </td>
                     </tr>

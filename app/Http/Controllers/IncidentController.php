@@ -2,9 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\IncidentCommentNotificationMail;
 use App\Mail\IncidentRiskNotificationMail;
 use App\Models\Incident;
 use App\Models\IncidentAttachment;
+use App\Models\IncidentComment;
 use App\Models\IncidentOption;
 use App\Models\User;
 use App\Services\AuthEventService;
@@ -148,12 +150,14 @@ class IncidentController extends Controller
             'comment' => ['required', 'string', 'max:5000'],
         ]);
 
-        $incident->comments()->create([
+        $comment = $incident->comments()->create([
             'user_id' => $request->user()->id,
             'comment' => trim($validated['comment']),
         ]);
 
         $events->record($request, 'incident_comment_added', true, reason: 'Comentario agregado en '.$incident->ticket);
+
+        $this->notifyCommentInvolved($incident, $comment, $request->user());
 
         return back()->with('success', 'Comentario registrado correctamente.');
     }
@@ -418,19 +422,21 @@ class IncidentController extends Controller
             ->get()
             ->groupBy(fn ($u) => mb_strtolower(trim($u->position)));
 
-        $failureMeta = collect(['failure', 'prioritized_risk'])->flatMap(function ($type) use ($options, $usersByPosition) {
-            return $options->get($type, collect())->mapWithKeys(function ($opt) use ($usersByPosition) {
+        $failureMeta = [];
+        foreach (['failure', 'prioritized_risk'] as $type) {
+            foreach ($options->get($type, collect()) as $opt) {
                 $pos = trim($opt->responsible_position ?? '');
                 $user = $pos !== '' ? $usersByPosition->get(mb_strtolower($pos))?->first() : null;
 
-                return [
-                    $opt->id => [
-                        'position' => $pos,
-                        'user' => $user ? trim($user->name.' '.$user->last_name).' ('.$user->email.')' : ($pos !== '' ? 'Sin usuario con este cargo registrado' : 'Sin cargo asignado por ahora'),
-                    ],
+                $failureMeta[$opt->id] = [
+                    'position' => $pos,
+                    'user_id' => $user?->id,
+                    'user_name' => $user ? trim($user->name.' '.$user->last_name) : null,
+                    'user_email' => $user?->email,
+                    'user' => $user ? trim($user->name.' '.$user->last_name).' ('.$user->email.')' : ($pos !== '' ? 'Sin usuario con este cargo registrado' : 'Sin cargo asignado por ahora'),
                 ];
-            });
-        });
+            }
+        }
 
         return view('incidents.form', compact('incident', 'options', 'reporter', 'profileIncomplete', 'failureMeta', 'activeUsers'));
     }
@@ -597,6 +603,23 @@ class IncidentController extends Controller
                 } catch (\Throwable $e) {
                     report($e);
                 }
+            }
+        }
+    }
+
+    private function notifyCommentInvolved(Incident $incident, IncidentComment $comment, User $author): void
+    {
+        $incident->loadMissing(['creator', 'responsibleUser', 'zone', 'failure', 'priority', 'impact']);
+
+        $recipients = collect([$incident->creator, $incident->responsibleUser])
+            ->filter(fn ($u) => $u && $u->id !== $author->id && !empty($u->email))
+            ->unique('id');
+
+        foreach ($recipients as $recipient) {
+            try {
+                Mail::to($recipient->email)->send(new IncidentCommentNotificationMail($incident, $comment, $recipient, $author));
+            } catch (\Throwable $e) {
+                report($e);
             }
         }
     }

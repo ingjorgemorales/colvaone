@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Mail\IncidentCommentNotificationMail;
 use App\Mail\IncidentRiskNotificationMail;
 use App\Models\Incident;
 use App\Models\IncidentOption;
@@ -421,7 +422,7 @@ class IncidentTest extends TestCase
         foreach (['reporter', 'location', 'description', 'tracking', 'evidence'] as $section) {
             $this->assertStringContainsString('data-section="'.$section.'"', $html);
         }
-        $this->assertStringContainsString(exption), $html);
+        $this->assertStringContainsString(e($incident->description), $html);
         $this->assertStringContainsString('Inspección.pdf', $html);
         $this->assertStringNotContainsString('Estado de atención', $html);
         $this->assertStringContainsString('Actividad', $html);
@@ -541,6 +542,42 @@ class IncidentTest extends TestCase
         $this->assertSame('VP Operaciones', $newRisk->fresh()->responsible_position);
     }
 
+    public function test_create_incident_form_unifies_responsible_filter_into_one_and_maps_automatically(): void
+    {
+        $creator = $this->userWith(['incidents.view', 'incidents.create']);
+        $lead = User::factory()->create([
+            'position' => 'Gerente financiero',
+            'is_active' => true,
+            'name' => 'Alfonso',
+            'last_name' => 'Gomez',
+            'email' => 'alfonso.gomez@example.com',
+        ]);
+
+        $risk = IncidentOption::where('type', 'prioritized_risk')
+            ->where('responsible_position', 'Gerente financiero')
+            ->firstOrFail();
+
+        $response = $this->actingAs($creator)->get(route('incidents.create'))->assertOk();
+
+        // 1. Should have the unified combobox and single label
+        $response->assertSee('id="responsible_combobox_input"', false);
+        $response->assertSee('id="responsible_dropdown"', false);
+        $response->assertSee('id="responsible_user_id"', false);
+        $response->assertSee('Persona responsable <span class="incident-required">*</span>', false);
+
+        // 2. Should NOT have the old separate "Buscar persona responsable" search input
+        $response->assertDontSee('id="responsible_search"', false);
+        $response->assertDontSee('Buscar persona responsable', false);
+
+        // 3. Risk option should include data-user-id mapping to the responsible user
+        $response->assertSee('data-user-id="'.$lead->id.'"', false);
+        $response->assertSee('data-position="Gerente financiero"', false);
+
+        // 4. View has the automatic badge and dropdown options
+        $response->assertSee('id="responsible_auto_badge"', false);
+        $response->assertSee('Alfonso Gomez', false);
+    }
+
     public function test_general_incident_notifies_when_responsible_user_is_selected_and_does_not_when_not_set(): void
     {
         Mail::fake();
@@ -598,6 +635,8 @@ class IncidentTest extends TestCase
 
     public function test_involved_users_can_add_comments_to_incident(): void
     {
+        Mail::fake();
+
         $creator = $this->userWith(['incidents.view']);
         $responsible = $this->userWith(['incidents.view']);
         $responsible->update([
@@ -613,13 +652,21 @@ class IncidentTest extends TestCase
             'responsible_position' => $responsible->position,
         ]);
 
-        // Creator adds a comment
+        // Creator adds a comment -> email sent to responsible
         $this->actingAs($creator)
             ->post(route('incidents.comments.add', $incident), [
                 'comment' => 'Se requiere visita técnica urgente para validar daños.',
             ])
             ->assertRedirect()
             ->assertSessionHas('success');
+
+        Mail::assertSent(IncidentCommentNotificationMail::class, function ($mail) use ($incident, $responsible, $creator) {
+            return $mail->incident->id === $incident->id
+                && $mail->hasTo($responsible->email)
+                && $mail->recipient->id === $responsible->id
+                && $mail->author->id === $creator->id
+                && str_contains($mail->comment->comment, 'Se requiere visita técnica');
+        });
 
         $this->assertDatabaseHas('incident_comments', [
             'incident_id' => $incident->id,
@@ -635,7 +682,7 @@ class IncidentTest extends TestCase
             ->assertSee('Se requiere visita técnica urgente para validar daños.')
             ->assertSee('Reportante');
 
-        // Responsible user adds a comment
+        // Responsible user adds a comment -> email sent to creator
         $this->actingAs($responsible)
             ->post(route('incidents.comments.add', $incident), [
                 'comment' => 'Recibido. Técnico asignado en camino a la sede.',
@@ -643,11 +690,31 @@ class IncidentTest extends TestCase
             ->assertRedirect()
             ->assertSessionHas('success');
 
+        Mail::assertSent(IncidentCommentNotificationMail::class, function ($mail) use ($incident, $creator, $responsible) {
+            return $mail->incident->id === $incident->id
+                && $mail->hasTo($creator->email)
+                && $mail->recipient->id === $creator->id
+                && $mail->author->id === $responsible->id
+                && str_contains($mail->comment->comment, 'Recibido. Técnico asignado');
+        });
+
         $this->assertDatabaseHas('incident_comments', [
             'incident_id' => $incident->id,
             'user_id' => $responsible->id,
             'comment' => 'Recibido. Técnico asignado en camino a la sede.',
         ]);
+
+        // Render the email view directly to verify template, logo, typography and button
+        $commentModel = $incident->comments()->latest('id')->firstOrFail();
+        $mailable = new IncidentCommentNotificationMail($incident, $commentModel, $creator, $responsible);
+        $renderedMail = $mailable->render();
+
+        $this->assertStringContainsString('logo-login.png', $renderedMail);
+        $this->assertStringContainsString("'Inter', Arial, Helvetica, sans-serif", $renderedMail);
+        $this->assertStringContainsString('Nuevo comentario en el incidente '.$incident->ticket, $renderedMail);
+        $this->assertStringContainsString('Recibido. Técnico asignado en camino a la sede.', $renderedMail);
+        $this->assertStringContainsString('Ver detalle del reporte en ColvaOne', $renderedMail);
+        $this->assertStringContainsString('color: #ffffff !important', $renderedMail);
 
         // Detail page reflects both comments with "Responsable" badge
         $this->actingAs($creator)
