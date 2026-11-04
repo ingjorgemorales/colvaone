@@ -111,49 +111,81 @@ class IncidentController extends Controller
 
         $changes = [];
 
-        if ($original['status'] !== $incident->status) {
-            $oldStatus = Incident::STATUSES[$original['status']] ?? ucfirst($original['status']);
-            $newStatus = Incident::STATUSES[$incident->status] ?? ucfirst($incident->status);
-            $changes[] = ['field' => 'Estado', 'old' => $oldStatus, 'new' => $newStatus];
+        $oldStatus = trim((string) ($original['status'] ?? ''));
+        $newStatus = trim((string) $incident->status);
+        if ($oldStatus !== $newStatus) {
+            $oldLabel = Incident::STATUSES[$oldStatus] ?? ucfirst($oldStatus);
+            $newLabel = Incident::STATUSES[$newStatus] ?? ucfirst($newStatus);
+            if ($oldLabel !== $newLabel) {
+                $changes[] = ['field' => 'Estado', 'old' => $oldLabel, 'new' => $newLabel];
+            }
         }
 
-        if ($original['priority_id'] !== $incident->priority_id) {
-            $oldPrio = IncidentOption::find($original['priority_id'])?->name ?? 'Sin prioridad';
-            $changes[] = ['field' => 'Prioridad', 'old' => $oldPrio, 'new' => $incident->priority?->name ?? 'Sin prioridad'];
+        $oldPrioId = (int) ($original['priority_id'] ?? 0);
+        $newPrioId = (int) ($incident->priority_id ?? 0);
+        if ($oldPrioId !== $newPrioId) {
+            $oldPrio = IncidentOption::find($oldPrioId)?->name ?? 'Sin prioridad';
+            $newPrio = $incident->priority?->name ?? (IncidentOption::find($newPrioId)?->name ?? 'Sin prioridad');
+            if ($oldPrio !== $newPrio) {
+                $changes[] = ['field' => 'Prioridad', 'old' => $oldPrio, 'new' => $newPrio];
+            }
         }
 
         if ($responsibleChanged) {
             $oldResp = $previousResponsibleUserId ? User::find($previousResponsibleUserId) : null;
             $oldRespName = $oldResp ? trim($oldResp->name.' '.$oldResp->last_name) : ($previousResponsiblePosition ?: 'Sin asignar');
             $newRespName = $incident->responsibleUser ? trim($incident->responsibleUser->name.' '.$incident->responsibleUser->last_name) : ($incident->responsible_name ?: 'Sin asignar');
-            $changes[] = ['field' => 'Responsable asignado', 'old' => $oldRespName, 'new' => $newRespName];
+            if ($oldRespName !== $newRespName) {
+                $changes[] = ['field' => 'Responsable asignado', 'old' => $oldRespName, 'new' => $newRespName];
+            }
         }
 
-        if ($original['failure_id'] !== $incident->failure_id) {
-            $oldFailure = IncidentOption::find($original['failure_id'])?->name ?? 'Sin especificar';
-            $changes[] = ['field' => 'Clasificación / Falla', 'old' => $oldFailure, 'new' => $incident->failure?->name ?? 'Sin especificar'];
+        $oldFailureId = (int) ($original['failure_id'] ?? 0);
+        $newFailureId = (int) ($incident->failure_id ?? 0);
+        if ($oldFailureId !== $newFailureId) {
+            $oldFailure = IncidentOption::find($oldFailureId)?->name ?? 'Sin especificar';
+            $newFailure = $incident->failure?->name ?? (IncidentOption::find($newFailureId)?->name ?? 'Sin especificar');
+            if ($oldFailure !== $newFailure) {
+                $changes[] = ['field' => 'Clasificación / Falla', 'old' => $oldFailure, 'new' => $newFailure];
+            }
         }
 
-        if ($original['zone_id'] !== $incident->zone_id) {
-            $oldZone = IncidentOption::find($original['zone_id'])?->name ?? 'Sin sede';
-            $changes[] = ['field' => 'Sede', 'old' => $oldZone, 'new' => $incident->zone?->name ?? 'Sin sede'];
+        $oldZoneId = (int) ($original['zone_id'] ?? 0);
+        $newZoneId = (int) ($incident->zone_id ?? 0);
+        if ($oldZoneId !== $newZoneId) {
+            $oldZone = IncidentOption::find($oldZoneId)?->name ?? 'Sin sede';
+            $newZone = $incident->zone?->name ?? (IncidentOption::find($newZoneId)?->name ?? 'Sin sede');
+            if ($oldZone !== $newZone) {
+                $changes[] = ['field' => 'Sede', 'old' => $oldZone, 'new' => $newZone];
+            }
         }
 
-        if ($original['location'] !== $incident->location) {
-            $changes[] = ['field' => 'Ubicación específica', 'old' => $original['location'], 'new' => $incident->location];
+        $oldLoc = trim((string) ($original['location'] ?? ''));
+        $newLoc = trim((string) $incident->location);
+        if ($oldLoc !== $newLoc) {
+            $changes[] = ['field' => 'Ubicación específica', 'old' => $oldLoc, 'new' => $newLoc];
         }
 
-        if ($original['impact_id'] !== $incident->impact_id) {
-            $oldImpact = IncidentOption::find($original['impact_id'])?->name ?? 'Sin especificar';
-            $changes[] = ['field' => 'Afectación operativa', 'old' => $oldImpact, 'new' => $incident->impact?->name ?? 'Sin especificar'];
+        $oldImpactId = (int) ($original['impact_id'] ?? 0);
+        $newImpactId = (int) ($incident->impact_id ?? 0);
+        if ($oldImpactId !== $newImpactId) {
+            $oldImpact = IncidentOption::find($oldImpactId)?->name ?? 'Sin especificar';
+            $newImpact = $incident->impact?->name ?? (IncidentOption::find($newImpactId)?->name ?? 'Sin especificar');
+            if ($oldImpact !== $newImpact) {
+                $changes[] = ['field' => 'Afectación operativa', 'old' => $oldImpact, 'new' => $newImpact];
+            }
         }
 
-        if ($original['description'] !== $incident->description) {
+        $oldDesc = trim(str_replace("\r\n", "\n", (string) ($original['description'] ?? '')));
+        $newDesc = trim(str_replace("\r\n", "\n", (string) $incident->description));
+        if ($oldDesc !== $newDesc) {
             $changes[] = ['field' => 'Descripción', 'old' => null, 'new' => 'Descripción actualizada'];
         }
 
-        if ($original['affected_assets'] !== $incident->affected_assets) {
-            $changes[] = ['field' => 'Equipos o activos afectados', 'old' => $original['affected_assets'] ?: 'Ninguno', 'new' => $incident->affected_assets ?: 'Ninguno'];
+        $oldAssets = trim((string) ($original['affected_assets'] ?? ''));
+        $newAssets = trim((string) $incident->affected_assets);
+        if ($oldAssets !== $newAssets) {
+            $changes[] = ['field' => 'Equipos o activos afectados', 'old' => $oldAssets ?: 'Ninguno', 'new' => $newAssets ?: 'Ninguno'];
         }
 
         if ($request->hasFile('attachments')) {
@@ -164,16 +196,22 @@ class IncidentController extends Controller
             $changes[] = ['field' => 'Evidencias retiradas', 'old' => null, 'new' => count($request->input('remove_attachments')).' imagen(es)'];
         }
 
+        $hasChanges = !empty($changes) || $responsibleChanged;
+
         if ($responsibleChanged) {
             $this->notifyRiskResponsibles($incident);
-            $this->notifyIncidentUpdated($incident, $request->user(), $changes, excludeUserId: $incident->responsible_user_id);
-        } else {
+            if (!empty($changes)) {
+                $this->notifyIncidentUpdated($incident, $request->user(), $changes, excludeUserId: $incident->responsible_user_id);
+            }
+        } elseif (!empty($changes)) {
             $this->notifyIncidentUpdated($incident, $request->user(), $changes);
         }
 
         $message = $responsibleChanged
             ? 'Incidente actualizado y notificación enviada al nuevo responsable asignado.'
-            : 'Incidente actualizado y notificación enviada a las personas involucradas.';
+            : ($hasChanges
+                ? 'Incidente actualizado y notificación enviada a las personas involucradas.'
+                : 'Incidente actualizado.');
 
         return redirect()->route('incidents.show', $incident)->with('success', $message);
     }

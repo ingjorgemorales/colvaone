@@ -94,17 +94,19 @@
                                             </div>
                                             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="font-family: {{ $fontFamily }}; font-size: 14px; line-height: 1.5;">
                                                 @foreach($changes as $ch)
-                                                    <tr>
-                                                        <td style="padding: 5px 0; color: #1e293b; font-family: {{ $fontFamily }};">
-                                                            <strong style="color: #0b3967;">&bull; {{ $ch['field'] }}:</strong>
-                                                            @if(!empty($ch['old']))
-                                                                <span style="color: #64748b; text-decoration: line-through; margin: 0 6px;">{{ $ch['old'] }}</span>
-                                                                <span style="color: #047857; font-weight: 600;">&rarr; {{ $ch['new'] }}</span>
-                                                            @else
-                                                                <span style="color: #047857; font-weight: 600; margin-left: 6px;">{{ $ch['new'] }}</span>
-                                                            @endif
-                                                        </td>
-                                                    </tr>
+                                                    @if(!empty($ch['new']) && (empty($ch['old']) || $ch['old'] !== $ch['new']))
+                                                        <tr>
+                                                            <td style="padding: 5px 0; color: #1e293b; font-family: {{ $fontFamily }};">
+                                                                <strong style="color: #0b3967;">&bull; {{ $ch['field'] }}:</strong>
+                                                                @if(!empty($ch['old']))
+                                                                    <span style="color: #64748b; text-decoration: line-through; margin: 0 6px;">{{ $ch['old'] }}</span>
+                                                                    <span style="color: #047857; font-weight: 600;">&rarr; {{ $ch['new'] }}</span>
+                                                                @else
+                                                                    <span style="color: #047857; font-weight: 600; margin-left: 6px;">{{ $ch['new'] }}</span>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @endif
                                                 @endforeach
                                             </table>
                                         </td>

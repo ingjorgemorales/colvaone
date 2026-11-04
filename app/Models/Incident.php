@@ -21,7 +21,17 @@ class Incident extends BaseModel
 
     protected function casts(): array
     {
-        return ['is_active' => 'boolean', 'archived_at' => 'datetime'];
+        return [
+            'is_active' => 'boolean',
+            'archived_at' => 'datetime',
+            'area_id' => 'integer',
+            'zone_id' => 'integer',
+            'failure_id' => 'integer',
+            'responsible_user_id' => 'integer',
+            'impact_id' => 'integer',
+            'priority_id' => 'integer',
+            'created_by' => 'integer',
+        ];
     }
 
     public function scopeVisibleFor(Builder $query, User $user): Builder

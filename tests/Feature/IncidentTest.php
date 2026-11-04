@@ -713,6 +713,29 @@ class IncidentTest extends TestCase
         });
 
         $this->assertSame($newResponsible->id, $incident->fresh()->responsible_user_id);
+
+        // 3. Edit changing ONLY location (e.g. Parqueadera -> Parqueadero) -> only 1 change entry
+        Mail::fake();
+        $singleChangeData = $this->data();
+        $singleChangeData['responsible_user_id'] = $newResponsible->id;
+        $singleChangeData['priority_id'] = $incident->priority_id;
+        $singleChangeData['failure_id'] = $incident->failure_id;
+        $singleChangeData['zone_id'] = $incident->zone_id;
+        $singleChangeData['impact_id'] = $incident->impact_id;
+        $singleChangeData['description'] = $incident->fresh()->description;
+        $singleChangeData['affected_assets'] = $incident->fresh()->affected_assets;
+        $singleChangeData['location'] = 'Parqueadero nuevo';
+
+        $this->actingAs($creator)->put(route('incidents.update', $incident), $singleChangeData)
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Incidente actualizado y notificación enviada a las personas involucradas.');
+
+        Mail::assertSent(IncidentUpdatedNotificationMail::class, function ($mail) {
+            $changes = collect($mail->changes);
+            return $changes->count() === 1
+                && $changes->first()['field'] === 'Ubicación específica'
+                && $changes->first()['new'] === 'Parqueadero nuevo';
+        });
     }
 
     public function test_involved_users_can_add_comments_to_incident(): void
