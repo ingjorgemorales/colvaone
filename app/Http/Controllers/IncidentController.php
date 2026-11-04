@@ -520,7 +520,26 @@ class IncidentController extends Controller
 
     private function authorizeRecord(Request $request, Incident $incident): void
     {
-        abort_unless(Incident::visibleFor($request->user())->whereKey($incident->id)->exists(), 403);
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        $isCreator = ((int) $incident->created_by === (int) $user->id);
+        $isResponsible = (!empty($incident->responsible_user_id) && (int) $incident->responsible_user_id === (int) $user->id);
+
+        if (!$isResponsible && !empty($incident->responsible_position) && !empty($user->position)) {
+            $pos = trim($incident->responsible_position);
+            if ($pos !== '' && mb_strtolower($pos) !== 'por definir' && !str_starts_with(mb_strtolower($pos), 'por definir')) {
+                if (mb_strtolower(trim($user->position)) === mb_strtolower($pos)) {
+                    $isResponsible = true;
+                }
+            }
+        }
+
+        $canViewAll = $user->hasPermission('incidents.view_all');
+
+        // Solo el reportante (representante) y la persona responsable asignada pueden acceder a este incidente
+        // (los administradores con incidents.view_all también pueden supervisar el caso)
+        abort_unless($isCreator || $isResponsible || $canViewAll, 403);
     }
 
     private function form(Incident $incident)

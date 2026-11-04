@@ -132,19 +132,20 @@ Route::middleware('auth')->group(function (): void {
             Route::get('/', [IncidentController::class, 'index'])->name('index');
             Route::get('create', [IncidentController::class, 'create'])->name('create')->middleware('permission:incidents.create');
             Route::post('/', [IncidentController::class, 'store'])->name('store')->middleware('permission:incidents.create');
-            Route::get('{incident}', [IncidentController::class, 'show'])->name('show')->whereNumber('incident');
-            Route::get('{incident}/edit', [IncidentController::class, 'edit'])->name('edit')->middleware('permission:incidents.edit');
-            Route::put('{incident}', [IncidentController::class, 'update'])->name('update')->middleware('permission:incidents.edit');
-            Route::post('{incident}/toggle', [IncidentController::class, 'toggle'])->name('toggle')->middleware('permission:incidents.toggle');
-            Route::post('{incident}/archive', [IncidentController::class, 'archive'])->name('archive')->middleware('permission:incidents.archive');
-            Route::get('{incident}/evidencias/{attachment}', [IncidentController::class, 'attachment'])->name('attachments.download');
-            Route::get('{incident}/evidencias/{attachment}/ver', [IncidentController::class, 'preview'])->name('attachments.preview');
-            Route::get('{incident}/pdf', [IncidentController::class, 'pdf'])->name('pdf');
-            Route::post('{incident}/comentarios', [IncidentController::class, 'addComment'])->name('comments.add');
             Route::get('reportes', [IncidentController::class, 'reports'])->name('reports');
             Route::get('reportes/exportar/excel', [IncidentController::class, 'exportExcel'])->name('reports.excel');
             Route::get('reportes/exportar/pdf', [IncidentController::class, 'exportPdf'])->name('reports.pdf');
         });
+
+        Route::get('{incident}', [IncidentController::class, 'show'])->name('show')->whereNumber('incident');
+        Route::get('{incident}/edit', [IncidentController::class, 'edit'])->name('edit')->middleware('permission:incidents.edit');
+        Route::put('{incident}', [IncidentController::class, 'update'])->name('update')->middleware('permission:incidents.edit');
+        Route::post('{incident}/toggle', [IncidentController::class, 'toggle'])->name('toggle')->middleware('permission:incidents.toggle');
+        Route::post('{incident}/archive', [IncidentController::class, 'archive'])->name('archive')->middleware('permission:incidents.archive');
+        Route::get('{incident}/evidencias/{attachment}', [IncidentController::class, 'attachment'])->name('attachments.download');
+        Route::get('{incident}/evidencias/{attachment}/ver', [IncidentController::class, 'preview'])->name('attachments.preview');
+        Route::get('{incident}/pdf', [IncidentController::class, 'pdf'])->name('pdf');
+        Route::post('{incident}/comentarios', [IncidentController::class, 'addComment'])->name('comments.add');
     });
 
     Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view,group_tasks.view_group,group_tasks.view_all');

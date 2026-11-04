@@ -72,6 +72,42 @@ class IncidentTest extends TestCase
         $this->get(route('incidents.show', $foreign))->assertForbidden();
     }
 
+    public function test_only_reporter_and_responsible_can_access_incident_others_see_403_template(): void
+    {
+        $creator = $this->userWith(['incidents.view', 'incidents.create']);
+        $responsibleWithoutGlobalPermission = User::factory()->create([
+            'role' => Role::create(['name' => 'Operador '.uniqid(), 'slug' => 'operador-'.uniqid(), 'permissions' => [], 'is_active' => true])->slug,
+            'is_active' => true,
+            'position' => 'Jefe de Operaciones',
+        ]);
+        $unauthorizedUser = $this->userWith(['incidents.view']);
+
+        $incident = $this->incident($creator, [
+            'responsible_user_id' => $responsibleWithoutGlobalPermission->id,
+            'responsible_name' => $responsibleWithoutGlobalPermission->name,
+            'responsible_position' => $responsibleWithoutGlobalPermission->position,
+        ]);
+
+        // 1. Creator can access
+        $this->actingAs($creator)->get(route('incidents.show', $incident))->assertOk()->assertSee($incident->ticket);
+
+        // 2. Assigned responsible can access directly (even without global incidents.view role permission)
+        $this->actingAs($responsibleWithoutGlobalPermission)
+            ->get(route('incidents.show', $incident))
+            ->assertOk()
+            ->assertSee($incident->ticket);
+
+        // 3. Unauthorized user (neither creator nor responsible) is blocked with standard 403 template
+        $response = $this->actingAs($unauthorizedUser)->get(route('incidents.show', $incident));
+        $response->assertForbidden();
+        $response->assertSee('Acceso no autorizado');
+        $response->assertSee('Tu usuario no tiene permisos para entrar a esta opcion. Si necesitas acceso, solicita que revisen tu rol o permisos.');
+
+        // 4. Unauthorized user cannot download PDF or post comments
+        $this->get(route('incidents.pdf', $incident))->assertForbidden();
+        $this->post(route('incidents.comments.add', $incident), ['comment' => 'Intento no autorizado'])->assertForbidden();
+    }
+
     public function test_action_permissions_require_visibility_and_readers_cannot_write(): void
     {
         $user = $this->userWith(['incidents.create', 'incidents.edit', 'incidents.toggle', 'incidents.archive']);

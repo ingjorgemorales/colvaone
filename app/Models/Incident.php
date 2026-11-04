@@ -40,12 +40,23 @@ class Incident extends BaseModel
             return $query;
         }
 
-        return $user->hasPermission('incidents.view')
-            ? $query->where(function ($q) use ($user) {
-                $q->where('created_by', $user->id)
-                  ->orWhere('responsible_user_id', $user->id);
-            })
-            : $query->whereRaw('1 = 0');
+        return $query->where(function ($q) use ($user) {
+            $q->where('created_by', $user->id)
+              ->orWhere('responsible_user_id', $user->id);
+
+            if (!empty($user->position)) {
+                $pos = trim($user->position);
+                if ($pos !== '' && mb_strtolower($pos) !== 'por definir') {
+                    $q->orWhere(function ($qp) use ($pos) {
+                        $qp->whereNull('responsible_user_id')
+                           ->where(function ($sub) use ($pos) {
+                               $sub->where('responsible_position', $pos)
+                                   ->orWhereRaw('LOWER(TRIM(responsible_position)) = ?', [mb_strtolower($pos)]);
+                           });
+                    });
+                }
+            }
+        });
     }
 
     public function getTicketAttribute(): string
