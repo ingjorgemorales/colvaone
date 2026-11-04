@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Mail\IncidentCommentNotificationMail;
 use App\Mail\IncidentRiskNotificationMail;
+use App\Mail\IncidentUpdatedNotificationMail;
 use App\Models\Incident;
 use App\Models\IncidentAttachment;
 use App\Models\IncidentComment;
@@ -79,10 +80,102 @@ class IncidentController extends Controller
     {
         $this->authorizeRecord($request, $incident);
         abort_if($incident->archived_at, 403, 'Restaura el incidente antes de editarlo.');
+
+        $previousResponsibleUserId = $incident->responsible_user_id;
+        $previousResponsiblePosition = trim((string) $incident->responsible_position);
+
+        $original = [
+            'status' => $incident->status,
+            'priority_id' => $incident->priority_id,
+            'impact_id' => $incident->impact_id,
+            'zone_id' => $incident->zone_id,
+            'location' => $incident->location,
+            'failure_id' => $incident->failure_id,
+            'description' => $incident->description,
+            'affected_assets' => $incident->affected_assets,
+            'responsible_user_id' => $incident->responsible_user_id,
+        ];
+
         $this->save($request, $incident);
         $events->record($request, 'incident_updated', true, reason: $incident->ticket.' actualizado');
 
-        return redirect()->route('incidents.show', $incident)->with('success', 'Incidente actualizado.');
+        $newResponsibleUserId = $incident->responsible_user_id;
+        $newResponsiblePosition = trim((string) $incident->responsible_position);
+
+        $responsibleChanged = false;
+        if (!empty($newResponsibleUserId)) {
+            $responsibleChanged = ((int) $previousResponsibleUserId !== (int) $newResponsibleUserId);
+        } elseif (!empty($newResponsiblePosition)) {
+            $responsibleChanged = (mb_strtolower($previousResponsiblePosition) !== mb_strtolower($newResponsiblePosition));
+        }
+
+        $changes = [];
+
+        if ($original['status'] !== $incident->status) {
+            $oldStatus = Incident::STATUSES[$original['status']] ?? ucfirst($original['status']);
+            $newStatus = Incident::STATUSES[$incident->status] ?? ucfirst($incident->status);
+            $changes[] = ['field' => 'Estado', 'old' => $oldStatus, 'new' => $newStatus];
+        }
+
+        if ($original['priority_id'] !== $incident->priority_id) {
+            $oldPrio = IncidentOption::find($original['priority_id'])?->name ?? 'Sin prioridad';
+            $changes[] = ['field' => 'Prioridad', 'old' => $oldPrio, 'new' => $incident->priority?->name ?? 'Sin prioridad'];
+        }
+
+        if ($responsibleChanged) {
+            $oldResp = $previousResponsibleUserId ? User::find($previousResponsibleUserId) : null;
+            $oldRespName = $oldResp ? trim($oldResp->name.' '.$oldResp->last_name) : ($previousResponsiblePosition ?: 'Sin asignar');
+            $newRespName = $incident->responsibleUser ? trim($incident->responsibleUser->name.' '.$incident->responsibleUser->last_name) : ($incident->responsible_name ?: 'Sin asignar');
+            $changes[] = ['field' => 'Responsable asignado', 'old' => $oldRespName, 'new' => $newRespName];
+        }
+
+        if ($original['failure_id'] !== $incident->failure_id) {
+            $oldFailure = IncidentOption::find($original['failure_id'])?->name ?? 'Sin especificar';
+            $changes[] = ['field' => 'Clasificación / Falla', 'old' => $oldFailure, 'new' => $incident->failure?->name ?? 'Sin especificar'];
+        }
+
+        if ($original['zone_id'] !== $incident->zone_id) {
+            $oldZone = IncidentOption::find($original['zone_id'])?->name ?? 'Sin sede';
+            $changes[] = ['field' => 'Sede', 'old' => $oldZone, 'new' => $incident->zone?->name ?? 'Sin sede'];
+        }
+
+        if ($original['location'] !== $incident->location) {
+            $changes[] = ['field' => 'Ubicación específica', 'old' => $original['location'], 'new' => $incident->location];
+        }
+
+        if ($original['impact_id'] !== $incident->impact_id) {
+            $oldImpact = IncidentOption::find($original['impact_id'])?->name ?? 'Sin especificar';
+            $changes[] = ['field' => 'Afectación operativa', 'old' => $oldImpact, 'new' => $incident->impact?->name ?? 'Sin especificar'];
+        }
+
+        if ($original['description'] !== $incident->description) {
+            $changes[] = ['field' => 'Descripción', 'old' => null, 'new' => 'Descripción actualizada'];
+        }
+
+        if ($original['affected_assets'] !== $incident->affected_assets) {
+            $changes[] = ['field' => 'Equipos o activos afectados', 'old' => $original['affected_assets'] ?: 'Ninguno', 'new' => $incident->affected_assets ?: 'Ninguno'];
+        }
+
+        if ($request->hasFile('attachments')) {
+            $changes[] = ['field' => 'Evidencias adjuntas', 'old' => null, 'new' => count($request->file('attachments')).' nueva(s) imagen(es)'];
+        }
+
+        if (!empty($request->input('remove_attachments'))) {
+            $changes[] = ['field' => 'Evidencias retiradas', 'old' => null, 'new' => count($request->input('remove_attachments')).' imagen(es)'];
+        }
+
+        if ($responsibleChanged) {
+            $this->notifyRiskResponsibles($incident);
+            $this->notifyIncidentUpdated($incident, $request->user(), $changes, excludeUserId: $incident->responsible_user_id);
+        } else {
+            $this->notifyIncidentUpdated($incident, $request->user(), $changes);
+        }
+
+        $message = $responsibleChanged
+            ? 'Incidente actualizado y notificación enviada al nuevo responsable asignado.'
+            : 'Incidente actualizado y notificación enviada a las personas involucradas.';
+
+        return redirect()->route('incidents.show', $incident)->with('success', $message);
     }
 
     public function toggle(Request $request, Incident $incident, AuthEventService $events)
@@ -571,9 +664,12 @@ class IncidentController extends Controller
 
     private function notifyRiskResponsibles(Incident $incident): void
     {
+        $incident->load(['failure', 'zone', 'priority', 'impact']);
+
         if ($incident->responsible_user_id) {
-            $recipient = $incident->responsibleUser ?? User::find($incident->responsible_user_id);
-            if ($recipient && !empty($recipient->email)) {
+            $incident->load('responsibleUser');
+            $recipient = $incident->responsibleUser ?: User::find($incident->responsible_user_id);
+            if ($recipient && !empty($recipient->email) && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
                 try {
                     Mail::to($recipient->email)->send(new IncidentRiskNotificationMail($incident, $recipient));
                 } catch (\Throwable $e) {
@@ -597,7 +693,7 @@ class IncidentController extends Controller
             ->get();
 
         foreach ($recipients as $recipient) {
-            if (!empty($recipient->email)) {
+            if (!empty($recipient->email) && filter_var($recipient->email, FILTER_VALIDATE_EMAIL)) {
                 try {
                     Mail::to($recipient->email)->send(new IncidentRiskNotificationMail($incident, $recipient));
                 } catch (\Throwable $e) {
@@ -607,13 +703,81 @@ class IncidentController extends Controller
         }
     }
 
+    private function notifyIncidentUpdated(Incident $incident, User $editor, array $changes = [], ?int $excludeUserId = null): void
+    {
+        $incident->loadMissing(['creator', 'responsibleUser', 'zone', 'failure', 'priority', 'impact']);
+
+        $creator = $incident->creator ?: User::find($incident->created_by);
+        $responsible = $incident->responsibleUser ?: ($incident->responsible_user_id ? User::find($incident->responsible_user_id) : null);
+
+        if (!$responsible && !empty($incident->responsible_position)) {
+            $pos = trim($incident->responsible_position);
+            if ($pos !== '' && mb_strtolower($pos) !== 'por definir' && !str_starts_with(mb_strtolower($pos), 'por definir')) {
+                $responsible = User::query()
+                    ->where('is_active', true)
+                    ->where(function ($q) use ($pos) {
+                        $q->where('position', $pos)
+                          ->orWhereRaw('LOWER(TRIM(position)) = ?', [mb_strtolower($pos)]);
+                    })
+                    ->first();
+            }
+        }
+
+        // Destinatarios: personas involucradas distintas al editor y al usuario excluido (ej. recién notificado como nuevo responsable)
+        $recipients = collect([$creator, $responsible])
+            ->filter(fn ($u) => $u && $u->id !== $editor->id && ($excludeUserId === null || $u->id !== $excludeUserId) && !empty($u->email) && filter_var($u->email, FILTER_VALIDATE_EMAIL))
+            ->unique('id');
+
+        // Fallback en pruebas locales o autoasignación donde el usuario realiza todos los roles
+        if ($recipients->isEmpty() && $excludeUserId === null) {
+            $fallback = $responsible ?: $creator;
+            if ($fallback && !empty($fallback->email) && filter_var($fallback->email, FILTER_VALIDATE_EMAIL)) {
+                $recipients = collect([$fallback]);
+            }
+        }
+
+        foreach ($recipients as $recipient) {
+            try {
+                Mail::to($recipient->email)->send(new IncidentUpdatedNotificationMail($incident, $recipient, $editor, $changes));
+            } catch (\Throwable $e) {
+                report($e);
+            }
+        }
+    }
+
     private function notifyCommentInvolved(Incident $incident, IncidentComment $comment, User $author): void
     {
         $incident->loadMissing(['creator', 'responsibleUser', 'zone', 'failure', 'priority', 'impact']);
 
-        $recipients = collect([$incident->creator, $incident->responsibleUser])
-            ->filter(fn ($u) => $u && $u->id !== $author->id && !empty($u->email))
+        $creator = $incident->creator ?: User::find($incident->created_by);
+        $responsible = $incident->responsibleUser ?: ($incident->responsible_user_id ? User::find($incident->responsible_user_id) : null);
+
+        if (!$responsible && !empty($incident->responsible_position)) {
+            $pos = trim($incident->responsible_position);
+            if ($pos !== '' && mb_strtolower($pos) !== 'por definir' && !str_starts_with(mb_strtolower($pos), 'por definir')) {
+                $responsible = User::query()
+                    ->where('is_active', true)
+                    ->where(function ($q) use ($pos) {
+                        $q->where('position', $pos)
+                          ->orWhereRaw('LOWER(TRIM(position)) = ?', [mb_strtolower($pos)]);
+                    })
+                    ->first();
+            }
+        }
+
+        // Destinatarios: la otra persona involucrada distinta al autor del comentario
+        $recipients = collect([$creator, $responsible])
+            ->filter(fn ($u) => $u && $u->id !== $author->id && !empty($u->email) && filter_var($u->email, FILTER_VALIDATE_EMAIL))
             ->unique('id');
+
+        // Si quien reportó y el responsable son la misma persona o en pruebas de autoasignación,
+        // no descartamos el envío para permitir verificar que el correo llega correctamente
+        if ($recipients->isEmpty()) {
+            $fallback = $responsible ?: $creator;
+            if ($fallback && !empty($fallback->email) && filter_var($fallback->email, FILTER_VALIDATE_EMAIL)) {
+                $recipients = collect([$fallback]);
+            }
+        }
 
         foreach ($recipients as $recipient) {
             try {

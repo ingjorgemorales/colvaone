@@ -143,7 +143,7 @@
                                 <input id="responsible_email_display" class="input-field" readonly aria-readonly="true" value="{{ $incident->responsibleUser?->email ?: 'Sin correo asignado' }}" placeholder="Selecciona una persona...">
                             </div>
                         </div>
-                        <p class="incident-muted" style="margin-top:10px">Al registrar este reporte, se enviará una notificación automática por correo electrónico a la persona seleccionada.</p>
+                        <p class="incident-muted" style="margin-top:10px">{{ $incident->exists ? 'Si modificas la persona responsable, se le enviará una notificación automática por correo electrónico con los detalles del reporte.' : 'Al registrar este reporte, se enviará una notificación automática por correo electrónico a la persona seleccionada.' }}</p>
                     </div>
 
                     @include('incidents.select', ['field' => 'impact', 'label' => '¿El incidente afecta la operación?', 'required' => true])

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Mail\IncidentCommentNotificationMail;
 use App\Mail\IncidentRiskNotificationMail;
+use App\Mail\IncidentUpdatedNotificationMail;
 use App\Models\Incident;
 use App\Models\IncidentOption;
 use App\Models\Role;
@@ -631,6 +632,87 @@ class IncidentTest extends TestCase
             ->assertSee('Incidente general')
             ->assertSee(trim($tiLead->name.' '.$tiLead->last_name))
             ->assertSee('Director TI');
+    }
+
+    public function test_updating_incident_with_new_responsible_sends_notification_mail_to_new_responsible(): void
+    {
+        Mail::fake();
+
+        $creator = $this->userWith(['incidents.view', 'incidents.edit']);
+        $initialResponsible = User::factory()->create([
+            'is_active' => true,
+            'name' => 'Felipe',
+            'last_name' => 'Morales',
+            'position' => 'Jefe de Redes',
+            'email' => 'felipe.morales@example.com',
+        ]);
+        $newResponsible = User::factory()->create([
+            'is_active' => true,
+            'name' => 'Sandra',
+            'last_name' => 'López',
+            'position' => 'Gerente de Seguridad',
+            'email' => 'sandra.lopez@example.com',
+        ]);
+
+        $incident = $this->incident($creator, [
+            'responsible_user_id' => $initialResponsible->id,
+            'responsible_name' => 'Felipe Morales',
+            'responsible_position' => $initialResponsible->position,
+            'description' => 'Descripción original',
+        ]);
+
+        $updateData = $this->data();
+        $updateData['responsible_user_id'] = $initialResponsible->id;
+        $updateData['description'] = 'Descripción actualizada para prueba de correo';
+        $updateData['status'] = 'en_atencion';
+
+        // 1. Edit without changing responsible -> sends IncidentUpdatedNotificationMail to $initialResponsible
+        $this->actingAs($creator)->put(route('incidents.update', $incident), $updateData)
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Incidente actualizado y notificación enviada a las personas involucradas.');
+
+        Mail::assertSent(IncidentUpdatedNotificationMail::class, function ($mail) use ($incident, $initialResponsible, $creator) {
+            return $mail->incident->id === $incident->id
+                && $mail->hasTo($initialResponsible->email)
+                && $mail->recipient->id === $initialResponsible->id
+                && $mail->editor->id === $creator->id
+                && collect($mail->changes)->contains(fn ($c) => $c['field'] === 'Estado' && $c['new'] === 'En atención');
+        });
+
+        // Verify template renders with logo, typography, changes and button
+        $mailable = new IncidentUpdatedNotificationMail($incident->fresh(), $initialResponsible, $creator, [
+            ['field' => 'Estado', 'old' => 'Reportado', 'new' => 'En atención'],
+            ['field' => 'Descripción', 'old' => null, 'new' => 'Descripción actualizada'],
+        ]);
+        $rendered = $mailable->render();
+        $this->assertStringContainsString('logo-login.png', $rendered);
+        $this->assertStringContainsString("'Inter', Arial, Helvetica, sans-serif", $rendered);
+        $this->assertStringContainsString('Reporte '.$incident->ticket.' actualizado', $rendered);
+        $this->assertStringContainsString('MODIFICACIONES REALIZADAS', $rendered);
+        $this->assertStringContainsString('En atención', $rendered);
+        $this->assertStringContainsString('Ver detalle del reporte en ColvaOne', $rendered);
+        $this->assertStringContainsString('color: #ffffff !important', $rendered);
+
+        Mail::fake(); // Reset fake to test responsible change
+
+        // 2. Edit changing responsible to $newResponsible -> sends IncidentRiskNotificationMail to $newResponsible
+        $updateData['responsible_user_id'] = $newResponsible->id;
+
+        $this->actingAs($creator)->put(route('incidents.update', $incident), $updateData)
+            ->assertRedirect()
+            ->assertSessionHas('success', 'Incidente actualizado y notificación enviada al nuevo responsable asignado.');
+
+        Mail::assertSent(IncidentRiskNotificationMail::class, function ($mail) use ($incident, $newResponsible) {
+            return $mail->incident->id === $incident->id
+                && $mail->hasTo($newResponsible->email)
+                && $mail->recipient->id === $newResponsible->id;
+        });
+
+        Mail::assertNotSent(IncidentRiskNotificationMail::class, function ($mail) use ($initialResponsible) {
+            return $mail->hasTo($initialResponsible->email);
+        });
+
+        $this->assertSame($newResponsible->id, $incident->fresh()->responsible_user_id);
     }
 
     public function test_involved_users_can_add_comments_to_incident(): void
