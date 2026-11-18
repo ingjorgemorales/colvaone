@@ -232,7 +232,7 @@
             <div style="padding:12px 16px;border-radius:10px;font-size:13px;color:#065f46;background:rgba(5,150,105,0.08);border:1px solid rgba(5,150,105,0.15)">{{ session('success') }}</div>
         @endif
 
-        @if($category === 'II')
+        @if(in_array($category, ['II', 'III', 'IV'], true))
             @include('indicators.partials.bsc-dashboard')
         @elseif(! $hasConfiguredDashboard)
             <div class="card pending-dashboard">
@@ -362,7 +362,7 @@
         @endif
     </div>
 
-    @if($category === 'II' && $bsc['charts'])
+    @if(in_array($category, ['II', 'III', 'IV'], true) && $bsc['charts'])
         @include('indicators.partials.bsc-charts')
     @elseif($category === 'I' && $dashboard['total'] > 0)
         <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>

@@ -231,6 +231,46 @@
             animation: spin 1s linear infinite;
         }
         @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Preferencias de accesibilidad aplicadas globalmente. */
+        html.a11y-large-text { font-size: 112.5%; }
+        html.a11y-high-contrast body { background: #fff; color: #111827; }
+        html.a11y-high-contrast .card,
+        html.a11y-high-contrast .header,
+        html.a11y-high-contrast .sidebar { background: #fff; border-color: #334155; }
+        html.a11y-high-contrast .nav-link,
+        html.a11y-high-contrast .nav-sub-link { color: #111827; }
+        html.a11y-high-contrast .nav-link.active,
+        html.a11y-high-contrast .nav-sub-link.active { background: #dbeafe; color: #0f172a; }
+        html.a11y-reduced-motion *,
+        html.a11y-reduced-motion *::before,
+        html.a11y-reduced-motion *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: .01ms !important;
+        }
+        /* Se ubica encima del boton del chat para mantener ambos accesibles. */
+        .a11y-launcher { position: fixed; right: 20px; bottom: 86px; z-index: 9000; }
+        .a11y-launcher > button {
+            width: 48px; height: 48px; border: 0; border-radius: 14px; cursor: pointer;
+            display: grid; place-items: center; color: #fff; background: #123f6e;
+            box-shadow: 0 8px 24px rgba(18,63,110,.25);
+        }
+        .a11y-panel {
+            position: absolute; right: 0; bottom: 58px; width: min(300px, calc(100vw - 32px));
+            padding: 16px; border: 1px solid rgba(18,63,110,.12); border-radius: 14px;
+            background: #fff; box-shadow: 0 14px 40px rgba(15,23,42,.18); color: #1e293b;
+        }
+        .a11y-panel h2 { font-size: 15px; margin: 0 0 12px; }
+        .a11y-panel button { width: 100%; min-height: 40px; margin-top: 8px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #1e293b; cursor: pointer; text-align: left; }
+        .a11y-panel button:hover, .a11y-panel button:focus-visible { background: #eff6ff; border-color: #123f6e; }
+        .a11y-panel .a11y-status { font-size: 12px; color: #64748b; margin: 10px 0 0; line-height: 1.4; }
+        :focus-visible { outline: 3px solid #f59e0b !important; outline-offset: 2px; }
+        @media (max-width: 640px) {
+            .a11y-launcher { right: 14px; bottom: 82px; }
+            .a11y-panel { right: 0; bottom: 58px; }
+        }
     </style>
 </head>
 <body>
@@ -484,9 +524,62 @@
         @endif
     @endauth
 
+    <div class="a11y-launcher" x-data="accessibilityTools()" @click.outside="open = false">
+        <button type="button" @click="open = !open" :aria-expanded="open.toString()" aria-controls="accessibility-panel" aria-label="Abrir opciones de accesibilidad" title="Opciones de accesibilidad">
+            <i data-lucide="accessibility" style="width:22px;height:22px"></i>
+        </button>
+        <div id="accessibility-panel" class="a11y-panel" x-show="open" x-transition x-cloak role="dialog" aria-labelledby="accessibility-title">
+            <h2 id="accessibility-title">Accesibilidad</h2>
+            <button type="button" @click="speakPage()"><span aria-hidden="true">🔊</span> Leer esta pantalla</button>
+            <button type="button" @click="stopSpeaking()"><span aria-hidden="true">⏹</span> Detener lectura</button>
+            <button type="button" @click="largeText = !largeText; save()" :aria-pressed="largeText.toString()"><span aria-hidden="true">A</span> Texto grande: <strong x-text="largeText ? 'Activado' : 'Desactivado'"></strong></button>
+            <button type="button" @click="highContrast = !highContrast; save()" :aria-pressed="highContrast.toString()"><span aria-hidden="true">◐</span> Alto contraste: <strong x-text="highContrast ? 'Activado' : 'Desactivado'"></strong></button>
+            <button type="button" @click="reducedMotion = !reducedMotion; save()" :aria-pressed="reducedMotion.toString()"><span aria-hidden="true">◌</span> Reducir movimiento: <strong x-text="reducedMotion ? 'Activado' : 'Desactivado'"></strong></button>
+            <p class="a11y-status" role="status">Las preferencias se guardan en este navegador.</p>
+        </div>
+    </div>
+
 
 
     <script>
+        window.accessibilityTools = function () {
+            const saved = JSON.parse(localStorage.getItem('colvaoneAccessibility') || '{}');
+
+            return {
+                open: false,
+                largeText: Boolean(saved.largeText),
+                highContrast: Boolean(saved.highContrast),
+                reducedMotion: Boolean(saved.reducedMotion),
+                init() { this.apply(); },
+                save() {
+                    localStorage.setItem('colvaoneAccessibility', JSON.stringify({
+                        largeText: this.largeText,
+                        highContrast: this.highContrast,
+                        reducedMotion: this.reducedMotion,
+                    }));
+                    this.apply();
+                },
+                apply() {
+                    document.documentElement.classList.toggle('a11y-large-text', this.largeText);
+                    document.documentElement.classList.toggle('a11y-high-contrast', this.highContrast);
+                    document.documentElement.classList.toggle('a11y-reduced-motion', this.reducedMotion);
+                },
+                speakPage() {
+                    if (!('speechSynthesis' in window)) {
+                        window.alert('Este navegador no admite lectura en voz alta.');
+                        return;
+                    }
+                    window.speechSynthesis.cancel();
+                    const main = document.querySelector('main');
+                    const text = (main?.innerText || document.body.innerText || '').replace(/\s+/g, ' ').trim();
+                    if (text) window.speechSynthesis.speak(new SpeechSynthesisUtterance(text.slice(0, 12000)));
+                },
+                stopSpeaking() {
+                    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+                },
+            };
+        };
+
         window.notificationBell = function ({ userId, unreadCount, notifications }) {
             return {
                 open: false,

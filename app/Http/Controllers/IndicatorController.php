@@ -40,8 +40,8 @@ class IndicatorController extends Controller
         $categories = Indicator::allowedCategoriesFor($request->user());
         $category = $this->categoryFromRequest($request, $categories);
 
-        if ($category === 'II') {
-            return $this->bscDashboard($request, $categories, $from, $to);
+        if (in_array($category, ['II', 'III', 'IV'], true)) {
+            return $this->bscDashboard($request, $categories, $category, $from, $to);
         }
 
         $hasConfiguredDashboard = $category === 'I';
@@ -82,7 +82,7 @@ class IndicatorController extends Controller
      * Tablero BSC, como el que se lleva a la junta: todos los indicadores de la
      * categoria con su cumplimiento acumulado y su evolucion por periodo.
      */
-    private function bscDashboard(Request $request, array $categories, ?string $from, ?string $to): View
+    private function bscDashboard(Request $request, array $categories, string $category, ?string $from, ?string $to): View
     {
         $custom = $request->hasAny(['from', 'to']);
 
@@ -103,16 +103,16 @@ class IndicatorController extends Controller
                 ->orderBy('id'),
         ])
             ->visibleFor($request->user())
-            ->inCategory('II')
+            ->inCategory($category)
             ->where('status', 'active')
             ->orderBy('name')
             ->get();
 
         return view('indicators.dashboard', [
             'bsc' => app(BscDashboardService::class)->build($indicators),
-            'filters' => ['from' => $from, 'to' => $to, 'categoria' => 'II', 'custom' => $custom],
-            'category' => 'II',
-            'categoryLabel' => Indicator::CATEGORIES['II'],
+            'filters' => ['from' => $from, 'to' => $to, 'categoria' => $category, 'custom' => $custom],
+            'category' => $category,
+            'categoryLabel' => Indicator::CATEGORIES[$category],
             'categories' => $categories,
             'hasConfiguredDashboard' => true,
         ]);

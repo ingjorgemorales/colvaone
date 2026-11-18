@@ -72,7 +72,7 @@ class BscDashboardTest extends TestCase
     {
         $this->actingAs($this->admin())->get('/indicators?categoria=II')
             ->assertOk()
-            ->assertSee('Aún no hay indicadores BSC activos para tu usuario.')
+            ->assertSee('Aún no hay indicadores activos para tu usuario.')
             ->assertDontSee('chart.umd.min.js');
     }
 
@@ -449,7 +449,7 @@ class BscDashboardTest extends TestCase
             ->get('/indicators?categoria=II')->assertForbidden();
     }
 
-    public function test_el_dashboard_sgc_y_las_otras_categorias_siguen_igual(): void
+    public function test_el_dashboard_sgc_y_las_otras_categorias_muestran_el_tablero_compartido(): void
     {
         $user = $this->admin();
         $sgc = $this->indicator($user, ['category' => 'I']);
@@ -457,8 +457,8 @@ class BscDashboardTest extends TestCase
 
         $this->actingAs($user)->get('/indicators?categoria=I')
             ->assertOk()->assertSee('indicatorStateChart')->assertSee('Cumplimiento promedio')->assertDontSee('id="bsc-chart-', false);
-        $this->get('/indicators?categoria=III')->assertOk()->assertSee('Dashboard pendiente')->assertDontSee('id="bsc-chart-', false);
-        $this->get('/indicators?categoria=IV')->assertOk()->assertSee('Dashboard pendiente');
+        $this->get('/indicators?categoria=III')->assertOk()->assertDontSee('Dashboard pendiente')->assertSee('Aún no hay indicadores activos');
+        $this->get('/indicators?categoria=IV')->assertOk()->assertDontSee('Dashboard pendiente')->assertSee('Aún no hay indicadores activos');
     }
 
     // ---------------------------------------------------------- ficha

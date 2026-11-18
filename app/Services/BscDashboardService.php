@@ -8,9 +8,8 @@ use App\Models\IndicatorResult;
 use Illuminate\Support\Collection;
 
 /**
- * Tablero BSC: replica el de la junta. Cada indicador muestra su cumplimiento
- * acumulado, su avance frente a la meta del ano y su evolucion por periodo
- * (real vs presupuestado), agrupados por perspectiva.
+ * Dashboard con el formato de BSC II, reutilizable para las categorias II, III
+ * y IV. Cada indicador muestra su cumplimiento, avance anual y evolucion.
  */
 class BscDashboardService
 {

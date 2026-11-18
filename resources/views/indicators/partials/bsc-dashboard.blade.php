@@ -1,8 +1,8 @@
 @if($bsc['total'] === 0)
     <div class="card empty-dashboard">
         <i data-lucide="chart-no-axes-combined"></i>
-        <p style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 6px">Aún no hay indicadores BSC activos para tu usuario.</p>
-        <p style="font-size:13px;margin:0;line-height:1.6">Registra los indicadores de la categoría BSC II con su perspectiva y sus resultados para verlos aquí.</p>
+        <p style="font-size:14px;font-weight:600;color:#64748b;margin:0 0 6px">Aún no hay indicadores activos para tu usuario.</p>
+        <p style="font-size:13px;margin:0;line-height:1.6">Registra indicadores de {{ $categoryLabel }} con sus resultados para verlos aquí.</p>
     </div>
 @else
     @foreach($bsc['sections'] as $section)
