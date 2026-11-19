@@ -5,12 +5,46 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
+    <script>
+        (function () {
+            try {
+                var saved = JSON.parse(localStorage.getItem('colvaoneAccessibility') || '{}');
+                if (saved.largeText) document.documentElement.classList.add('a11y-large-text');
+                if (saved.highContrast) document.documentElement.classList.add('a11y-high-contrast');
+                if (saved.reducedMotion) document.documentElement.classList.add('a11y-reduced-motion');
+            } catch (e) {}
+        })();
+    </script>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        /* Preferencias de accesibilidad aplicadas globalmente */
+        html.a11y-large-text {
+            zoom: 1.18;
+            font-size: 118%;
+        }
+        @supports not (zoom: 1.18) {
+            html.a11y-large-text body {
+                font-size: 16px;
+            }
+            html.a11y-large-text :is(p, span, a, label, input, select, textarea, button, th, td, li, dd, dt, h1, h2, h3, h4, h5, h6, strong, b, small) {
+                font-size: 1.15em !important;
+            }
+        }
+        html.a11y-high-contrast body { background: #fff; color: #111827; }
+        html.a11y-high-contrast .auth-card { background: #fff !important; border-color: #334155 !important; }
+        html.a11y-reduced-motion *,
+        html.a11y-reduced-motion *::before,
+        html.a11y-reduced-motion *::after {
+            animation-duration: .01ms !important;
+            animation-iteration-count: 1 !important;
+            scroll-behavior: auto !important;
+            transition-duration: .01ms !important;
+        }
 
         body {
             font-family: 'Inter', sans-serif;

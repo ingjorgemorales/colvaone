@@ -13,3 +13,21 @@
 [x-cloak] {
     display: none !important;
 }
+
+/* Preferencias de accesibilidad globales */
+html.a11y-large-text {
+    zoom: 1.18;
+    font-size: 118%;
+}
+
+@supports not (zoom: 1.18) {
+    html.a11y-large-text body,
+    html.a11y-large-text .content,
+    html.a11y-large-text .main-area,
+    html.a11y-large-text .sidebar {
+        font-size: 16px;
+    }
+    html.a11y-large-text :is(p, span, a, label, input, select, textarea, button, th, td, li, dd, dt, h1, h2, h3, h4, h5, h6, strong, b, small) {
+        font-size: 1.15em !important;
+    }
+}

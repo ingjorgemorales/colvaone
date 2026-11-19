@@ -5,6 +5,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $title ?? config('app.name') }}</title>
+    <script>
+        (function () {
+            try {
+                var saved = JSON.parse(localStorage.getItem('colvaoneAccessibility') || '{}');
+                if (saved.largeText) document.documentElement.classList.add('a11y-large-text');
+                if (saved.highContrast) document.documentElement.classList.add('a11y-high-contrast');
+                if (saved.reducedMotion) document.documentElement.classList.add('a11y-reduced-motion');
+            } catch (e) {}
+        })();
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -233,7 +243,21 @@
         @keyframes spin { to { transform: rotate(360deg); } }
 
         /* Preferencias de accesibilidad aplicadas globalmente. */
-        html.a11y-large-text { font-size: 112.5%; }
+        html.a11y-large-text {
+            zoom: 1.18;
+            font-size: 118%;
+        }
+        @supports not (zoom: 1.18) {
+            html.a11y-large-text body,
+            html.a11y-large-text .content,
+            html.a11y-large-text .main-area,
+            html.a11y-large-text .sidebar {
+                font-size: 16px;
+            }
+            html.a11y-large-text :is(p, span, a, label, input, select, textarea, button, th, td, li, dd, dt, h1, h2, h3, h4, h5, h6, strong, b, small) {
+                font-size: 1.15em !important;
+            }
+        }
         html.a11y-high-contrast body { background: #fff; color: #111827; }
         html.a11y-high-contrast .card,
         html.a11y-high-contrast .header,
@@ -242,6 +266,9 @@
         html.a11y-high-contrast .nav-sub-link { color: #111827; }
         html.a11y-high-contrast .nav-link.active,
         html.a11y-high-contrast .nav-sub-link.active { background: #dbeafe; color: #0f172a; }
+        html.a11y-high-contrast .input-field,
+        html.a11y-high-contrast select,
+        html.a11y-high-contrast textarea { border-color: #334155 !important; background: #fff !important; color: #111827 !important; }
         html.a11y-reduced-motion *,
         html.a11y-reduced-motion *::before,
         html.a11y-reduced-motion *::after {
@@ -265,6 +292,7 @@
         .a11y-panel h2 { font-size: 15px; margin: 0 0 12px; }
         .a11y-panel button { width: 100%; min-height: 40px; margin-top: 8px; padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 9px; background: #fff; color: #1e293b; cursor: pointer; text-align: left; }
         .a11y-panel button:hover, .a11y-panel button:focus-visible { background: #eff6ff; border-color: #123f6e; }
+        .a11y-panel button[aria-pressed="true"] { background: #eff6ff; border-color: #123f6e; color: #123f6e; font-weight: 600; }
         .a11y-panel .a11y-status { font-size: 12px; color: #64748b; margin: 10px 0 0; line-height: 1.4; }
         :focus-visible { outline: 3px solid #f59e0b !important; outline-offset: 2px; }
         @media (max-width: 640px) {
