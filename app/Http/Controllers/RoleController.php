@@ -135,6 +135,18 @@ class RoleController extends Controller
                     'budgets.toggle' => 'Activar/Desactivar presupuesto',
                 ],
             ],
+            'financial' => [
+                'name' => 'Financiera - Operaciones Recíprocas',
+                'items' => [
+                    'financial.view' => 'Ver módulo Financiera',
+                    'reciprocals.view' => 'Ver operaciones recíprocas',
+                    'reciprocals.create' => 'Crear operación recíproca',
+                    'reciprocals.edit' => 'Editar operación recíproca',
+                    'reciprocals.delete' => 'Eliminar operación recíproca',
+                    'reciprocals.export' => 'Exportar operaciones recíprocas',
+                    'reciprocals.import' => 'Importar operaciones recíprocas',
+                ],
+            ],
             'indicators' => [
                 'name' => 'Indicadores',
                 'items' => [

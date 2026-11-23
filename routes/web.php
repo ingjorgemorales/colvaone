@@ -20,6 +20,7 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\RoleController;
 use App\Http\Controllers\TaskController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\FinancialReciprocalController;
 use App\Http\Controllers\IncidentController;
 use App\Http\Controllers\IncidentOptionController;
 use Illuminate\Support\Facades\Route;
@@ -146,6 +147,25 @@ Route::middleware('auth')->group(function (): void {
         Route::get('{incident}/evidencias/{attachment}/ver', [IncidentController::class, 'preview'])->name('attachments.preview');
         Route::get('{incident}/pdf', [IncidentController::class, 'pdf'])->name('pdf');
         Route::post('{incident}/comentarios', [IncidentController::class, 'addComment'])->name('comments.add');
+    });
+
+    Route::prefix('financiera/reciprocas')->name('financial.reciprocals.')->group(function (): void {
+        Route::get('/', [FinancialReciprocalController::class, 'index'])->name('index')->middleware('permission:reciprocals.view');
+        Route::get('/ajustes', [FinancialReciprocalController::class, 'settings'])->name('settings')->middleware('permission:reciprocals.view');
+        Route::put('/ajustes', [FinancialReciprocalController::class, 'updateSettings'])->name('settings.update')->middleware('permission:reciprocals.edit');
+        Route::post('/ajustes/entidades', [FinancialReciprocalController::class, 'storeEntity'])->name('entities.store')->middleware('permission:reciprocals.edit');
+        Route::put('/ajustes/entidades/{entity}', [FinancialReciprocalController::class, 'updateEntity'])->name('entities.update')->middleware('permission:reciprocals.edit');
+        Route::post('/ajustes/entidades/{entity}/toggle', [FinancialReciprocalController::class, 'toggleEntity'])->name('entities.toggle')->middleware('permission:reciprocals.edit');
+        Route::get('/entidades/buscar', [FinancialReciprocalController::class, 'searchEntities'])->name('entities.search')->middleware('permission:reciprocals.view');
+        Route::get('/crear', [FinancialReciprocalController::class, 'create'])->name('create')->middleware('permission:reciprocals.create');
+        Route::post('/', [FinancialReciprocalController::class, 'store'])->name('store')->middleware('permission:reciprocals.create');
+        Route::get('/exportar', [FinancialReciprocalController::class, 'export'])->name('export')->middleware('permission:reciprocals.export,reciprocals.view');
+        Route::post('/importar', [FinancialReciprocalController::class, 'import'])->name('import')->middleware('permission:reciprocals.import,reciprocals.create');
+        Route::get('/plantilla', [FinancialReciprocalController::class, 'downloadTemplate'])->name('template')->middleware('permission:reciprocals.import,reciprocals.create');
+        Route::get('/{reciprocal}', [FinancialReciprocalController::class, 'show'])->name('show')->whereNumber('reciprocal')->middleware('permission:reciprocals.view');
+        Route::get('/{reciprocal}/editar', [FinancialReciprocalController::class, 'edit'])->name('edit')->whereNumber('reciprocal')->middleware('permission:reciprocals.edit');
+        Route::put('/{reciprocal}', [FinancialReciprocalController::class, 'update'])->name('update')->whereNumber('reciprocal')->middleware('permission:reciprocals.edit');
+        Route::delete('/{reciprocal}', [FinancialReciprocalController::class, 'destroy'])->name('destroy')->whereNumber('reciprocal')->middleware('permission:reciprocals.delete');
     });
 
     Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view,group_tasks.view_group,group_tasks.view_all');

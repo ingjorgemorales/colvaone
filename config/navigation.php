@@ -7,6 +7,9 @@ return [
         ['name' => 'Gestión de incidentes', 'icon' => 'ticket', 'route' => 'incidents.index', 'active_route' => 'incidents.*', 'permission' => ['incidents.view', 'incidents.view_all'], 'order' => 22, 'enabled' => true],
         ['name' => 'Grupos', 'icon' => 'users-round', 'route' => 'groups.index', 'permission' => 'groups.view', 'order' => 25, 'enabled' => true],
         ['name' => 'Presupuesto', 'icon' => 'wallet-cards', 'route' => null, 'permission' => 'budgets.view', 'order' => 30, 'enabled' => true],
+        ['name' => 'Financiera', 'icon' => 'landmark', 'route' => null, 'permission' => ['financial.view', 'reciprocals.view'], 'order' => 35, 'enabled' => true, 'children' => [
+            ['name' => 'Reciprocas', 'route' => 'financial.reciprocals.index', 'active_route' => 'financial.reciprocals.*', 'permission' => 'reciprocals.view'],
+        ]],
         ['name' => 'Indicadores', 'icon' => 'chart-no-axes-combined', 'route' => null, 'permission' => ['indicators.view', 'indicators.view_all', 'indicators.category_i', 'indicators.category_ii', 'indicators.category_iii', 'indicators.category_iv'], 'order' => 40, 'enabled' => true, 'children' => [
             ['name' => 'Indicador SGC I', 'route' => 'indicators.index', 'params' => ['categoria' => 'I'], 'permission' => 'indicators.category_i'],
             ['name' => 'Indicador BSC II', 'route' => 'indicators.index', 'params' => ['categoria' => 'II'], 'permission' => 'indicators.category_ii'],

@@ -362,7 +362,8 @@
                             }
 
                             $childParams = $child['params'] ?? [];
-                            $matchesConfiguredRoute = request()->routeIs($childRoute)
+                            $childActiveRoute = $child['active_route'] ?? null;
+                            $matchesConfiguredRoute = (request()->routeIs($childRoute) || ($childActiveRoute && request()->routeIs($childActiveRoute)))
                                 && collect($childParams)->every(fn ($v, $k) => (string) request($k) === (string) $v);
 
                             if ($matchesConfiguredRoute) {
