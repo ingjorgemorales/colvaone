@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\View\View;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class FinancialReciprocalController extends Controller
@@ -288,7 +289,7 @@ class FinancialReciprocalController extends Controller
             ->with('success', "Operación recíproca #{$reciprocal->id} eliminada correctamente.");
     }
 
-    public function export(Request $request, FinancialReciprocalExportService $exportService): StreamedResponse
+    public function export(Request $request, FinancialReciprocalExportService $exportService): BinaryFileResponse
     {
         $search = $request->input('search');
         $trimestre = $request->input('trimestre');
@@ -345,27 +346,29 @@ class FinancialReciprocalController extends Controller
         $spreadsheet = $exportService->build($records, $filterLabels, $request->user(), $fechaCorte);
         $filename = 'CGN2005-002-Operaciones-Reciprocas-' . now()->format('Ymd-His') . '.xlsx';
 
-        return response()->streamDownload(function () use ($spreadsheet): void {
-            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
-            $spreadsheet->disconnectWorksheets();
-        }, $filename, [
+        $tempFile = tempnam(sys_get_temp_dir(), 'reciprocal_exp_');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tempFile);
+        $spreadsheet->disconnectWorksheets();
+
+        return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
-    public function downloadTemplate(FinancialReciprocalExportService $exportService): StreamedResponse
+    public function downloadTemplate(FinancialReciprocalExportService $exportService): BinaryFileResponse
     {
         $spreadsheet = $exportService->buildTemplate();
         $filename = 'Plantilla-CGN2005-002-Operaciones-Reciprocas.xlsx';
 
-        return response()->streamDownload(function () use ($spreadsheet): void {
-            (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save('php://output');
-            $spreadsheet->disconnectWorksheets();
-        }, $filename, [
+        $tempFile = tempnam(sys_get_temp_dir(), 'reciprocal_tpl_');
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tempFile);
+        $spreadsheet->disconnectWorksheets();
+
+        return response()->download($tempFile, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0',
-        ]);
+        ])->deleteFileAfterSend(true);
     }
 
     public function import(Request $request): RedirectResponse
@@ -374,6 +377,8 @@ class FinancialReciprocalController extends Controller
             'archivo' => 'required|file|mimes:xlsx,xls,csv,txt|max:10240',
         ], [
             'archivo.required' => 'Debes seleccionar un archivo para importar.',
+            'archivo.file' => 'El archivo seleccionado no es válido.',
+            'archivo.uploaded' => 'El archivo no pudo subirse al servidor. Verifica que sea un archivo válido (.xlsx, .xls o .csv) y no exceda 10 MB.',
             'archivo.mimes' => 'El archivo debe estar en formato Excel (.xlsx, .xls) o CSV.',
             'archivo.max' => 'El tamaño máximo permitido es 10MB.',
         ]);
@@ -381,32 +386,27 @@ class FinancialReciprocalController extends Controller
         $file = $request->file('archivo');
 
         try {
-            $spreadsheet = IOFactory::load($file->getRealPath());
+            $reader = IOFactory::createReaderForFile($file->getRealPath());
+            if (method_exists($reader, 'setReadDataOnly')) {
+                $reader->setReadDataOnly(true);
+            }
+            if (method_exists($reader, 'setReadEmptyCells')) {
+                $reader->setReadEmptyCells(false);
+            }
+            $spreadsheet = $reader->load($file->getRealPath());
             $sheet = $spreadsheet->getActiveSheet();
             $rows = $sheet->toArray(null, true, false, false);
 
             if (empty($rows) || count($rows) < 2) {
-                return back()->with('error', 'El archivo no contiene filas de datos para procesar.');
+                return back()->withErrors(['archivo' => 'El archivo no contiene filas de datos para procesar.'])->withInput();
             }
 
             // Detect header row (official CGN file has headers around row 7, plain files around row 1)
             $headerRowIndex = null;
-            $fechaDeCorteExtracted = null;
 
             for ($r = 0; $r < min(20, count($rows)); $r++) {
                 $rowCells = array_filter(array_map('strval', $rows[$r]));
                 $rowStr = mb_strtolower(implode(' ', $rowCells));
-
-                // Check for FECHA DE CORTE in header rows
-                if (str_contains($rowStr, 'fecha de corte') || str_contains($rowStr, 'corte')) {
-                    foreach ($rows[$r] as $cellVal) {
-                        $parsed = $this->parseFechaDeCorte((string) $cellVal);
-                        if ($parsed) {
-                            $fechaDeCorteExtracted = $parsed;
-                            break;
-                        }
-                    }
-                }
 
                 if (str_contains($rowStr, 'codigo contable') || str_contains($rowStr, 'subcuenta')) {
                     $headerRowIndex = $r;
@@ -446,69 +446,94 @@ class FinancialReciprocalController extends Controller
             $colFecha = $findCol(['fecha']);
 
             if ($colCodSubcuenta === null || $colNomSubcuenta === null || $colCodEntidad === null || $colNomEntidad === null) {
-                return back()->with('error', 'No se pudieron identificar las columnas requeridas (Código Contable Subcuenta, Nombre de la Subcuenta, Código Entidad Recíproca, Nombre Entidad Recíproca).');
+                return back()->withErrors(['archivo' => 'No se pudieron identificar las columnas requeridas (Código Contable Subcuenta, Nombre de la Subcuenta, Código Entidad Recíproca, Nombre Entidad Recíproca).'])->withInput();
             }
 
-            $imported = 0;
-            $skipped = 0;
+            $rowsToInsert = [];
+            $entitiesToInsert = [];
+            $rowErrors = [];
             $userId = $request->user()->id;
+            // Default date: upload date (fecha en la que se sube el documento)
+            $fechaSubida = now()->toDateString();
 
             for ($i = $headerRowIndex + 1; $i < count($rows); $i++) {
                 $row = $rows[$i];
+                $excelRowNum = $i + 1;
 
                 $codSub = trim((string) ($row[$colCodSubcuenta] ?? ''));
                 $nomSub = trim((string) ($row[$colNomSubcuenta] ?? ''));
                 $codEnt = trim((string) ($row[$colCodEntidad] ?? ''));
                 $nomEnt = trim((string) ($row[$colNomEntidad] ?? ''));
+                $valCorrRaw = $colValCorriente !== null ? ($row[$colValCorriente] ?? '') : '';
+                $valNoCorrRaw = $colValNoCorriente !== null ? ($row[$colValNoCorriente] ?? '') : '';
 
-                if ($codSub === '' && $nomSub === '' && $codEnt === '') {
-                    continue; // Skip completely empty row
+                // Skip completely empty row
+                if ($codSub === '' && $nomSub === '' && $codEnt === '' && $nomEnt === '' && $valCorrRaw === '' && $valNoCorrRaw === '') {
+                    continue;
                 }
 
                 // Skip summary or totals rows that may appear at the bottom
-                if (mb_stripos($codSub, 'total') !== false || mb_stripos($nomSub, 'total') !== false) {
+                if (mb_stripos($codSub, 'total') !== false || mb_stripos($nomSub, 'total') !== false || mb_stripos($codEnt, 'total') !== false) {
                     continue;
                 }
 
-                if ($codSub === '' || $nomSub === '' || $codEnt === '' || $nomEnt === '') {
-                    $skipped++;
+                // Field validations per row with detailed error messages
+                $missing = [];
+                if ($codSub === '') {
+                    $missing[] = 'Código Contable Subcuenta';
+                }
+                if ($nomSub === '') {
+                    $missing[] = 'Nombre de la Subcuenta';
+                }
+                if ($codEnt === '') {
+                    $missing[] = 'Código Entidad Recíproca';
+                }
+                if ($nomEnt === '') {
+                    $missing[] = 'Nombre Entidad Recíproca';
+                }
+
+                if (!empty($missing)) {
+                    $rowErrors[] = "Fila {$excelRowNum}: Campos obligatorios incompletos (" . implode(', ', $missing) . ').';
                     continue;
                 }
 
-                // Parse currency values using FinancialReciprocal amount parser
-                $valCorrRaw = $colValCorriente !== null ? ($row[$colValCorriente] ?? 0) : 0;
-                $valNoCorrRaw = $colValNoCorriente !== null ? ($row[$colValNoCorriente] ?? 0) : 0;
+                // Validate numeric format for amounts
+                if ($valCorrRaw !== '' && $valCorrRaw !== null && !is_numeric($valCorrRaw)) {
+                    $cleanCorrTest = preg_replace('/[\s\x{00A0}$.,\-]/u', '', (string) $valCorrRaw);
+                    if ($cleanCorrTest !== '' && !ctype_digit($cleanCorrTest)) {
+                        $rowErrors[] = "Fila {$excelRowNum}: El Valor Corriente ('{$valCorrRaw}') no es un número válido.";
+                        continue;
+                    }
+                }
 
+                if ($valNoCorrRaw !== '' && $valNoCorrRaw !== null && !is_numeric($valNoCorrRaw)) {
+                    $cleanNoCorrTest = preg_replace('/[\s\x{00A0}$.,\-]/u', '', (string) $valNoCorrRaw);
+                    if ($cleanNoCorrTest !== '' && !ctype_digit($cleanNoCorrTest)) {
+                        $rowErrors[] = "Fila {$excelRowNum}: El Valor No Corriente ('{$valNoCorrRaw}') no es un número válido.";
+                        continue;
+                    }
+                }
+
+                // Parse currency values using FinancialReciprocal amount parser (preserves thousands)
                 $valCorr = FinancialReciprocal::parseAmount($valCorrRaw);
                 $valNoCorr = FinancialReciprocal::parseAmount($valNoCorrRaw);
 
-                // Determine Date: use extracted fecha de corte, or fallback to settings cut-off or today
+                // Date: default is the upload date (la fecha en la que se sube el documento)
+                $fechaVal = $fechaSubida;
                 $fechaRaw = $colFecha !== null ? ($row[$colFecha] ?? null) : null;
-                $fechaVal = $fechaDeCorteExtracted;
-
-                if (empty($fechaVal)) {
-                    $settings = FinancialReciprocalSetting::current();
-                    $fechaVal = $this->parseFechaDeCorte($settings->fecha_corte) ?: now()->toDateString();
-                }
-
                 if (!empty($fechaRaw)) {
                     if (is_numeric($fechaRaw)) {
                         $fechaVal = ExcelDate::excelToDateTimeObject($fechaRaw)->format('Y-m-d');
                     } else {
-                        $parsedFecha = $this->parseFechaDeCorte((string) $fechaRaw);
-                        if ($parsedFecha) {
-                            $fechaVal = $parsedFecha;
-                        } else {
-                            try {
-                                $fechaVal = Carbon::parse($fechaRaw)->format('Y-m-d');
-                            } catch (\Throwable $e) {
-                                // keep fallback
-                            }
+                        try {
+                            $fechaVal = Carbon::parse($fechaRaw)->format('Y-m-d');
+                        } catch (\Throwable $e) {
+                            $fechaVal = $fechaSubida;
                         }
                     }
                 }
 
-                FinancialReciprocal::create([
+                $rowsToInsert[] = [
                     'codigo_contable_subcuenta' => $codSub,
                     'nombre_subcuenta' => $nomSub,
                     'codigo_entidad_reciproca' => $codEnt,
@@ -519,31 +544,50 @@ class FinancialReciprocalController extends Controller
                     'is_active' => true,
                     'created_by' => $userId,
                     'updated_by' => $userId,
-                ]);
+                ];
 
+                $entitiesToInsert[] = [
+                    'codigo_entidad_reciproca' => $codEnt,
+                    'nombre_entidad_reciproca' => $nomEnt,
+                ];
+            }
+
+            // If there are validation errors in rows, stop and report them explicitly!
+            if (!empty($rowErrors)) {
+                $displayErrors = array_slice($rowErrors, 0, 15);
+                if (count($rowErrors) > 15) {
+                    $displayErrors[] = '... y ' . (count($rowErrors) - 15) . ' errores adicionales en otras filas del archivo.';
+                }
+                return back()->withErrors(['archivo' => $displayErrors])->withInput();
+            }
+
+            if (empty($rowsToInsert)) {
+                return back()->withErrors(['archivo' => 'No se encontraron registros válidos para importar en el archivo.'])->withInput();
+            }
+
+            $imported = 0;
+            foreach ($rowsToInsert as $data) {
+                FinancialReciprocal::create($data);
+                $imported++;
+            }
+
+            foreach ($entitiesToInsert as $ent) {
                 FinancialReciprocalEntity::firstOrCreate(
-                    ['codigo_entidad_reciproca' => $codEnt],
+                    ['codigo_entidad_reciproca' => $ent['codigo_entidad_reciproca']],
                     [
-                        'nombre_entidad_reciproca' => $nomEnt,
+                        'nombre_entidad_reciproca' => $ent['nombre_entidad_reciproca'],
                         'is_active' => true,
                         'created_by' => $userId,
                         'updated_by' => $userId,
                     ]
                 );
-
-                $imported++;
-            }
-
-            $message = "Se importaron correctamente {$imported} operaciones recíprocas.";
-            if ($skipped > 0) {
-                $message .= " Se omitieron {$skipped} filas por tener campos obligatorios incompletos.";
             }
 
             return redirect()
                 ->route('financial.reciprocals.index')
-                ->with('success', $message);
+                ->with('success', "Se importaron correctamente {$imported} operaciones recíprocas con fecha {$fechaSubida}.");
         } catch (\Throwable $e) {
-            return back()->with('error', 'Ocurrió un error al procesar el archivo: ' . $e->getMessage());
+            return back()->withErrors(['archivo' => 'Ocurrió un error al procesar el archivo: ' . $e->getMessage()])->withInput();
         }
     }
 

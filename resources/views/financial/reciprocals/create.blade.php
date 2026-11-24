@@ -228,7 +228,7 @@
         }
     </style>
 
-    <div class="reciprocal-form-container" x-data="{ importModalOpen: false }">
+    <div class="reciprocal-form-container" x-data="{ importModalOpen: {{ $errors->has('archivo') ? 'true' : 'false' }} }">
 
         {{-- Header Area con botón de volver al listado e importar organizados --}}
         <div class="reciprocal-form-header">
@@ -248,6 +248,15 @@
                 </button>
             </div>
         </div>
+
+        @if (session('error'))
+            <div style="margin-bottom: 24px; padding: 14px 18px; border-radius: 10px; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.25); color: #991b1b; font-size: 13.5px">
+                <div style="font-weight: 600; margin-bottom: 4px; display: flex; align-items: center; gap: 8px">
+                    <i data-lucide="alert-circle" style="width: 16px; height: 16px"></i>
+                    <span>{{ session('error') }}</span>
+                </div>
+            </div>
+        @endif
 
         @if (isset($errors) && $errors->any())
             <div style="margin-bottom: 24px; padding: 14px 18px; border-radius: 10px; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.25); color: #991b1b; font-size: 13.5px">
@@ -425,13 +434,31 @@
                 <form method="POST" action="{{ route('financial.reciprocals.import') }}" enctype="multipart/form-data">
                     @csrf
                     <div class="modal-body">
+                        @if ($errors->has('archivo'))
+                            <div style="margin-bottom: 16px; padding: 12px 16px; border-radius: 8px; background: rgba(220, 38, 38, 0.08); border: 1px solid rgba(220, 38, 38, 0.25); color: #991b1b; font-size: 13px">
+                                <div style="font-weight: 600; margin-bottom: 6px; display: flex; align-items: center; gap: 6px">
+                                    <i data-lucide="alert-circle" style="width: 15px; height: 15px"></i>
+                                    <span>Se encontraron errores en el archivo a importar:</span>
+                                </div>
+                                <ul style="margin: 0; padding-left: 18px; max-height: 180px; overflow-y: auto">
+                                    @foreach ($errors->get('archivo') as $err)
+                                        <li>{{ $err }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
+
                         <p style="font-size: 13.5px; color: #475569; margin: 0 0 16px; line-height: 1.5">
                             Sube el archivo oficial en formato Excel (<strong>.xlsx</strong>, <strong>.xls</strong>) o <strong>.csv</strong> correspondiente a <strong>CGN2005_002_SALDO_DE_OPERACIONES RECIPROCAS</strong>.
                         </p>
 
                         <div style="margin-bottom: 20px; padding: 12px 16px; border-radius: 10px; background: rgba(18, 63, 110, 0.04); border: 1px solid rgba(18, 63, 110, 0.1); display: flex; align-items: center; justify-content: space-between">
                             <span style="font-size: 13px; color: #123f6e; font-weight: 500">¿Deseas descargar el formato oficial?</span>
-                            <a href="{{ route('financial.reciprocals.template') }}" class="btn-pill-secondary" style="min-height: 32px; padding: 6px 14px; font-size: 12px">
+                            <a href="{{ route('financial.reciprocals.template') }}"
+                               class="btn-pill-secondary"
+                               download="Plantilla-CGN2005-002-Operaciones-Reciprocas.xlsx"
+                               data-no-spinner="true"
+                               style="min-height: 32px; padding: 6px 14px; font-size: 12px">
                                 <i data-lucide="download" style="width: 13px; height: 13px"></i>
                                 <span>Descargar plantilla oficial</span>
                             </a>

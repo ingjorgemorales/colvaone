@@ -54,7 +54,16 @@ class FinancialReciprocal extends BaseModel
             return 0.0;
         }
 
-        if (is_int($value) || is_float($value)) {
+        if (is_int($value)) {
+            return (float) $value;
+        }
+
+        if (is_float($value)) {
+            $str = (string) $value;
+            // Float read from Excel formatted with dot as thousands e.g. 1.262, 27.357, 95.761, 58.614
+            if ($value > 0 && $value < 1000 && preg_match('/^\d{1,3}\.\d{3}$/', $str)) {
+                return (float) str_replace('.', '', $str);
+            }
             return (float) $value;
         }
 
@@ -139,31 +148,31 @@ class FinancialReciprocal extends BaseModel
             1 => [
                 'inicio' => "{$y}-01-01",
                 'fin' => "{$y}-03-31",
-                'corte' => "1 a 31 de Marzo {$y}",
+                'corte' => "1 Enero a 31 de Marzo {$y}",
                 'label' => "1er Trimestre (1 Ene - 31 Mar)",
             ],
             2 => [
                 'inicio' => "{$y}-04-01",
                 'fin' => "{$y}-06-30",
-                'corte' => "1 a 30 de Junio {$y}",
+                'corte' => "1 Abril a 30 de Junio {$y}",
                 'label' => "2do Trimestre (1 Abr - 30 Jun)",
             ],
             3 => [
                 'inicio' => "{$y}-07-01",
                 'fin' => "{$y}-09-30",
-                'corte' => "1 a 30 de Septiembre {$y}",
+                'corte' => "1 Julio a 30 de Septiembre {$y}",
                 'label' => "3er Trimestre (1 Jul - 30 Sep)",
             ],
             4 => [
                 'inicio' => "{$y}-10-01",
                 'fin' => "{$y}-12-31",
-                'corte' => "1 a 31 de Diciembre {$y}",
+                'corte' => "1 Octubre a 31 de Diciembre {$y}",
                 'label' => "4to Trimestre (1 Oct - 31 Dic)",
             ],
             default => [
                 'inicio' => "{$y}-01-01",
                 'fin' => "{$y}-12-31",
-                'corte' => "1 a 31 de Diciembre {$y}",
+                'corte' => "1 Enero a 31 de Diciembre {$y}",
                 'label' => "Anual {$y}",
             ],
         };
@@ -215,16 +224,16 @@ class FinancialReciprocal extends BaseModel
                 $y = $y ?: $end->year;
 
                 if ($start->month === 1 && $end->month === 3) {
-                    return "1 a 31 de Marzo {$y}";
+                    return "1 Enero a 31 de Marzo {$y}";
                 }
                 if ($start->month === 4 && $end->month === 6) {
-                    return "1 a 30 de Junio {$y}";
+                    return "1 Abril a 30 de Junio {$y}";
                 }
                 if ($start->month === 7 && $end->month === 9) {
-                    return "1 a 30 de Septiembre {$y}";
+                    return "1 Julio a 30 de Septiembre {$y}";
                 }
                 if ($start->month === 10 && $end->month === 12) {
-                    return "1 a 31 de Diciembre {$y}";
+                    return "1 Octubre a 31 de Diciembre {$y}";
                 }
 
                 $meses = [
@@ -237,7 +246,7 @@ class FinancialReciprocal extends BaseModel
                     return "{$start->day} a {$end->day} de {$meses[$end->month]} {$y}";
                 }
 
-                return "{$start->day} de {$meses[$start->month]} a {$end->day} de {$meses[$end->month]} {$y}";
+                return "{$start->day} {$meses[$start->month]} a {$end->day} de {$meses[$end->month]} {$y}";
             } catch (\Throwable $e) {}
         }
 
@@ -246,15 +255,28 @@ class FinancialReciprocal extends BaseModel
             try {
                 $end = Carbon::parse($fechaFin);
                 $y = $y ?: $end->year;
-                if ($end->month <= 3) return "1 a 31 de Marzo {$y}";
-                if ($end->month <= 6) return "1 a 30 de Junio {$y}";
-                if ($end->month <= 9) return "1 a 30 de Septiembre {$y}";
-                return "1 a 31 de Diciembre {$y}";
+                if ($end->month <= 3) return "1 Enero a 31 de Marzo {$y}";
+                if ($end->month <= 6) return "1 Abril a 30 de Junio {$y}";
+                if ($end->month <= 9) return "1 Julio a 30 de Septiembre {$y}";
+                return "1 Octubre a 31 de Diciembre {$y}";
             } catch (\Throwable $e) {}
         }
 
-        // Use fallback if provided
+        // Use fallback if provided, normalizing to explicit initial month if it was '1 a ...'
         if (!empty($fallback)) {
+            $lower = mb_strtolower($fallback);
+            if (str_contains($lower, 'junio') && preg_match('/1\s+a\s+30/i', $fallback)) {
+                return (string) preg_replace('/1\s+a\s+30\s+de\s+junio/i', '1 Abril a 30 de Junio', $fallback);
+            }
+            if (str_contains($lower, 'marzo') && preg_match('/1\s+a\s+31/i', $fallback)) {
+                return (string) preg_replace('/1\s+a\s+31\s+de\s+marzo/i', '1 Enero a 31 de Marzo', $fallback);
+            }
+            if (str_contains($lower, 'septiembre') && preg_match('/1\s+a\s+30/i', $fallback)) {
+                return (string) preg_replace('/1\s+a\s+30\s+de\s+septiembre/i', '1 Julio a 30 de Septiembre', $fallback);
+            }
+            if (str_contains($lower, 'diciembre') && preg_match('/1\s+a\s+31/i', $fallback)) {
+                return (string) preg_replace('/1\s+a\s+31\s+de\s+diciembre/i', '1 Octubre a 31 de Diciembre', $fallback);
+            }
             return $fallback;
         }
 

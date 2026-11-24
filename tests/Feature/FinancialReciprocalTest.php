@@ -158,7 +158,7 @@ class FinancialReciprocalTest extends TestCase
         $response->assertSee('269411001');
         $settings = FinancialReciprocalSetting::current();
         $response->assertSee('FECHA DE CORTE:');
-        $response->assertSee($settings->fecha_corte);
+        $response->assertSee(FinancialReciprocal::resolveFechaCorte(null, null, $settings->fecha_corte));
         $response->assertSee('CGN2005_002_SALDO_DE_OPERACIONES RECIPROCAS');
         $response->assertSee('Cifras en Miles de Pesos');
 
@@ -179,7 +179,7 @@ class FinancialReciprocalTest extends TestCase
         $response->assertSee('Buscar.....');
         $response->assertSee('Fecha inicio:');
         $response->assertSee('Fecha fin:');
-        $response->assertSee('Filtrar');
+        $response->assertSee('Buscar');
         $response->assertSee('Exportar');
         $response->assertSee('Ajustes');
         $response->assertSee('Agregar');
@@ -273,7 +273,7 @@ class FinancialReciprocalTest extends TestCase
 
         // Check format code of columns E and F
         $formatCode = $sheet->getStyle('E8')->getNumberFormat()->getFormatCode();
-        $this->assertEquals('#,##0.##;(#,##0.##);0', $formatCode);
+        $this->assertEquals('#,##0', $formatCode);
 
         // Row 7 Headers: Exactly 6 columns (A to F)
         $this->assertEquals('Codigo Contable Subcuenta', $sheet->getCell('A7')->getValue());
@@ -429,10 +429,10 @@ class FinancialReciprocalTest extends TestCase
         $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.export']);
 
         // Helper test
-        $this->assertEquals('1 a 31 de Marzo 2026', FinancialReciprocal::resolveFechaCorte('2026-01-01', '2026-03-31'));
-        $this->assertEquals('1 a 30 de Junio 2026', FinancialReciprocal::resolveFechaCorte('2026-04-01', '2026-06-30'));
-        $this->assertEquals('1 a 30 de Septiembre 2026', FinancialReciprocal::resolveFechaCorte('2026-07-01', '2026-09-30'));
-        $this->assertEquals('1 a 31 de Diciembre 2026', FinancialReciprocal::resolveFechaCorte('2026-10-01', '2026-12-31'));
+        $this->assertEquals('1 Enero a 31 de Marzo 2026', FinancialReciprocal::resolveFechaCorte('2026-01-01', '2026-03-31'));
+        $this->assertEquals('1 Abril a 30 de Junio 2026', FinancialReciprocal::resolveFechaCorte('2026-04-01', '2026-06-30'));
+        $this->assertEquals('1 Julio a 30 de Septiembre 2026', FinancialReciprocal::resolveFechaCorte('2026-07-01', '2026-09-30'));
+        $this->assertEquals('1 Octubre a 31 de Diciembre 2026', FinancialReciprocal::resolveFechaCorte('2026-10-01', '2026-12-31'));
 
         // Q1 Filter in Index view
         $resQ1 = $this->actingAs($user)->get(route('financial.reciprocals.index', [
@@ -441,7 +441,7 @@ class FinancialReciprocalTest extends TestCase
         ]));
         $resQ1->assertOk();
         $resQ1->assertSee('FECHA DE CORTE:');
-        $resQ1->assertSee('1 a 31 de Marzo 2026');
+        $resQ1->assertSee('1 Enero a 31 de Marzo 2026');
 
         // Q2 Filter in Index view
         $resQ2 = $this->actingAs($user)->get(route('financial.reciprocals.index', [
@@ -449,7 +449,7 @@ class FinancialReciprocalTest extends TestCase
             'fecha_fin' => '2026-06-30',
         ]));
         $resQ2->assertOk();
-        $resQ2->assertSee('1 a 30 de Junio 2026');
+        $resQ2->assertSee('1 Abril a 30 de Junio 2026');
 
         // Q3 Filter in Index view
         $resQ3 = $this->actingAs($user)->get(route('financial.reciprocals.index', [
@@ -457,7 +457,7 @@ class FinancialReciprocalTest extends TestCase
             'fecha_fin' => '2026-09-30',
         ]));
         $resQ3->assertOk();
-        $resQ3->assertSee('1 a 30 de Septiembre 2026');
+        $resQ3->assertSee('1 Julio a 30 de Septiembre 2026');
 
         // Q4 Filter in Index view
         $resQ4 = $this->actingAs($user)->get(route('financial.reciprocals.index', [
@@ -465,7 +465,7 @@ class FinancialReciprocalTest extends TestCase
             'fecha_fin' => '2026-12-31',
         ]));
         $resQ4->assertOk();
-        $resQ4->assertSee('1 a 31 de Diciembre 2026');
+        $resQ4->assertSee('1 Octubre a 31 de Diciembre 2026');
 
         // Passing trimestre=1 directly
         $resTrim1 = $this->actingAs($user)->get(route('financial.reciprocals.index', [
@@ -473,12 +473,12 @@ class FinancialReciprocalTest extends TestCase
             'year' => 2026,
         ]));
         $resTrim1->assertOk();
-        $resTrim1->assertSee('1 a 31 de Marzo 2026');
+        $resTrim1->assertSee('1 Enero a 31 de Marzo 2026');
 
         // Excel export service with Q1 cut-off
         $service = new FinancialReciprocalExportService();
-        $spreadsheet = $service->build(collect([]), [], $user, '1 a 31 de Marzo 2026');
-        $this->assertEquals('1 a 31 de Marzo 2026', $spreadsheet->getActiveSheet()->getCell('B5')->getValue());
+        $spreadsheet = $service->build(collect([]), [], $user, '1 Enero a 31 de Marzo 2026');
+        $this->assertEquals('1 Enero a 31 de Marzo 2026', $spreadsheet->getActiveSheet()->getCell('B5')->getValue());
 
         // Streamed export download responds successfully
         $resExcel = $this->actingAs($user)->get(route('financial.reciprocals.export', [
@@ -486,5 +486,181 @@ class FinancialReciprocalTest extends TestCase
             'fecha_fin' => '2026-03-31',
         ]));
         $resExcel->assertOk();
+    }
+
+    public function test_can_download_official_template(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.import']);
+
+        $response = $this->actingAs($user)->get(route('financial.reciprocals.template'));
+
+        $response->assertOk();
+        $this->assertTrue(
+            str_contains(
+                (string) $response->headers->get('Content-Disposition'),
+                'Plantilla-CGN2005-002-Operaciones-Reciprocas.xlsx'
+            )
+        );
+        $this->assertEquals(
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            $response->headers->get('Content-Type')
+        );
+    }
+
+    public function test_template_download_accessible_with_create_permission(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.create']);
+
+        $response = $this->actingAs($user)->get(route('financial.reciprocals.template'));
+
+        $response->assertOk();
+    }
+
+    public function test_template_download_denies_unauthorized_user(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view']);
+
+        $response = $this->actingAs($user)->get(route('financial.reciprocals.template'));
+
+        $response->assertForbidden();
+    }
+
+    public function test_index_toolbar_has_year_field_and_buscar_button(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view']);
+
+        $response = $this->actingAs($user)->get(route('financial.reciprocals.index'));
+
+        $response->assertOk();
+        $response->assertSee('name="year"', false);
+        $response->assertSee('Año:');
+        $response->assertSee('Buscar');
+        $response->assertDontSee('<span>Filtrar</span>', false);
+    }
+
+    public function test_export_number_format_without_trailing_commas(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view']);
+
+        $rec = FinancialReciprocal::create([
+            'codigo_contable_subcuenta' => '1.2.22.06',
+            'nombre_subcuenta' => 'Sociedades públicas',
+            'codigo_entidad_reciproca' => '229911001',
+            'nombre_entidad_reciproca' => 'AGUAS DE BOGOTA S.A. E.S.P.',
+            'valor_corriente' => 27357,
+            'valor_no_corriente' => 5000000,
+            'fecha' => '2026-11-24',
+        ]);
+
+        $service = new FinancialReciprocalExportService();
+        $spreadsheet = $service->build(collect([$rec]), [], $user, '1 Abril a 30 de Junio 2026');
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Must be '#,##0' without trailing '.##'
+        $this->assertEquals('#,##0', $sheet->getStyle('E8')->getNumberFormat()->getFormatCode());
+        $this->assertEquals('#,##0', $sheet->getStyle('F8')->getNumberFormat()->getFormatCode());
+        $this->assertStringNotContainsString('.##', $sheet->getStyle('E8')->getNumberFormat()->getFormatCode());
+    }
+
+    public function test_parse_amount_handles_thousands_floats_and_integers(): void
+    {
+        $this->assertEquals(27357.0, FinancialReciprocal::parseAmount(27.357));
+        $this->assertEquals(95761.0, FinancialReciprocal::parseAmount(95.761));
+        $this->assertEquals(58614.0, FinancialReciprocal::parseAmount(58.614));
+        $this->assertEquals(1262.0, FinancialReciprocal::parseAmount(1.262));
+        $this->assertEquals(27357.0, FinancialReciprocal::parseAmount('27.357'));
+        $this->assertEquals(95761.0, FinancialReciprocal::parseAmount('95.761'));
+        $this->assertEquals(58614.0, FinancialReciprocal::parseAmount('58.614'));
+    }
+
+    public function test_import_defaults_date_to_upload_date(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.import']);
+
+        // Create a valid temporary xlsx
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A1', 'DEPARTAMENTO');
+        $sheet->setCellValue('B1', 'CUNDINAMARCA');
+        $sheet->setCellValue('A5', 'FECHA DE CORTE:');
+        $sheet->setCellValue('B5', '1 a 30 de Septiembre 2026'); // even if cut-off has 30/09/2026!
+        $sheet->setCellValue('A7', 'Codigo Contable Subcuenta');
+        $sheet->setCellValue('B7', 'Nombre de la Subcuenta');
+        $sheet->setCellValue('C7', 'Codigo entidad Reciproca');
+        $sheet->setCellValue('D7', 'Nombre entidad Reciproca');
+        $sheet->setCellValue('E7', 'Valor Corriente');
+        $sheet->setCellValue('F7', 'Valor No Corriente');
+        $sheet->setCellValue('A8', '1.2.22.06');
+        $sheet->setCellValue('B8', 'Sociedades públicas');
+        $sheet->setCellValue('C8', '229911001');
+        $sheet->setCellValue('D8', 'AGUAS DE BOGOTA S.A. E.S.P.');
+        $sheet->setCellValue('E8', '0');
+        $sheet->setCellValue('F8', '5.000.000');
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test_imp_') . '.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tempPath);
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $tempPath,
+            'test.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($user)->post(route('financial.reciprocals.import'), [
+            'archivo' => $uploadedFile,
+        ]);
+
+        $response->assertRedirect(route('financial.reciprocals.index'));
+
+        $imported = FinancialReciprocal::where('codigo_entidad_reciproca', '229911001')->first();
+        $this->assertNotNull($imported);
+        // Date must be today (the upload date), NOT 2026-09-30
+        $this->assertEquals(now()->toDateString(), $imported->fecha->format('Y-m-d'));
+        $this->assertNotEquals('2026-09-30', $imported->fecha->format('Y-m-d'));
+
+        @unlink($tempPath);
+    }
+
+    public function test_import_validates_and_reports_detailed_row_errors(): void
+    {
+        $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.import']);
+
+        // Create an invalid spreadsheet with missing fields on row 8
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setCellValue('A7', 'Codigo Contable Subcuenta');
+        $sheet->setCellValue('B7', 'Nombre de la Subcuenta');
+        $sheet->setCellValue('C7', 'Codigo entidad Reciproca');
+        $sheet->setCellValue('D7', 'Nombre entidad Reciproca');
+        $sheet->setCellValue('E7', 'Valor Corriente');
+        $sheet->setCellValue('F7', 'Valor No Corriente');
+        // Row 8 missing nombre subcuenta and nombre entidad
+        $sheet->setCellValue('A8', '1.2.22.06');
+        $sheet->setCellValue('B8', '');
+        $sheet->setCellValue('C8', '229911001');
+        $sheet->setCellValue('D8', '');
+
+        $tempPath = tempnam(sys_get_temp_dir(), 'test_err_') . '.xlsx';
+        (new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet))->save($tempPath);
+
+        $uploadedFile = new \Illuminate\Http\UploadedFile(
+            $tempPath,
+            'test_err.xlsx',
+            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            null,
+            true
+        );
+
+        $response = $this->actingAs($user)->post(route('financial.reciprocals.import'), [
+            'archivo' => $uploadedFile,
+        ]);
+
+        $response->assertSessionHasErrors('archivo');
+        $errors = session('errors')->get('archivo');
+        $this->assertTrue(collect($errors)->contains(fn ($e) => str_contains($e, 'Fila 8')));
+
+        @unlink($tempPath);
     }
 }

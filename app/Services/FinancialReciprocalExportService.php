@@ -98,10 +98,17 @@ class FinancialReciprocalExportService
             $sheet->setCellValue('E' . $currentRow, $valCorriente);
             $sheet->setCellValue('F' . $currentRow, $valNoCorriente);
 
-            // Alignments
+            // Alignments and number formatting (sin coma al final y respetando separador de miles)
             $sheet->getStyle('A' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('C' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
             $sheet->getStyle('E' . $currentRow . ':F' . $currentRow)->getAlignment()->setHorizontal(Alignment::HORIZONTAL_RIGHT);
+
+            $sheet->getStyle('E' . $currentRow)->getNumberFormat()->setFormatCode(
+                fmod(abs($valCorriente), 1.0) == 0.0 ? '#,##0' : '#,##0.00'
+            );
+            $sheet->getStyle('F' . $currentRow)->getNumberFormat()->setFormatCode(
+                fmod(abs($valNoCorriente), 1.0) == 0.0 ? '#,##0' : '#,##0.00'
+            );
 
             // Zebra Striping
             if ($index % 2 === 1) {
@@ -113,12 +120,8 @@ class FinancialReciprocalExportService
             $currentRow++;
         }
 
-        // Apply number format to currency columns (sin decimales innecesarios y formato de miles corregido)
+        // Apply borders to table data
         if ($currentRow > 8) {
-            $sheet->getStyle('E8:F' . ($currentRow - 1))
-                ->getNumberFormat()
-                ->setFormatCode('#,##0.##;(#,##0.##);0');
-
             $sheet->getStyle('A8:F' . ($currentRow - 1))->applyFromArray([
                 'borders' => ['allBorders' => ['borderStyle' => Border::BORDER_THIN, 'color' => ['argb' => self::COLOR_BORDER]]],
             ]);

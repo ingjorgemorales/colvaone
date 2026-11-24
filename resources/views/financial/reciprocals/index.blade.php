@@ -448,6 +448,23 @@
                     </select>
                 </div>
 
+                {{-- Año Pill Selector --}}
+                <div class="filter-pill-wrap filter-select-wrap">
+                    <label for="filter_year">
+                        <i data-lucide="calendar" style="width: 14px; height: 14px; color: #123f6e"></i>
+                        <span>Año:</span>
+                    </label>
+                    <input type="number"
+                           id="filter_year"
+                           name="year"
+                           value="{{ $selectedYear ?? now()->year }}"
+                           min="2000"
+                           max="2099"
+                           class="filter-select-input"
+                           style="width: 72px; text-align: center"
+                           aria-label="Año oficial">
+                </div>
+
                 {{-- Date Start Pill --}}
                 <div class="filter-pill-wrap filter-date-wrap">
                     <label for="fecha_inicio">Fecha inicio:</label>
@@ -468,12 +485,12 @@
                            class="filter-date-input">
                 </div>
 
-                <button type="submit" class="btn-filter-action" title="Aplicar filtros de búsqueda">
-                    <i data-lucide="filter" style="width: 15px; height: 15px"></i>
-                    <span>Filtrar</span>
+                <button type="submit" class="btn-filter-action" title="Buscar operaciones recíprocas">
+                    <i data-lucide="search" style="width: 15px; height: 15px"></i>
+                    <span>Buscar</span>
                 </button>
 
-                @if(filled($search) || filled($fechaInicio) || filled($fechaFin) || filled($trimestre))
+                @if(filled($search) || filled($fechaInicio) || filled($fechaFin) || filled($trimestre) || (filled($selectedYear) && $selectedYear != now()->year))
                     <a href="{{ route('financial.reciprocals.index') }}" class="btn-filter-clear" title="Limpiar filtros">
                         <i data-lucide="x" style="width: 15px; height: 15px"></i>
                         <span>Limpiar</span>
@@ -483,7 +500,11 @@
 
             {{-- Right Action Buttons: Exportar, Ajustes y Agregar --}}
             <div class="reciprocal-actions-group">
-                <a href="{{ route('financial.reciprocals.export', request()->query()) }}" class="btn-pill-primary" title="Exportar reporte a Excel en formato oficial CGN">
+                <a href="{{ route('financial.reciprocals.export', request()->query()) }}"
+                   class="btn-pill-primary"
+                   download
+                   data-no-spinner="true"
+                   title="Exportar reporte a Excel en formato oficial CGN">
                     <i data-lucide="download" style="width: 16px; height: 16px"></i>
                     <span>Exportar</span>
                 </a>
@@ -585,18 +606,20 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const selectTrimestre = document.getElementById('select_trimestre');
+            const inputYear = document.getElementById('filter_year');
             const inputInicio = document.getElementById('fecha_inicio');
             const inputFin = document.getElementById('fecha_fin');
 
             if (!selectTrimestre || !inputInicio || !inputFin) return;
 
             const getYear = () => {
+                if (inputYear && inputYear.value) return inputYear.value;
                 if (inputFin.value) return inputFin.value.split('-')[0];
                 if (inputInicio.value) return inputInicio.value.split('-')[0];
                 return '{{ $selectedYear ?: 2026 }}';
             };
 
-            selectTrimestre.addEventListener('change', () => {
+            const updateQuarterDates = () => {
                 const val = selectTrimestre.value;
                 if (!val) return;
                 const y = getYear();
@@ -613,7 +636,16 @@
                     inputInicio.value = `${y}-10-01`;
                     inputFin.value = `${y}-12-31`;
                 }
-            });
+            };
+
+            selectTrimestre.addEventListener('change', updateQuarterDates);
+            if (inputYear) {
+                inputYear.addEventListener('input', () => {
+                    if (selectTrimestre.value) {
+                        updateQuarterDates();
+                    }
+                });
+            }
 
             const checkQuarterMatch = () => {
                 const ini = inputInicio.value;
