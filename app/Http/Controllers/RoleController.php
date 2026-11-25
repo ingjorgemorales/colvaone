@@ -142,7 +142,7 @@ class RoleController extends Controller
                     'reciprocals.view' => 'Ver operaciones recíprocas',
                     'reciprocals.create' => 'Crear operación recíproca',
                     'reciprocals.edit' => 'Editar operación recíproca',
-                    'reciprocals.delete' => 'Eliminar operación recíproca',
+                    'reciprocals.toggle' => 'Activar/Desactivar operación recíproca',
                     'reciprocals.export' => 'Exportar operaciones recíprocas',
                     'reciprocals.import' => 'Importar operaciones recíprocas',
                 ],

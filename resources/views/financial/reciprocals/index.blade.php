@@ -577,6 +577,25 @@
                                                 <i data-lucide="pencil" style="width: 15px; height: 15px"></i>
                                             </a>
                                         @endif
+
+                                        @if(auth()->user()->hasPermission('reciprocals.toggle') || auth()->user()->role === 'superadmin')
+                                            <form method="POST" action="{{ route('financial.reciprocals.toggle', $rec) }}" style="display:inline; margin:0">
+                                                @csrf
+                                                @if($rec->is_active)
+                                                    <button type="submit" class="action-btn" title="Desactivar"
+                                                        style="color: #16a34a; border: none; background: none; cursor: pointer; padding: 0"
+                                                        onclick="return confirm('¿Desactivar esta operación recíproca?')">
+                                                        <i data-lucide="toggle-right" style="width: 17px; height: 17px"></i>
+                                                    </button>
+                                                @else
+                                                    <button type="submit" class="action-btn" title="Activar"
+                                                        style="color: #dc2626; border: none; background: none; cursor: pointer; padding: 0"
+                                                        onclick="return confirm('¿Activar esta operación recíproca?')">
+                                                        <i data-lucide="toggle-left" style="width: 17px; height: 17px"></i>
+                                                    </button>
+                                                @endif
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

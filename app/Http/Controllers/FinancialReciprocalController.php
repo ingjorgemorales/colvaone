@@ -289,6 +289,20 @@ class FinancialReciprocalController extends Controller
             ->with('success', "Operación recíproca #{$reciprocal->id} eliminada correctamente.");
     }
 
+    public function toggleActive(FinancialReciprocal $reciprocal): RedirectResponse
+    {
+        $reciprocal->update([
+            'is_active' => !$reciprocal->is_active,
+            'updated_by' => auth()->id(),
+        ]);
+
+        $estado = $reciprocal->is_active ? 'activada' : 'inactivada';
+
+        return redirect()
+            ->route('financial.reciprocals.index')
+            ->with('success', "Operación recíproca #{$reciprocal->id} {$estado} correctamente.");
+    }
+
     public function export(Request $request, FinancialReciprocalExportService $exportService): BinaryFileResponse
     {
         $search = $request->input('search');

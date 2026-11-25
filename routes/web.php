@@ -165,7 +165,7 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/{reciprocal}', [FinancialReciprocalController::class, 'show'])->name('show')->whereNumber('reciprocal')->middleware('permission:reciprocals.view');
         Route::get('/{reciprocal}/editar', [FinancialReciprocalController::class, 'edit'])->name('edit')->whereNumber('reciprocal')->middleware('permission:reciprocals.edit');
         Route::put('/{reciprocal}', [FinancialReciprocalController::class, 'update'])->name('update')->whereNumber('reciprocal')->middleware('permission:reciprocals.edit');
-        Route::delete('/{reciprocal}', [FinancialReciprocalController::class, 'destroy'])->name('destroy')->whereNumber('reciprocal')->middleware('permission:reciprocals.delete');
+        Route::post('/{reciprocal}/toggle', [FinancialReciprocalController::class, 'toggleActive'])->name('toggle')->whereNumber('reciprocal')->middleware('permission:reciprocals.toggle');
     });
 
     Route::resource('tasks', TaskController::class)->except(['destroy'])->middleware('permission:group_tasks.view,group_tasks.view_group,group_tasks.view_all');
