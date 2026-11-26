@@ -62,7 +62,7 @@
                     @error('system_prompt') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                 </div>
 
-                <div style="display:flex;align-items:center;gap:12px;padding-top:8px">
+                <div class="form-actions" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:8px">
                     <button type="submit" class="btn-primary">
                         <i data-lucide="save" style="width:16px;height:16px"></i> Guardar configuracion
                     </button>

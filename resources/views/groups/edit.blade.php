@@ -69,7 +69,7 @@
                     </div>
                 </div>
 
-                <div style="display:flex;gap:12px;justify-content:flex-end">
+                <div class="form-actions form-actions-reverse" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end">
                     <a href="{{ route('groups.index') }}" class="btn-secondary">Cancelar</a>
                     <button type="submit" class="btn-primary">
                         <i data-lucide="save" style="width:16px;height:16px"></i> Actualizar grupo

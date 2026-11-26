@@ -141,9 +141,26 @@
             color: #475569; transition: background 0.2s; flex-shrink: 0;
         }
         .hamburger:hover { background: rgba(18,63,110,0.04); }
-        .header-title { flex: 1; min-width: 0; }
-        .header-title h1 { font-size: 17px; font-weight: 600; color: #1e293b; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .header-title p { font-size: 13px; color: #94a3b8; }
+        .header-title { flex: 1; min-width: 0; overflow: hidden; }
+        .header-title h1 { font-size: 17px; font-weight: 600; color: #1e293b; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-title p { font-size: 13px; color: #94a3b8; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .header-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+        @media (max-width: 640px) {
+            .header { padding: 0 12px; gap: 8px; }
+            .hamburger { width: 36px; height: 36px; }
+            .header-title h1 { font-size: 15px; }
+            .header-title p { font-size: 11.5px; margin-top: 1px; }
+            .header-actions { gap: 6px; }
+            .user-menu-trigger { padding: 2px; gap: 0; }
+            .user-menu-trigger .user-menu-chevron { display: none; }
+            /* Espacio inferior para que los botones flotantes (accesibilidad y chat) no tapen el contenido. */
+            .content { padding: 16px 12px 150px; }
+            .form-actions { flex-direction: column; align-items: stretch !important; }
+            .form-actions.form-actions-reverse { flex-direction: column-reverse; }
+            .form-actions > .btn-primary,
+            .form-actions > .btn-secondary { width: 100%; }
+        }
 
         .content { flex: 1; padding: 24px; max-width: 1200px; width: 100%; margin: 0 auto; }
 
@@ -464,11 +481,12 @@
                         ])->values();
                     @endphp
 
-                    <a href="{{ route('manual.show') }}" target="_blank" rel="noopener noreferrer" title="Manual de usuario" style="margin-right:8px;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s;text-decoration:none;flex-shrink:0" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
+                    <div class="header-actions">
+                    <a href="{{ route('manual.show') }}" target="_blank" rel="noopener noreferrer" title="Manual de usuario" class="header-manual" style="width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s;text-decoration:none;flex-shrink:0" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
                         <i data-lucide="circle-help" style="width:18px;height:18px;color:#64748b"></i>
                     </a>
 
-                    <div style="position:relative;margin-right:8px" x-data="notificationBell({ userId: @js(auth()->id()), unreadCount: @js(auth()->user()->unreadNotifications()->count()), notifications: @js($bellNotifications) })" x-init="init()" @click.outside="open = false">
+                    <div style="position:relative" x-data="notificationBell({ userId: @js(auth()->id()), unreadCount: @js(auth()->user()->unreadNotifications()->count()), notifications: @js($bellNotifications) })" x-init="init()" @click.outside="open = false">
                         <button @click="open = !open" style="position:relative;width:36px;height:36px;border-radius:10px;border:1px solid rgba(18,63,110,0.08);background:white;display:grid;place-items:center;cursor:pointer;transition:all 0.2s" onmouseover="this.style.background='rgba(18,63,110,0.04)'" onmouseout="this.style.background='white'">
                             <i data-lucide="bell" style="width:18px;height:18px;color:#64748b"></i>
                             <span x-cloak x-show="unreadCount > 0" x-text="unreadCount > 9 ? '9+' : unreadCount" style="position:absolute;top:-6px;right:-6px;min-width:18px;height:18px;padding:0 5px;border-radius:999px;background:#ef4444;border:2px solid white;color:white;font-size:10px;font-weight:700;line-height:14px;text-align:center"></span>
@@ -513,7 +531,7 @@
                     <div style="position:relative" x-data="{ userMenu: false }" @click.outside="userMenu = false">
                         <button class="user-menu-trigger" @click="userMenu = !userMenu">
                             <div class="avatar" style="width:36px;height:36px">{{ auth()->user()->initials }}</div>
-                            <i data-lucide="chevron-down" style="width:16px;height:16px;color:#94a3b8"></i>
+                            <i data-lucide="chevron-down" class="user-menu-chevron" style="width:16px;height:16px;color:#94a3b8"></i>
                         </button>
                         <div x-cloak x-show="userMenu" x-transition class="user-menu">
                             <div style="padding:12px 14px;border-bottom:1px solid rgba(18,63,110,0.06)">
@@ -538,6 +556,7 @@
                                 </form>
                             </div>
                         </div>
+                    </div>
                     </div>
                 @endauth
             </header>

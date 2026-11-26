@@ -72,6 +72,16 @@
             border-radius: 9999px;
             border: 1px solid rgba(18, 63, 110, 0.16);
             letter-spacing: 0.02em;
+            max-width: 100%;
+            min-width: 0;
+        }
+        /* El nombre del formato no tiene espacios (usa "_"), así que se permite partirlo para que no se salga. */
+        .cgn-format-pill span { min-width: 0; overflow-wrap: anywhere; }
+        .cgn-format-pill i, .cgn-format-pill svg { flex-shrink: 0; }
+        @media (max-width: 640px) {
+            .cgn-institutional-header { padding: 16px; }
+            .cgn-format-pill { border-radius: 12px; }
+            .cgn-field-label { min-width: 110px; }
         }
         .cgn-header-footer {
             display: flex;

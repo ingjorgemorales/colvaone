@@ -379,16 +379,46 @@
                     const highest = Math.max(0, ...values.map((value) => Number(value || 0)));
                     return Math.max(minimum, Math.ceil((highest * 1.15) / 10) * 10);
                 };
-                const fitChartHeight = (elementId, count, minHeight, pixelsPerItem) => {
+                // Caracteres por linea segun el ancho disponible, para que el nombre completo quepa sin cortarse.
+                const charsPerLine = (width, ratio = 0.4) => Math.max(10, Math.min(34, Math.floor((width * ratio) / 6.5)));
+                // Divide un nombre en varias lineas (Chart.js dibuja un arreglo como texto multilinea).
+                const wrapLabel = (text, maxChars) => {
+                    const lines = [];
+                    let current = '';
+                    String(text ?? '').split(/\s+/).filter(Boolean).forEach((word) => {
+                        while (word.length > maxChars) {
+                            if (current) { lines.push(current); current = ''; }
+                            lines.push(word.slice(0, maxChars));
+                            word = word.slice(maxChars);
+                        }
+                        if (!current) { current = word; return; }
+                        if ((current + ' ' + word).length <= maxChars) { current += ' ' + word; return; }
+                        lines.push(current);
+                        current = word;
+                    });
+                    if (current) lines.push(current);
+                    return lines.length ? lines : [''];
+                };
+                const fitChartHeight = (elementId, labels, minHeight, pixelsPerItem, ratio = 0.4) => {
                     const canvas = document.getElementById(elementId);
                     const wrapper = canvas?.closest('.chart-wrap');
                     if (!wrapper) return;
 
-                    wrapper.style.minHeight = `${Math.max(minHeight, 110 + (count * pixelsPerItem))}px`;
+                    const maxChars = charsPerLine(wrapper.clientWidth || 600, ratio);
+                    const height = labels.reduce((total, label) => {
+                        const lines = wrapLabel(label, maxChars).length;
+                        return total + Math.max(pixelsPerItem, (lines * 15) + 14);
+                    }, 110);
+                    wrapper.style.minHeight = `${Math.max(minHeight, height)}px`;
                 };
-                const shortTick = function(value) {
-                    const label = String(this.getLabelForValue(value));
-                    return label.length > 38 ? `${label.slice(0, 35)}...` : label;
+                // Etiquetas del eje vertical en graficas horizontales: nombre completo en varias lineas.
+                const wrappedTick = function(value) {
+                    return wrapLabel(this.getLabelForValue(value), charsPerLine(this.chart.width));
+                };
+                // Etiquetas del eje horizontal en graficas de columnas: se reparten entre las columnas.
+                const wrappedColumnTick = function(value) {
+                    const columns = Math.max(1, this.chart.data.labels.length);
+                    return wrapLabel(this.getLabelForValue(value), charsPerLine(this.chart.width / columns, 0.9));
                 };
                 const labelPlugin = {
                     id: 'colvaoneValueLabels',
@@ -435,10 +465,18 @@
                     },
                 };
 
-                fitChartHeight('qualityComplianceChart', dashboard.qualityObjectives.labels.length, 250, 44);
-                fitChartHeight('qualityStatusChart', dashboard.qualityObjectives.labels.length, 250, 36);
-                fitChartHeight('subprocessComplianceChart', dashboard.subprocesses.labels.length, 420, 34);
-                fitChartHeight('subprocessStatusChart', dashboard.subprocesses.labels.length, 420, 34);
+                const fitAllCharts = () => {
+                    fitChartHeight('qualityComplianceChart', dashboard.qualityObjectives.labels, 250, 44);
+                    fitChartHeight('qualityStatusChart', dashboard.qualityObjectives.labels, 250, 36);
+                    fitChartHeight('subprocessComplianceChart', dashboard.subprocesses.labels, 420, 34);
+                    fitChartHeight('subprocessStatusChart', dashboard.subprocesses.labels, 420, 34);
+                };
+                fitAllCharts();
+                let resizeTimer;
+                window.addEventListener('resize', () => {
+                    clearTimeout(resizeTimer);
+                    resizeTimer = setTimeout(fitAllCharts, 200);
+                });
 
                 const sharedOptions = {
                     responsive: true,
@@ -515,7 +553,7 @@
                         ...sharedOptions,
                         scales: {
                             x: {
-                                ticks: { color: textColor, callback: shortTick, maxRotation: 0, minRotation: 0 },
+                                ticks: { color: textColor, callback: wrappedColumnTick, maxRotation: 0, minRotation: 0, autoSkip: false },
                                 grid: { display: false },
                             },
                             y: {
@@ -572,7 +610,7 @@
                                 grid: { color: gridColor },
                             },
                             y: {
-                                ticks: { color: textColor, autoSkip: false, callback: shortTick },
+                                ticks: { color: textColor, autoSkip: false, callback: wrappedTick },
                                 grid: { display: false },
                             },
                         },
@@ -608,7 +646,7 @@
                             },
                             y: {
                                 stacked: true,
-                                ticks: { color: textColor, autoSkip: false, callback: shortTick },
+                                ticks: { color: textColor, autoSkip: false, callback: wrappedTick },
                                 grid: { display: false },
                             },
                         },

@@ -37,7 +37,7 @@
                     @error('members') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                 </div>
 
-                <div style="display:flex;gap:12px;justify-content:flex-end">
+                <div class="form-actions form-actions-reverse" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end">
                     <a href="{{ route('committees.show', $committee) }}" class="btn-secondary">Cancelar</a>
                     <button type="submit" class="btn-primary">
                         <i data-lucide="save" style="width:16px;height:16px"></i> Guardar cambios

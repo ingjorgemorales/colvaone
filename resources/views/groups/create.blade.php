@@ -61,7 +61,7 @@
                     <p style="font-size:11px;color:#94a3b8;margin-top:4px">Selecciona los usuarios que formaran parte del grupo.</p>
                 </div>
 
-                <div style="display:flex;gap:12px;justify-content:flex-end">
+                <div class="form-actions form-actions-reverse" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end">
                     <a href="{{ route('groups.index') }}" class="btn-secondary">Cancelar</a>
                     <button type="submit" class="btn-primary">
                         <i data-lucide="plus" style="width:16px;height:16px"></i> Crear grupo

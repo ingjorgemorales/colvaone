@@ -81,7 +81,7 @@
                     Se enviara un correo al usuario con una contrasena temporal. Debera cambiarla al iniciar sesion.
                 </div>
 
-                <div style="display:flex;align-items:center;gap:12px;padding-top:8px">
+                <div class="form-actions" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:8px">
                     <button type="submit" class="btn-primary">
                         <i data-lucide="user-plus" style="width:16px;height:16px"></i> Crear usuario
                     </button>

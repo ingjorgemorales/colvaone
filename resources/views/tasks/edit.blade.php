@@ -20,7 +20,7 @@
                     <textarea name="description" rows="3" class="input-field" style="resize:vertical">{{ old('description', $task->description) }}</textarea>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px">
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Grupo de trabajo *</label>
                         <select name="group_id" id="groupSelect" required class="input-field @error('group_id') {{ 'error-field' }} @enderror" style="cursor:pointer" onchange="loadGroupMembers(this.value)">
@@ -45,7 +45,7 @@
                     </div>
                 </div>
 
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr));gap:16px">
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Fecha de inicio *</label>
                         <input name="start_date" id="startDate" type="date" value="{{ old('start_date', $task->start_date->format('Y-m-d')) }}" min="{{ today()->format('Y-m-d') }}" required class="input-field @error('start_date') {{ 'error-field' }} @enderror">
@@ -89,7 +89,7 @@
                     <textarea name="observations" rows="3" class="input-field" style="resize:vertical">{{ old('observations', $task->observations) }}</textarea>
                 </div>
 
-                <div style="display:flex;gap:12px;justify-content:flex-end">
+                <div class="form-actions form-actions-reverse" style="display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-end">
                     <a href="{{ route('tasks.index') }}" class="btn-secondary">Cancelar</a>
                     <button type="submit" class="btn-primary">
                         <i data-lucide="save" style="width:16px;height:16px"></i> Actualizar tarea

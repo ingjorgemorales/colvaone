@@ -172,6 +172,13 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Formulario "Agregar nueva entidad recíproca": en pantallas angostas los campos y el botón van uno debajo del otro. */
+        .entity-add-form { display: grid; grid-template-columns: 220px minmax(0, 1fr) auto; gap: 16px; align-items: end; }
+        @media (max-width: 768px) {
+            .entity-add-form { grid-template-columns: minmax(0, 1fr); }
+            .entity-add-form .btn-pill-primary { width: 100%; justify-content: center; }
+        }
         .badge-entity-code {
             font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
             font-weight: 600;
@@ -560,7 +567,7 @@
                     </p>
                 </div>
 
-                <form method="POST" action="{{ route('financial.reciprocals.entities.store') }}" style="display: grid; grid-template-columns: 220px 1fr auto; gap: 16px; align-items: end">
+                <form method="POST" action="{{ route('financial.reciprocals.entities.store') }}" class="entity-add-form">
                     @csrf
                     <div class="settings-field">
                         <label for="new_codigo" class="settings-label">Código Entidad <span style="color: #ef4444">*</span></label>

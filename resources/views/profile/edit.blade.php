@@ -3,10 +3,10 @@
         <div class="card" style="padding:24px;margin-bottom:20px">
             <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
                 <div class="avatar" style="width:64px;height:64px;font-size:20px;border-radius:16px">{{ $user->initials }}</div>
-                <div>
-                    <h2 style="font-size:18px;font-weight:600;color:#1e293b;margin:0">{{ $user->name }} {{ $user->last_name }}</h2>
+                <div style="min-width:0;flex:1">
+                    <h2 style="font-size:18px;font-weight:600;color:#1e293b;margin:0;overflow-wrap:anywhere">{{ $user->name }} {{ $user->last_name }}</h2>
                     <p style="font-size:14px;color:#94a3b8;margin:4px 0 0">{{ $user->role_label }}</p>
-                    <p style="font-size:13px;color:#64748b;margin:2px 0 0">{{ $user->email }}</p>
+                    <p style="font-size:13px;color:#64748b;margin:2px 0 0;overflow-wrap:anywhere">{{ $user->email }}</p>
                 </div>
             </div>
         </div>
@@ -25,7 +25,7 @@
                 @csrf
                 @method('PUT')
 
-                <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr">
+                <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))">
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Nombre *</label>
                         <input name="name" type="text" value="{{ old('name', $user->name) }}" required class="input-field">
@@ -50,7 +50,7 @@
                     @error('phone') <p style="font-size:12px;color:#dc2626;margin-top:4px">{{ $message }}</p> @enderror
                 </div>
 
-                <div style="display:grid;gap:16px;grid-template-columns:1fr 1fr">
+                <div style="display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,220px),1fr))">
                     <div>
                         <label style="display:block;font-size:13px;font-weight:500;color:#475569;margin-bottom:6px">Cargo</label>
                         <input name="position" type="text" value="{{ old('position', $user->position) }}" class="input-field">
@@ -66,7 +66,7 @@
                     <input name="department" type="text" value="{{ old('department', $user->department) }}" class="input-field">
                 </div>
 
-                <div style="display:flex;align-items:center;gap:12px;padding-top:8px">
+                <div class="form-actions" style="display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-top:8px">
                     <button type="submit" class="btn-primary">
                         <i data-lucide="save" style="width:16px;height:16px"></i> Guardar cambios
                     </button>
