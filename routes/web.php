@@ -159,9 +159,9 @@ Route::middleware('auth')->group(function (): void {
         Route::get('/entidades/buscar', [FinancialReciprocalController::class, 'searchEntities'])->name('entities.search')->middleware('permission:reciprocals.view');
         Route::get('/crear', [FinancialReciprocalController::class, 'create'])->name('create')->middleware('permission:reciprocals.create');
         Route::post('/', [FinancialReciprocalController::class, 'store'])->name('store')->middleware('permission:reciprocals.create');
-        Route::get('/exportar', [FinancialReciprocalController::class, 'export'])->name('export')->middleware('permission:reciprocals.export,reciprocals.view');
-        Route::post('/importar', [FinancialReciprocalController::class, 'import'])->name('import')->middleware('permission:reciprocals.import,reciprocals.create');
-        Route::get('/plantilla', [FinancialReciprocalController::class, 'downloadTemplate'])->name('template')->middleware('permission:reciprocals.import,reciprocals.create');
+        Route::get('/exportar', [FinancialReciprocalController::class, 'export'])->name('export')->middleware('permission:reciprocals.export');
+        Route::post('/importar', [FinancialReciprocalController::class, 'import'])->name('import')->middleware('permission:reciprocals.import');
+        Route::get('/plantilla', [FinancialReciprocalController::class, 'downloadTemplate'])->name('template')->middleware('permission:reciprocals.import');
         Route::get('/{reciprocal}', [FinancialReciprocalController::class, 'show'])->name('show')->whereNumber('reciprocal')->middleware('permission:reciprocals.view');
         Route::get('/{reciprocal}/editar', [FinancialReciprocalController::class, 'edit'])->name('edit')->whereNumber('reciprocal')->middleware('permission:reciprocals.edit');
         Route::put('/{reciprocal}', [FinancialReciprocalController::class, 'update'])->name('update')->whereNumber('reciprocal')->middleware('permission:reciprocals.edit');

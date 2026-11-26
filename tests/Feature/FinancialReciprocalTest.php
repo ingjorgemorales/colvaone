@@ -93,7 +93,7 @@ class FinancialReciprocalTest extends TestCase
 
     public function test_reciprocals_index_displays_clean_formatted_numbers_without_unnecessary_decimals(): void
     {
-        $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.create']);
+        $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.create', 'reciprocals.export']);
 
         FinancialReciprocal::create([
             'codigo_contable_subcuenta' => '1.2.22.06',
@@ -190,7 +190,7 @@ class FinancialReciprocalTest extends TestCase
 
     public function test_create_page_renders_form_with_clean_number_inputs(): void
     {
-        $user = $this->userWith(['financial.view', 'reciprocals.create']);
+        $user = $this->userWith(['financial.view', 'reciprocals.create', 'reciprocals.import']);
 
         $response = $this->actingAs($user)->get(route('financial.reciprocals.create'));
 
@@ -507,13 +507,13 @@ class FinancialReciprocalTest extends TestCase
         );
     }
 
-    public function test_template_download_accessible_with_create_permission(): void
+    public function test_template_download_denied_with_only_create_permission(): void
     {
         $user = $this->userWith(['financial.view', 'reciprocals.view', 'reciprocals.create']);
 
         $response = $this->actingAs($user)->get(route('financial.reciprocals.template'));
 
-        $response->assertOk();
+        $response->assertForbidden();
     }
 
     public function test_template_download_denies_unauthorized_user(): void

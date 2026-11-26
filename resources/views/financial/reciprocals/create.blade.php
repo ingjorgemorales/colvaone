@@ -242,10 +242,12 @@
                     <span>Volver al listado</span>
                 </a>
 
+                @if(auth()->user()->hasPermission('reciprocals.import'))
                 <button type="button" @click="importModalOpen = true" class="btn-pill-primary" title="Importar desde archivo Excel o CSV oficial">
                     <i data-lucide="upload" style="width: 16px; height: 16px"></i>
                     <span>Importar</span>
                 </button>
+                @endif
             </div>
         </div>
 
@@ -417,6 +419,7 @@
         </form>
 
         {{-- Import Modal --}}
+        @if(auth()->user()->hasPermission('reciprocals.import'))
         <div x-show="importModalOpen"
              x-cloak
              x-transition.opacity
@@ -486,6 +489,7 @@
                 </form>
             </div>
         </div>
+        @endif
 
     </div>
 

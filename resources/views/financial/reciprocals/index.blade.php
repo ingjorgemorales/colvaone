@@ -510,6 +510,7 @@
 
             {{-- Right Action Buttons: Exportar, Ajustes y Agregar --}}
             <div class="reciprocal-actions-group">
+                @if(auth()->user()->hasPermission('reciprocals.export'))
                 <a href="{{ route('financial.reciprocals.export', request()->query()) }}"
                    class="btn-pill-primary"
                    download
@@ -518,6 +519,7 @@
                     <i data-lucide="download" style="width: 16px; height: 16px"></i>
                     <span>Exportar</span>
                 </a>
+                @endif
 
                 <a href="{{ route('financial.reciprocals.settings') }}" class="btn-pill-secondary" title="Ajustes institucionales del formato CGN">
                     <i data-lucide="settings" style="width: 16px; height: 16px"></i>
